@@ -148,7 +148,8 @@ const Book = () => {
     if (!selectedDuration) return 30;
     if (selectedDuration === "One Day") return 1;
     if (selectedDuration === "One Week") return 7;
-    return 30; // One Month
+    if (selectedDuration === "One Month") return 30;
+    return 365; // One Year
   };
 
   const maxAccessoryDays = getMaxDays();
@@ -158,7 +159,13 @@ const Book = () => {
     if (!selectedDate || !selectedDuration) return null;
     if (selectedDuration === "One Day") return addDays(selectedDate, 1);
     if (selectedDuration === "One Week") return addWeeks(selectedDate, 1);
-    return addMonths(selectedDate, 1);
+    if (selectedDuration === "One Month") return addMonths(selectedDate, 1);
+    if (selectedDuration === "One Year") {
+      const yearLater = new Date(selectedDate);
+      yearLater.setFullYear(yearLater.getFullYear() + 1);
+      return yearLater;
+    }
+    return null;
   };
 
   const returnDate = getReturnDate();
@@ -169,6 +176,7 @@ const Book = () => {
     if (selectedDuration === "One Day") return Number(cycleData.price_per_day);
     if (selectedDuration === "One Week") return Number(cycleData.price_per_week);
     if (selectedDuration === "One Month") return Number(cycleData.price_per_day) * 30;
+    if (selectedDuration === "One Year") return Number(cycleData.price_per_year || 50000);
     return 0;
   };
 
@@ -194,7 +202,9 @@ const Book = () => {
 
   // Validate checkout form
   const canProceedToPayment = () => {
-    return phoneVerified && fullName && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
+    // Check if phone number is valid (10 digits)
+    const isPhoneValid = phoneNumber.length === 10;
+    return isPhoneValid && fullName && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
   };
 
   // Handle payment navigation
@@ -432,11 +442,12 @@ const Book = () => {
                       Choose Rental Duration
                     </h3>
                     
-                    <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid md:grid-cols-4 gap-4">
                       {cycleData && [
                         { duration: "One Day", price: `₹${cycleData.price_per_day}`, deposit: `₹${cycleData.security_deposit}`, hours: "24 hours" },
                         { duration: "One Week", price: `₹${cycleData.price_per_week}`, deposit: `₹${cycleData.security_deposit}`, hours: "7 days" },
-                        { duration: "One Month", price: `₹${Number(cycleData.price_per_day) * 30}`, deposit: `₹${cycleData.security_deposit}`, hours: "30 days" }
+                        { duration: "One Month", price: `₹${Number(cycleData.price_per_day) * 30}`, deposit: `₹${cycleData.security_deposit}`, hours: "30 days" },
+                        { duration: "One Year", price: `₹${cycleData.price_per_year || 50000}`, deposit: `₹${cycleData.security_deposit}`, hours: "365 days" }
                       ].map((option) => (
                         <Card 
                           key={option.duration}

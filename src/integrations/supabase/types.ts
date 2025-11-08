@@ -216,6 +216,7 @@ export type Database = {
           price_per_day: number
           price_per_hour: number
           price_per_week: number
+          price_per_year: number | null
           security_deposit: number
           specifications: Json | null
           total_quantity: number
@@ -233,6 +234,7 @@ export type Database = {
           price_per_day: number
           price_per_hour: number
           price_per_week: number
+          price_per_year?: number | null
           security_deposit?: number
           specifications?: Json | null
           total_quantity?: number
@@ -250,6 +252,7 @@ export type Database = {
           price_per_day?: number
           price_per_hour?: number
           price_per_week?: number
+          price_per_year?: number | null
           security_deposit?: number
           specifications?: Json | null
           total_quantity?: number

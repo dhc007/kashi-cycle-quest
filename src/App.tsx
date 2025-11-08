@@ -15,8 +15,10 @@ import Cycles from "./pages/admin/Cycles";
 import Accessories from "./pages/admin/Accessories";
 import Partners from "./pages/admin/Partners";
 import AdminSettings from "./pages/admin/AdminSettings";
+import Users from "./pages/admin/Users";
 import NotFound from "./pages/NotFound";
 import Signup from "./pages/Signup";
+import BookingHistory from "./pages/BookingHistory";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,7 @@ const App = () => (
         <Route path="/payment" element={<Payment />} />
         <Route path="/confirmation" element={<Confirmation />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/bookings" element={<BookingHistory />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -42,6 +45,7 @@ const App = () => (
             <Route path="accessories" element={<Accessories />} />
             <Route path="partners" element={<Partners />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="users" element={<Users />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

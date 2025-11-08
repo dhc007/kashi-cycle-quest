@@ -18,6 +18,7 @@ const AdminSettings = () => {
   const [pricePerHour, setPricePerHour] = useState("");
   const [pricePerDay, setPricePerDay] = useState("");
   const [pricePerWeek, setPricePerWeek] = useState("");
+  const [pricePerYear, setPricePerYear] = useState("");
   const [securityDeposit, setSecurityDeposit] = useState("");
 
   // Accessories
@@ -74,6 +75,7 @@ const AdminSettings = () => {
         setPricePerHour(cycleData.price_per_hour.toString());
         setPricePerDay(cycleData.price_per_day.toString());
         setPricePerWeek(cycleData.price_per_week.toString());
+        setPricePerYear(cycleData.price_per_year?.toString() || '50000');
         setSecurityDeposit(cycleData.security_deposit.toString());
       }
 
@@ -109,6 +111,7 @@ const AdminSettings = () => {
           price_per_hour: parseFloat(pricePerHour),
           price_per_day: parseFloat(pricePerDay),
           price_per_week: parseFloat(pricePerWeek),
+          price_per_year: parseFloat(pricePerYear),
           security_deposit: parseFloat(securityDeposit),
           updated_at: new Date().toISOString(),
         })
@@ -246,6 +249,18 @@ const AdminSettings = () => {
                   value={pricePerWeek}
                   onChange={(e) => setPricePerWeek(e.target.value)}
                   placeholder="1500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pricePerYear">Price per Year (₹)</Label>
+                <Input
+                  id="pricePerYear"
+                  type="number"
+                  step="0.01"
+                  value={pricePerYear}
+                  onChange={(e) => setPricePerYear(e.target.value)}
+                  placeholder="50000"
                 />
               </div>
 

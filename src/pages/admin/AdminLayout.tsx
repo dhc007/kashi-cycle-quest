@@ -20,6 +20,7 @@ const AdminLayout = () => {
     { icon: Bike, label: "Cycles", path: "/admin/cycles" },
     { icon: Package, label: "Accessories", path: "/admin/accessories" },
     { icon: Users, label: "Partners", path: "/admin/partners" },
+    { icon: Users, label: "Users", path: "/admin/users" },
     { icon: Settings, label: "Settings", path: "/admin/settings" },
   ];
 
