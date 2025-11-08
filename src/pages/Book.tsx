@@ -1,19 +1,33 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Clock, Bike } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Bike, Glasses, Camera, HardHat, Wrench, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface Accessory {
+  id: string;
+  name: string;
+  pricePerDay: number;
+  icon: any;
+  days: number;
+}
 
 const Book = () => {
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
   const [selectedDuration, setSelectedDuration] = useState<string>();
+  const [accessories, setAccessories] = useState<Accessory[]>([
+    { id: "rayban", name: "Meta Ray-Ban Glasses", pricePerDay: 1200, icon: Glasses, days: 0 },
+    { id: "gopro", name: "GoPro Camera", pricePerDay: 700, icon: Camera, days: 0 },
+    { id: "helmet", name: "Smart Helmet", pricePerDay: 200, icon: HardHat, days: 0 },
+    { id: "pump", name: "Pump", pricePerDay: 80, icon: Wrench, days: 0 },
+  ]);
 
   // Generate time slots from 6 AM to 10 PM in 30-minute intervals
   const generateTimeSlots = () => {
@@ -42,6 +56,55 @@ const Book = () => {
   maxDate.setFullYear(maxDate.getFullYear() + 1);
 
   const canContinue = selectedDate && selectedTime;
+
+  // Get max rental days based on duration
+  const getMaxDays = () => {
+    if (!selectedDuration) return 30;
+    if (selectedDuration === "One Day") return 1;
+    if (selectedDuration === "One Week") return 7;
+    return 30; // One Month
+  };
+
+  const maxAccessoryDays = getMaxDays();
+
+  // Calculate return date based on duration
+  const getReturnDate = () => {
+    if (!selectedDate || !selectedDuration) return null;
+    if (selectedDuration === "One Day") return addDays(selectedDate, 1);
+    if (selectedDuration === "One Week") return addWeeks(selectedDate, 1);
+    return addMonths(selectedDate, 1);
+  };
+
+  const returnDate = getReturnDate();
+
+  // Get base price for selected duration
+  const getBasePrice = () => {
+    if (selectedDuration === "One Day") return 499;
+    if (selectedDuration === "One Week") return 1999;
+    if (selectedDuration === "One Month") return 4999;
+    return 0;
+  };
+
+  // Get security deposit
+  const getSecurityDeposit = () => {
+    if (selectedDuration === "One Day" || selectedDuration === "One Week") return 2000;
+    if (selectedDuration === "One Month") return 5000;
+    return 0;
+  };
+
+  // Calculate accessories total
+  const accessoriesTotal = accessories.reduce((sum, acc) => sum + (acc.pricePerDay * acc.days), 0);
+
+  // Handle accessory day change
+  const updateAccessoryDays = (id: string, change: number) => {
+    setAccessories(prev => prev.map(acc => {
+      if (acc.id === id) {
+        const newDays = Math.max(0, Math.min(maxAccessoryDays, acc.days + change));
+        return { ...acc, days: newDays };
+      }
+      return acc;
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -211,9 +274,101 @@ const Book = () => {
                 </div>
               )}
 
-              {step >= 3 && (
+              {step === 3 && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Camera className="w-5 h-5 text-primary" />
+                      Add Accessories (Optional)
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      Enhance your experience with our premium accessories
+                    </p>
+
+                    <div className="space-y-4">
+                      {accessories.map((accessory) => {
+                        const IconComponent = accessory.icon;
+                        return (
+                          <Card 
+                            key={accessory.id}
+                            className={cn(
+                              "transition-all hover:shadow-warm",
+                              accessory.days > 0 && "border-primary bg-primary/5"
+                            )}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-center gap-4">
+                                <div className="flex-shrink-0">
+                                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <IconComponent className="w-6 h-6 text-primary" />
+                                  </div>
+                                </div>
+                                
+                                <div className="flex-1">
+                                  <h4 className="font-semibold">{accessory.name}</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    ₹{accessory.pricePerDay}/day • Max {maxAccessoryDays} day{maxAccessoryDays > 1 ? 's' : ''}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => updateAccessoryDays(accessory.id, -1)}
+                                    disabled={accessory.days === 0}
+                                    className="h-8 w-8"
+                                  >
+                                    <Minus className="w-4 h-4" />
+                                  </Button>
+                                  
+                                  <div className="w-12 text-center">
+                                    <span className="font-semibold text-lg">{accessory.days}</span>
+                                    <p className="text-xs text-muted-foreground">day{accessory.days !== 1 ? 's' : ''}</p>
+                                  </div>
+                                  
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => updateAccessoryDays(accessory.id, 1)}
+                                    disabled={accessory.days >= maxAccessoryDays}
+                                    className="h-8 w-8"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </Button>
+
+                                  <div className="w-24 text-right">
+                                    {accessory.days > 0 ? (
+                                      <span className="font-bold text-primary">
+                                        ₹{accessory.pricePerDay * accessory.days}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground text-sm">Not added</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                      Back
+                    </Button>
+                    <Button onClick={() => setStep(4)} className="flex-1 bg-gradient-primary hover:opacity-90">
+                      Continue to Checkout
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {step >= 4 && (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground">Additional booking steps will be implemented...</p>
+                  <p className="text-muted-foreground">Checkout steps will be implemented next...</p>
                   <Button 
                     onClick={() => setStep(1)} 
                     className="mt-4 bg-gradient-primary hover:opacity-90"
@@ -226,19 +381,113 @@ const Book = () => {
           </Card>
 
           {/* Booking Summary Sidebar */}
-          <Card className="mt-6 sticky top-20 shadow-warm border-primary/20">
+          <Card className="mt-6 sticky top-20 shadow-warm border-primary/20 animate-fade-in">
             <CardHeader>
-              <CardTitle>Booking Summary</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Bike className="w-5 h-5 text-primary" />
+                Booking Summary
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
+              <div className="space-y-4 text-sm">
+                <div className="flex justify-between pb-3 border-b">
                   <span className="text-muted-foreground">Booking ID:</span>
                   <span className="font-mono font-semibold">BLT-{Date.now().toString().slice(-6)}</span>
                 </div>
-                <div className="border-t pt-3">
-                  <p className="text-muted-foreground text-xs">Complete the booking to see full summary</p>
-                </div>
+
+                {/* Date & Time */}
+                {selectedDate && selectedTime && (
+                  <div className="space-y-2 animate-fade-in">
+                    <div className="flex items-start gap-2">
+                      <CalendarIcon className="w-4 h-4 text-primary mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-medium">Pickup</p>
+                        <p className="text-muted-foreground">
+                          {format(selectedDate, "PPP")}
+                        </p>
+                        <p className="text-muted-foreground">
+                          {selectedTime && (() => {
+                            const [hour, minute] = selectedTime.split(':');
+                            const h = parseInt(hour);
+                            const period = h >= 12 ? 'PM' : 'AM';
+                            const displayHour = h > 12 ? h - 12 : h === 0 ? 12 : h;
+                            return `${displayHour}:${minute} ${period}`;
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Duration & Return Date */}
+                {selectedDuration && returnDate && (
+                  <div className="space-y-2 animate-fade-in">
+                    <div className="flex items-start gap-2">
+                      <Clock className="w-4 h-4 text-primary mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-medium">Duration: {selectedDuration}</p>
+                        <p className="text-muted-foreground">
+                          Return: {format(returnDate, "PPP")}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Accessories */}
+                {accessories.some(acc => acc.days > 0) && (
+                  <div className="space-y-2 pb-3 border-b animate-fade-in">
+                    <p className="font-medium flex items-center gap-2">
+                      <Camera className="w-4 h-4 text-primary" />
+                      Accessories
+                    </p>
+                    {accessories.filter(acc => acc.days > 0).map(acc => (
+                      <div key={acc.id} className="flex justify-between text-xs ml-6">
+                        <span className="text-muted-foreground">
+                          {acc.name} ({acc.days}d)
+                        </span>
+                        <span>₹{acc.pricePerDay * acc.days}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Price Breakdown */}
+                {selectedDuration && (
+                  <div className="space-y-2 animate-fade-in">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Cycle Rental</span>
+                      <span className="font-semibold">₹{getBasePrice()}</span>
+                    </div>
+                    
+                    {accessoriesTotal > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Accessories</span>
+                        <span className="font-semibold">₹{accessoriesTotal}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Security Deposit</span>
+                      <span className="text-muted-foreground">₹{getSecurityDeposit()} (Refundable)</span>
+                    </div>
+                    
+                    <div className="flex justify-between pt-3 border-t">
+                      <span className="font-semibold">Subtotal</span>
+                      <span className="font-bold text-primary text-lg">
+                        ₹{getBasePrice() + accessoriesTotal}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {!selectedDate && !selectedTime && !selectedDuration && (
+                  <div className="text-center py-4">
+                    <p className="text-muted-foreground text-xs">
+                      Start by selecting your pickup date & time
+                    </p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
