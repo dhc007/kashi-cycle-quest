@@ -1,13 +1,19 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Clock, Bike, Glasses, Camera, HardHat, Wrench, Plus, Minus } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Bike, Glasses, Camera, HardHat, Wrench, Plus, Minus, User, Phone as PhoneIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PhoneInput } from "@/components/PhoneInput";
+import { FileUpload } from "@/components/FileUpload";
+import { useToast } from "@/hooks/use-toast";
 
 interface Accessory {
   id: string;
@@ -18,6 +24,8 @@ interface Accessory {
 }
 
 const Book = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
@@ -28,6 +36,15 @@ const Book = () => {
     { id: "helmet", name: "Smart Helmet", pricePerDay: 200, icon: HardHat, days: 0 },
     { id: "pump", name: "Pump", pricePerDay: 80, icon: Wrench, days: 0 },
   ]);
+
+  // Step 4 - Checkout
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [email, setEmail] = useState("");
+  const [livePhoto, setLivePhoto] = useState<File | null>(null);
+  const [idProof, setIdProof] = useState<File | null>(null);
+  const [emergencyName, setEmergencyName] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
 
   // Generate time slots from 6 AM to 10 PM in 30-minute intervals
   const generateTimeSlots = () => {
@@ -104,6 +121,39 @@ const Book = () => {
       }
       return acc;
     }));
+  };
+
+  // Validate checkout form
+  const canProceedToPayment = () => {
+    return phoneVerified && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
+  };
+
+  // Handle payment navigation
+  const handleProceedToPayment = () => {
+    if (!canProceedToPayment()) {
+      toast({
+        title: "Incomplete Information",
+        description: "Please complete all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    navigate("/payment", {
+      state: {
+        selectedDate,
+        selectedTime,
+        selectedDuration,
+        accessories: accessories.filter(acc => acc.days > 0),
+        phoneNumber,
+        email,
+        emergencyName,
+        emergencyPhone,
+        basePrice: getBasePrice(),
+        accessoriesTotal,
+        securityDeposit: getSecurityDeposit(),
+      },
+    });
   };
 
   return (
@@ -366,15 +416,133 @@ const Book = () => {
                 </div>
               )}
 
-              {step >= 4 && (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground">Checkout steps will be implemented next...</p>
-                  <Button 
-                    onClick={() => setStep(1)} 
-                    className="mt-4 bg-gradient-primary hover:opacity-90"
-                  >
-                    Start Over
-                  </Button>
+              {step === 4 && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                      <User className="w-5 h-5 text-primary" />
+                      Checkout Information
+                    </h3>
+
+                    <div className="space-y-8">
+                      {/* Contact Verification */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Contact Verification</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <PhoneInput
+                            value={phoneNumber}
+                            onChange={setPhoneNumber}
+                            onVerified={setPhoneVerified}
+                            verified={phoneVerified}
+                          />
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="email">Email Address (Optional)</Label>
+                            <Input
+                              id="email"
+                              type="email"
+                              placeholder="your@email.com"
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Identity Verification */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Identity Verification</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <FileUpload
+                            label="Live Photo"
+                            accept="image/jpeg,image/png"
+                            onFileSelect={setLivePhoto}
+                            maxSize={10}
+                            description="Take a clear photo of yourself"
+                          />
+                          
+                          <FileUpload
+                            label="ID Proof (Aadhar Card or Driving License)"
+                            accept="image/jpeg,image/png,application/pdf"
+                            onFileSelect={setIdProof}
+                            maxSize={10}
+                            description="Upload a clear copy of your ID"
+                          />
+                        </CardContent>
+                      </Card>
+
+                      {/* Emergency Contact */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Emergency Contact</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="emergencyName">Emergency Contact Name</Label>
+                            <Input
+                              id="emergencyName"
+                              type="text"
+                              placeholder="Full name"
+                              value={emergencyName}
+                              onChange={(e) => setEmergencyName(e.target.value)}
+                            />
+                          </div>
+                          
+                          <div className="space-y-2">
+                            <Label htmlFor="emergencyPhone">Emergency Contact Number</Label>
+                            <Input
+                              id="emergencyPhone"
+                              type="tel"
+                              placeholder="10-digit mobile number"
+                              value={emergencyPhone}
+                              onChange={(e) => setEmergencyPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                              maxLength={10}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Pickup Location */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Pickup Location</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            <p className="font-medium">Live Free Hostel Varanasi</p>
+                            <p className="text-sm text-muted-foreground">
+                              D-3/24-A1, Nagwa, Varanasi, Uttar Pradesh 221005
+                            </p>
+                            <a
+                              href="https://www.google.com/maps/place/Live+Free+Hostel+Varanasi/@25.2847829,83.0044305,17z"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block text-sm text-primary hover:underline"
+                            >
+                              View on Google Maps →
+                            </a>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
+                      Back
+                    </Button>
+                    <Button 
+                      onClick={handleProceedToPayment}
+                      disabled={!canProceedToPayment()}
+                      className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                    >
+                      Proceed to Payment
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -473,11 +641,14 @@ const Book = () => {
                     </div>
                     
                     <div className="flex justify-between pt-3 border-t">
-                      <span className="font-semibold">Subtotal</span>
+                      <span className="font-semibold">Total Amount</span>
                       <span className="font-bold text-primary text-lg">
-                        ₹{getBasePrice() + accessoriesTotal}
+                        ₹{getBasePrice() + accessoriesTotal + getSecurityDeposit()}
                       </span>
                     </div>
+                    <p className="text-xs text-muted-foreground text-center mt-1">
+                      (Includes ₹{getSecurityDeposit()} refundable deposit)
+                    </p>
                   </div>
                 )}
 
