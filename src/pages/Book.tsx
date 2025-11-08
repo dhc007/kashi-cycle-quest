@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { Navbar } from "@/components/Navbar";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
 import { FileUpload } from "@/components/FileUpload";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Accessory {
   id: string;
@@ -21,6 +22,7 @@ interface Accessory {
   pricePerDay: number;
   icon: any;
   days: number;
+  available: number;
 }
 
 const Book = () => {
@@ -30,21 +32,88 @@ const Book = () => {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
   const [selectedDuration, setSelectedDuration] = useState<string>();
-  const [accessories, setAccessories] = useState<Accessory[]>([
-    { id: "rayban", name: "Meta Ray-Ban Glasses", pricePerDay: 1200, icon: Glasses, days: 0 },
-    { id: "gopro", name: "GoPro Camera", pricePerDay: 700, icon: Camera, days: 0 },
-    { id: "helmet", name: "Smart Helmet", pricePerDay: 200, icon: HardHat, days: 0 },
-    { id: "pump", name: "Pump", pricePerDay: 80, icon: Wrench, days: 0 },
-  ]);
+  const [accessories, setAccessories] = useState<Accessory[]>([]);
+  const [cycleData, setCycleData] = useState<any>(null);
+  const [partnersData, setPartnersData] = useState<any[]>([]);
+  const [selectedPartner, setSelectedPartner] = useState<string>("");
+  const [loading, setLoading] = useState(true);
 
   // Step 4 - Checkout
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
   const [livePhoto, setLivePhoto] = useState<File | null>(null);
   const [idProof, setIdProof] = useState<File | null>(null);
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
+
+  // Load cycles, accessories, and partners data
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Load cycle data
+        const { data: cyclesData, error: cyclesError } = await supabase
+          .from('cycles')
+          .select('*')
+          .eq('is_active', true)
+          .single();
+
+        if (cyclesError) throw cyclesError;
+        setCycleData(cyclesData);
+
+        // Load accessories
+        const { data: accessoriesData, error: accessoriesError } = await supabase
+          .from('accessories')
+          .select('*')
+          .eq('is_active', true);
+
+        if (accessoriesError) throw accessoriesError;
+
+        const iconMap: Record<string, any> = {
+          'Meta Ray-Ban Glasses': Glasses,
+          'GoPro Camera': Camera,
+          'Smart Helmet': HardHat,
+          'Pump': Wrench,
+        };
+
+        setAccessories(
+          accessoriesData.map((acc) => ({
+            id: acc.id,
+            name: acc.name,
+            pricePerDay: Number(acc.price_per_day),
+            icon: iconMap[acc.name] || Camera,
+            days: 0,
+            available: acc.available_quantity || 0,
+          }))
+        );
+
+        // Load partners
+        const { data: partnersData, error: partnersError } = await supabase
+          .from('partners')
+          .select('*')
+          .eq('is_active', true);
+
+        if (partnersError) throw partnersError;
+        setPartnersData(partnersData || []);
+        if (partnersData && partnersData.length > 0) {
+          setSelectedPartner(partnersData[0].id);
+        }
+
+      } catch (error: any) {
+        console.error('Error loading data:', error);
+        toast({
+          title: "Error Loading Data",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [toast]);
 
   // Generate time slots from 6 AM to 10 PM in 30-minute intervals
   const generateTimeSlots = () => {
@@ -96,17 +165,17 @@ const Book = () => {
 
   // Get base price for selected duration
   const getBasePrice = () => {
-    if (selectedDuration === "One Day") return 499;
-    if (selectedDuration === "One Week") return 1999;
-    if (selectedDuration === "One Month") return 4999;
+    if (!cycleData) return 0;
+    if (selectedDuration === "One Day") return Number(cycleData.price_per_day);
+    if (selectedDuration === "One Week") return Number(cycleData.price_per_week);
+    if (selectedDuration === "One Month") return Number(cycleData.price_per_day) * 30;
     return 0;
   };
 
   // Get security deposit
   const getSecurityDeposit = () => {
-    if (selectedDuration === "One Day" || selectedDuration === "One Week") return 2000;
-    if (selectedDuration === "One Month") return 5000;
-    return 0;
+    if (!cycleData) return 0;
+    return Number(cycleData.security_deposit);
   };
 
   // Calculate accessories total
@@ -125,7 +194,7 @@ const Book = () => {
 
   // Validate checkout form
   const canProceedToPayment = () => {
-    return phoneVerified && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
+    return phoneVerified && fullName && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
   };
 
   // Handle payment navigation
@@ -139,22 +208,51 @@ const Book = () => {
       return;
     }
 
+    if (!cycleData || !selectedPartner) {
+      toast({
+        title: "Error",
+        description: "Missing cycle or partner data",
+        variant: "destructive",
+      });
+      return;
+    }
+
     navigate("/payment", {
       state: {
         selectedDate,
         selectedTime,
         selectedDuration,
+        returnDate: returnDate ? format(returnDate, 'yyyy-MM-dd') : null,
         accessories: accessories.filter(acc => acc.days > 0),
         phoneNumber,
         email,
+        fullName,
         emergencyName,
         emergencyPhone,
+        cycleId: cycleData.id,
+        partnerId: selectedPartner,
         basePrice: getBasePrice(),
         accessoriesTotal,
         securityDeposit: getSecurityDeposit(),
+        livePhoto,
+        idProof,
       },
     });
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading booking options...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -282,10 +380,10 @@ const Book = () => {
                     </h3>
                     
                     <div className="grid md:grid-cols-3 gap-4">
-                      {[
-                        { duration: "One Day", price: "₹499", deposit: "₹2,000", hours: "24 hours" },
-                        { duration: "One Week", price: "₹1,999", deposit: "₹2,000", hours: "168 hours" },
-                        { duration: "One Month", price: "₹4,999", deposit: "₹5,000", hours: "30 days" }
+                      {cycleData && [
+                        { duration: "One Day", price: `₹${cycleData.price_per_day}`, deposit: `₹${cycleData.security_deposit}`, hours: "24 hours" },
+                        { duration: "One Week", price: `₹${cycleData.price_per_week}`, deposit: `₹${cycleData.security_deposit}`, hours: "7 days" },
+                        { duration: "One Month", price: `₹${Number(cycleData.price_per_day) * 30}`, deposit: `₹${cycleData.security_deposit}`, hours: "30 days" }
                       ].map((option) => (
                         <Card 
                           key={option.duration}
@@ -431,6 +529,18 @@ const Book = () => {
                           <CardTitle className="text-base">Contact Verification</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="fullName">Full Name</Label>
+                            <Input
+                              id="fullName"
+                              type="text"
+                              placeholder="Your full name"
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
+                              required
+                            />
+                          </div>
+
                           <PhoneInput
                             value={phoneNumber}
                             onChange={setPhoneNumber}
@@ -512,20 +622,38 @@ const Book = () => {
                           <CardTitle className="text-base">Pickup Location</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="space-y-3">
-                            <p className="font-medium">Live Free Hostel Varanasi</p>
-                            <p className="text-sm text-muted-foreground">
-                              D-3/24-A1, Nagwa, Varanasi, Uttar Pradesh 221005
-                            </p>
-                            <a
-                              href="https://www.google.com/maps/place/Live+Free+Hostel+Varanasi/@25.2847829,83.0044305,17z"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-block text-sm text-primary hover:underline"
-                            >
-                              View on Google Maps →
-                            </a>
-                          </div>
+                          {partnersData.length > 0 && (
+                            <Select value={selectedPartner} onValueChange={setSelectedPartner}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select pickup location" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {partnersData.map((partner) => (
+                                  <SelectItem key={partner.id} value={partner.id}>
+                                    {partner.name} - {partner.city}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          {selectedPartner && partnersData.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                              {(() => {
+                                const partner = partnersData.find(p => p.id === selectedPartner);
+                                return partner ? (
+                                  <>
+                                    <p className="font-medium">{partner.name}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {partner.address}, {partner.city}, {partner.state} {partner.pincode}
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      📞 {partner.phone_number}
+                                    </p>
+                                  </>
+                                ) : null;
+                              })()}
+                            </div>
+                          )}
                         </CardContent>
                       </Card>
                     </div>
