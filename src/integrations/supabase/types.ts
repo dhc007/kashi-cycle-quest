@@ -14,13 +14,360 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      accessories: {
+        Row: {
+          available_quantity: number
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          price_per_day: number
+          total_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          available_quantity?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          price_per_day: number
+          total_quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          available_quantity?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          price_per_day?: number
+          total_quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      booking_accessories: {
+        Row: {
+          accessory_id: string
+          booking_id: string
+          created_at: string
+          days: number
+          id: string
+          price_per_day: number
+          quantity: number
+          total_cost: number
+        }
+        Insert: {
+          accessory_id: string
+          booking_id: string
+          created_at?: string
+          days: number
+          id?: string
+          price_per_day: number
+          quantity?: number
+          total_cost: number
+        }
+        Update: {
+          accessory_id?: string
+          booking_id?: string
+          created_at?: string
+          days?: number
+          id?: string
+          price_per_day?: number
+          quantity?: number
+          total_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_accessories_accessory_id_fkey"
+            columns: ["accessory_id"]
+            isOneToOne: false
+            referencedRelation: "accessories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_accessories_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          accessories_cost: number
+          booking_id: string
+          booking_status: string
+          created_at: string
+          cycle_id: string
+          cycle_rental_cost: number
+          duration_type: string
+          gst: number
+          has_insurance: boolean
+          id: string
+          insurance_cost: number
+          notes: string | null
+          partner_id: string
+          payment_id: string | null
+          payment_method: string | null
+          payment_status: string
+          pickup_date: string
+          pickup_time: string
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          razorpay_signature: string | null
+          return_date: string
+          security_deposit: number
+          total_amount: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accessories_cost?: number
+          booking_id: string
+          booking_status?: string
+          created_at?: string
+          cycle_id: string
+          cycle_rental_cost: number
+          duration_type: string
+          gst: number
+          has_insurance?: boolean
+          id?: string
+          insurance_cost?: number
+          notes?: string | null
+          partner_id: string
+          payment_id?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          pickup_date: string
+          pickup_time: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          return_date: string
+          security_deposit: number
+          total_amount: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accessories_cost?: number
+          booking_id?: string
+          booking_status?: string
+          created_at?: string
+          cycle_id?: string
+          cycle_rental_cost?: number
+          duration_type?: string
+          gst?: number
+          has_insurance?: boolean
+          id?: string
+          insurance_cost?: number
+          notes?: string | null
+          partner_id?: string
+          payment_id?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          pickup_date?: string
+          pickup_time?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          return_date?: string
+          security_deposit?: number
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cycles: {
+        Row: {
+          available_quantity: number
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          model: string
+          name: string
+          price_per_day: number
+          price_per_hour: number
+          price_per_week: number
+          security_deposit: number
+          specifications: Json | null
+          total_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          available_quantity?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          model: string
+          name: string
+          price_per_day: number
+          price_per_hour: number
+          price_per_week: number
+          security_deposit?: number
+          specifications?: Json | null
+          total_quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          available_quantity?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          model?: string
+          name?: string
+          price_per_day?: number
+          price_per_hour?: number
+          price_per_week?: number
+          security_deposit?: number
+          specifications?: Json | null
+          total_quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      partners: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          latitude: number | null
+          longitude: number | null
+          name: string
+          phone_number: string
+          pincode: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          phone_number: string
+          pincode: string
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          phone_number?: string
+          pincode?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          full_name: string
+          id: string
+          id_proof_url: string | null
+          phone_number: string
+          photo_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          full_name: string
+          id?: string
+          id_proof_url?: string | null
+          phone_number: string
+          photo_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          full_name?: string
+          id?: string
+          id_proof_url?: string | null
+          phone_number?: string
+          photo_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_accessory_availability: {
+        Args: {
+          p_accessory_id: string
+          p_pickup_date: string
+          p_return_date: string
+        }
+        Returns: number
+      }
+      check_cycle_availability: {
+        Args: {
+          p_cycle_id: string
+          p_pickup_date: string
+          p_return_date: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
