@@ -13,6 +13,7 @@ const Book = () => {
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
+  const [selectedDuration, setSelectedDuration] = useState<string>();
 
   // Generate time slots from 6 AM to 10 PM in 30-minute intervals
   const generateTimeSlots = () => {
@@ -175,7 +176,13 @@ const Book = () => {
                       ].map((option) => (
                         <Card 
                           key={option.duration}
-                          className="cursor-pointer hover:border-primary hover:shadow-warm transition-all"
+                          onClick={() => setSelectedDuration(option.duration)}
+                          className={cn(
+                            "cursor-pointer hover:shadow-warm transition-all",
+                            selectedDuration === option.duration 
+                              ? "border-primary border-2 shadow-warm bg-primary/5" 
+                              : "hover:border-primary"
+                          )}
                         >
                           <CardContent className="pt-6 text-center">
                             <Bike className="w-12 h-12 mx-auto mb-3 text-primary" />
@@ -193,7 +200,11 @@ const Book = () => {
                     <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
                       Back
                     </Button>
-                    <Button onClick={() => setStep(3)} className="flex-1 bg-gradient-primary hover:opacity-90">
+                    <Button 
+                      onClick={() => setStep(3)} 
+                      disabled={!selectedDuration}
+                      className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                    >
                       Continue to Accessories
                     </Button>
                   </div>
