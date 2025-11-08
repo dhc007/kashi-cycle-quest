@@ -50,7 +50,22 @@ const Payment = () => {
     };
   }, [navigate, toast]);
 
-  const bookingData = location.state || {};
+  // Get booking data from sessionStorage
+  const getBookingData = () => {
+    const stored = sessionStorage.getItem('bookingData');
+    if (!stored) {
+      toast({
+        title: "Error",
+        description: "Booking data not found. Please start over.",
+        variant: "destructive",
+      });
+      navigate("/book");
+      return {};
+    }
+    return JSON.parse(stored);
+  };
+
+  const bookingData = getBookingData();
   const {
     selectedDate,
     selectedTime,

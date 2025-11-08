@@ -16,6 +16,7 @@ import Accessories from "./pages/admin/Accessories";
 import Partners from "./pages/admin/Partners";
 import AdminSettings from "./pages/admin/AdminSettings";
 import NotFound from "./pages/NotFound";
+import Signup from "./pages/Signup";
 
 const queryClient = new QueryClient();
 
@@ -27,9 +28,10 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/book" element={<Book />} />
-          <Route path="/payment" element={<Payment />} />
-          <Route path="/confirmation" element={<Confirmation />} />
+        <Route path="/book" element={<Book />} />
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/confirmation" element={<Confirmation />} />
+        <Route path="/signup" element={<Signup />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

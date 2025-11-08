@@ -252,26 +252,34 @@ const Book = () => {
       // Wait for all files to be processed
       await Promise.all(filePromises);
 
-      // Only navigate after all files are stored
-      navigate("/payment", {
-        state: {
-          selectedDate,
-          selectedTime,
-          selectedDuration,
-          returnDate: returnDate ? format(returnDate, 'yyyy-MM-dd') : null,
-          accessories: accessories.filter(acc => acc.days > 0),
-          phoneNumber,
-          email,
-          fullName,
-          emergencyName,
-          emergencyPhone,
-          cycleId: cycleData.id,
-          partnerId: selectedPartner,
-          basePrice: getBasePrice(),
-          accessoriesTotal,
-          securityDeposit: getSecurityDeposit(),
-        },
-      });
+      // Store all booking data in sessionStorage to avoid serialization issues
+      const bookingData = {
+        selectedDate,
+        selectedTime,
+        selectedDuration,
+        returnDate: returnDate ? format(returnDate, 'yyyy-MM-dd') : null,
+        accessories: accessories.filter(acc => acc.days > 0).map(acc => ({
+          id: acc.id,
+          name: acc.name,
+          days: acc.days,
+          pricePerDay: acc.pricePerDay
+        })),
+        phoneNumber,
+        email,
+        fullName,
+        emergencyName,
+        emergencyPhone,
+        cycleId: cycleData.id,
+        partnerId: selectedPartner,
+        basePrice: getBasePrice(),
+        accessoriesTotal,
+        securityDeposit: getSecurityDeposit(),
+      };
+      
+      sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
+
+      // Navigate without state to avoid DataCloneError
+      navigate("/payment");
     } catch (error) {
       console.error('Error storing files:', error);
       toast({
