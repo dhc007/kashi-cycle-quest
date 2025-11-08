@@ -219,30 +219,40 @@ const Book = () => {
 
     // Store files in sessionStorage as base64
     try {
+      const filePromises = [];
+
       if (livePhoto) {
-        const reader = new FileReader();
-        reader.readAsDataURL(livePhoto);
-        await new Promise((resolve) => {
+        const promise = new Promise((resolve, reject) => {
+          const reader = new FileReader();
           reader.onload = () => {
             sessionStorage.setItem('livePhoto', reader.result as string);
             sessionStorage.setItem('livePhotoName', livePhoto.name);
             resolve(null);
           };
+          reader.onerror = () => reject(new Error('Failed to read live photo'));
+          reader.readAsDataURL(livePhoto);
         });
+        filePromises.push(promise);
       }
 
       if (idProof) {
-        const reader = new FileReader();
-        reader.readAsDataURL(idProof);
-        await new Promise((resolve) => {
+        const promise = new Promise((resolve, reject) => {
+          const reader = new FileReader();
           reader.onload = () => {
             sessionStorage.setItem('idProof', reader.result as string);
             sessionStorage.setItem('idProofName', idProof.name);
             resolve(null);
           };
+          reader.onerror = () => reject(new Error('Failed to read ID proof'));
+          reader.readAsDataURL(idProof);
         });
+        filePromises.push(promise);
       }
 
+      // Wait for all files to be processed
+      await Promise.all(filePromises);
+
+      // Only navigate after all files are stored
       navigate("/payment", {
         state: {
           selectedDate,
@@ -266,7 +276,7 @@ const Book = () => {
       console.error('Error storing files:', error);
       toast({
         title: "Error",
-        description: "Failed to process files",
+        description: "Failed to process files. Please try again.",
         variant: "destructive",
       });
     }
@@ -315,13 +325,16 @@ const Book = () => {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <Card className="shadow-warm">
-            <CardHeader>
-              <CardTitle className="text-2xl">Book Your Electric Bicycle</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {step === 1 && (
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Main Booking Form - Left Side */}
+            <div className="lg:col-span-2">
+              <Card className="shadow-warm">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Book Your Electric Bicycle</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {step === 1 && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -707,9 +720,11 @@ const Book = () => {
               )}
             </CardContent>
           </Card>
+        </div>
 
-          {/* Booking Summary Sidebar */}
-          <Card className="mt-6 sticky top-20 shadow-warm border-primary/20 animate-fade-in">
+        {/* Booking Summary - Right Side */}
+        <div className="lg:col-span-1">
+          <Card className="shadow-warm border-primary/20 animate-fade-in lg:sticky lg:top-24">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bike className="w-5 h-5 text-primary" />
@@ -825,6 +840,8 @@ const Book = () => {
         </div>
       </div>
     </div>
+  </div>
+</div>
   );
 };
 
