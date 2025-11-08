@@ -67,9 +67,45 @@ const Payment = () => {
     basePrice = 0,
     accessoriesTotal = 0,
     securityDeposit = 0,
-    livePhoto,
-    idProof,
   } = bookingData;
+
+  // Retrieve files from sessionStorage
+  const getLivePhoto = () => {
+    const data = sessionStorage.getItem('livePhoto');
+    const name = sessionStorage.getItem('livePhotoName');
+    if (data && name) {
+      const arr = data.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new File([u8arr], name, { type: mime });
+    }
+    return null;
+  };
+
+  const getIdProof = () => {
+    const data = sessionStorage.getItem('idProof');
+    const name = sessionStorage.getItem('idProofName');
+    if (data && name) {
+      const arr = data.split(',');
+      const mime = arr[0].match(/:(.*?);/)?.[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new File([u8arr], name, { type: mime });
+    }
+    return null;
+  };
+
+  const livePhoto = getLivePhoto();
+  const idProof = getIdProof();
 
   const insuranceCost = 21;
   const subtotal = basePrice + accessoriesTotal;

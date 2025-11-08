@@ -198,7 +198,7 @@ const Book = () => {
   };
 
   // Handle payment navigation
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     if (!canProceedToPayment()) {
       toast({
         title: "Incomplete Information",
@@ -217,27 +217,59 @@ const Book = () => {
       return;
     }
 
-    navigate("/payment", {
-      state: {
-        selectedDate,
-        selectedTime,
-        selectedDuration,
-        returnDate: returnDate ? format(returnDate, 'yyyy-MM-dd') : null,
-        accessories: accessories.filter(acc => acc.days > 0),
-        phoneNumber,
-        email,
-        fullName,
-        emergencyName,
-        emergencyPhone,
-        cycleId: cycleData.id,
-        partnerId: selectedPartner,
-        basePrice: getBasePrice(),
-        accessoriesTotal,
-        securityDeposit: getSecurityDeposit(),
-        livePhoto,
-        idProof,
-      },
-    });
+    // Store files in sessionStorage as base64
+    try {
+      if (livePhoto) {
+        const reader = new FileReader();
+        reader.readAsDataURL(livePhoto);
+        await new Promise((resolve) => {
+          reader.onload = () => {
+            sessionStorage.setItem('livePhoto', reader.result as string);
+            sessionStorage.setItem('livePhotoName', livePhoto.name);
+            resolve(null);
+          };
+        });
+      }
+
+      if (idProof) {
+        const reader = new FileReader();
+        reader.readAsDataURL(idProof);
+        await new Promise((resolve) => {
+          reader.onload = () => {
+            sessionStorage.setItem('idProof', reader.result as string);
+            sessionStorage.setItem('idProofName', idProof.name);
+            resolve(null);
+          };
+        });
+      }
+
+      navigate("/payment", {
+        state: {
+          selectedDate,
+          selectedTime,
+          selectedDuration,
+          returnDate: returnDate ? format(returnDate, 'yyyy-MM-dd') : null,
+          accessories: accessories.filter(acc => acc.days > 0),
+          phoneNumber,
+          email,
+          fullName,
+          emergencyName,
+          emergencyPhone,
+          cycleId: cycleData.id,
+          partnerId: selectedPartner,
+          basePrice: getBasePrice(),
+          accessoriesTotal,
+          securityDeposit: getSecurityDeposit(),
+        },
+      });
+    } catch (error) {
+      console.error('Error storing files:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process files",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
