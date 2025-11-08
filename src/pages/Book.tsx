@@ -1,11 +1,46 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Clock, Bike } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar as CalendarIcon, Clock, Bike } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const Book = () => {
   const [step, setStep] = useState(1);
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [selectedTime, setSelectedTime] = useState<string>();
+
+  // Generate time slots from 6 AM to 10 PM in 30-minute intervals
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 6; hour <= 22; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        if (hour === 22 && minute > 0) break; // Stop at 10:00 PM
+        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        const displayTime = `${displayHour}:${minute.toString().padStart(2, '0')} ${period}`;
+        slots.push({ value: time, label: displayTime });
+      }
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  // Calculate minimum date (2 hours from now)
+  const minDate = new Date();
+  minDate.setHours(minDate.getHours() + 2);
+
+  // Calculate maximum date (1 year from now)
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
+
+  const canContinue = selectedDate && selectedTime;
 
   return (
     <div className="min-h-screen bg-background">
@@ -46,22 +81,78 @@ const Book = () => {
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-primary" />
+                      <CalendarIcon className="w-5 h-5 text-primary" />
                       Select Pickup Date & Time
                     </h3>
                     <p className="text-muted-foreground mb-4">
                       Choose when you'd like to start your Kashi adventure
                     </p>
-                    {/* Date/Time picker components will be added */}
-                    <div className="border border-border rounded-lg p-4 text-center">
-                      <p className="text-muted-foreground">Date & Time Picker Component</p>
-                      <p className="text-sm text-muted-foreground mt-2">Operating Hours: 6:00 AM - 10:00 PM</p>
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {/* Date Picker */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Pickup Date</label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !selectedDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={setSelectedDate}
+                              disabled={(date) =>
+                                date < new Date(new Date().setHours(0, 0, 0, 0)) || date > maxDate
+                              }
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Time Picker */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Pickup Time</label>
+                        <Select value={selectedTime} onValueChange={setSelectedTime}>
+                          <SelectTrigger className="w-full">
+                            <Clock className="mr-2 h-4 w-4" />
+                            <SelectValue placeholder="Select time" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {timeSlots.map((slot) => (
+                              <SelectItem key={slot.value} value={slot.value}>
+                                {slot.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Operating Hours:</strong> 6:00 AM - 10:00 PM
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        <strong>Note:</strong> Minimum 2 hours advance booking required
+                      </p>
                     </div>
                   </div>
 
                   <Button 
                     onClick={() => setStep(2)}
-                    className="w-full bg-gradient-primary hover:opacity-90"
+                    disabled={!canContinue}
+                    className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                   >
                     Continue to Duration Selection
                   </Button>
