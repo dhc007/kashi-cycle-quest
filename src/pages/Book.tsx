@@ -190,8 +190,7 @@ const Book = () => {
 
   // Validate checkout form
   const canProceedToPayment = () => {
-    const isPhoneValid = phoneNumber.length === 10;
-    return isPhoneValid && firstName && lastName && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
+    return phoneVerified && firstName && lastName && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
   };
 
   // Handle payment navigation
