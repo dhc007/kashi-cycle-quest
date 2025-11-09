@@ -39,19 +39,37 @@ const Payment = () => {
   // Get booking data from sessionStorage
   const getBookingData = () => {
     const stored = sessionStorage.getItem('bookingData');
+    console.log('SessionStorage bookingData:', stored);
     if (!stored) {
+      console.error('No booking data found in sessionStorage');
       toast({
         title: "Error",
         description: "Booking data not found. Please start over.",
         variant: "destructive",
       });
       navigate("/book");
-      return {};
+      return null;
     }
-    return JSON.parse(stored);
+    try {
+      return JSON.parse(stored);
+    } catch (error) {
+      console.error('Failed to parse booking data:', error);
+      toast({
+        title: "Error",
+        description: "Invalid booking data. Please start over.",
+        variant: "destructive",
+      });
+      navigate("/book");
+      return null;
+    }
   };
 
   const bookingData = getBookingData();
+
+  // If no booking data, don't render anything (will redirect)
+  if (!bookingData) {
+    return null;
+  }
   const {
     selectedDate,
     selectedTime,
@@ -118,6 +136,8 @@ const Payment = () => {
   const totalAmount = subtotal + (insurance ? insuranceCost : 0) + gst + securityDeposit;
 
   const handlePayment = async () => {
+    console.log('Payment button clicked');
+    console.log('Booking data:', bookingData);
     setLoading(true);
 
     try {

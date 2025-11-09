@@ -258,6 +258,18 @@ const Book = () => {
 
   // Handle payment navigation
   const handleProceedToPayment = async () => {
+    console.log('Proceed to payment clicked');
+    console.log('Validation check:', {
+      canProceed: canProceedToPayment(),
+      phoneNumber,
+      phoneVerified,
+      firstName,
+      lastName,
+      livePhoto: !!livePhoto,
+      idProof: !!idProof,
+      user: !!user
+    });
+
     if (!canProceedToPayment()) {
       toast({
         title: "Incomplete Information",
@@ -337,7 +349,9 @@ const Book = () => {
         securityDeposit: getSecurityDeposit(),
       };
       
+      console.log('Storing booking data:', bookingData);
       sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
+      console.log('Navigating to payment page');
       navigate("/payment");
     } catch (error) {
       console.error('Error storing files:', error);
