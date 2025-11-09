@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, DollarSign, Bike, AlertTriangle } from "lucide-react";
+import { Calendar, DollarSign, Bike, Users, TrendingUp, Package } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -8,54 +9,187 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { RoleGuard } from "@/components/admin/RoleGuard";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 
-const Dashboard = () => {
-  // Mock data - will be replaced with real data
-  const metrics = [
+interface DashboardMetrics {
+  totalBookings: number;
+  totalRevenue: number;
+  totalPartners: number;
+  availableCycles: number;
+  cyclesInUse: number;
+  activeBookings: number;
+}
+
+interface Booking {
+  id: string;
+  booking_id: string;
+  pickup_date: string;
+  return_date: string;
+  pickup_time: string;
+  duration_type: string;
+  total_amount: number;
+  booking_status: string;
+  profiles?: {
+    full_name: string;
+    phone_number: string;
+  };
+}
+
+const DashboardContent = () => {
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
+    totalBookings: 0,
+    totalRevenue: 0,
+    totalPartners: 0,
+    availableCycles: 0,
+    cyclesInUse: 0,
+    activeBookings: 0,
+  });
+  const [activeBookings, setActiveBookings] = useState<Booking[]>([]);
+  const [bookingTrends, setBookingTrends] = useState<any[]>([]);
+  const [revenueTrends, setRevenueTrends] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      // Fetch all bookings
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      // Fetch cycles
+      const { data: cycles } = await supabase
+        .from('cycles')
+        .select('*')
+        .eq('is_active', true);
+
+      // Fetch partners
+      const { data: partners } = await supabase
+        .from('partners')
+        .select('*')
+        .eq('is_active', true);
+
+      // Calculate metrics
+      const totalBookings = bookings?.length || 0;
+      const totalRevenue = bookings?.reduce((sum, b) => sum + Number(b.total_amount), 0) || 0;
+      const totalPartners = partners?.length || 0;
+      const availableCycles = cycles?.reduce((sum, c) => sum + c.available_quantity, 0) || 0;
+      const cyclesInUse = cycles?.reduce((sum, c) => sum + (c.total_quantity - c.available_quantity), 0) || 0;
+      const activeBookingsCount = bookings?.filter(b => b.booking_status === 'active' || b.booking_status === 'confirmed').length || 0;
+
+      setMetrics({
+        totalBookings,
+        totalRevenue,
+        totalPartners,
+        availableCycles,
+        cyclesInUse,
+        activeBookings: activeBookingsCount,
+      });
+
+      // Get active bookings with profiles
+      const activeBookingsData = bookings?.filter(b => 
+        b.booking_status === 'active' || b.booking_status === 'confirmed'
+      ).slice(0, 5) || [];
+
+      const bookingsWithProfiles = await Promise.all(
+        activeBookingsData.map(async (booking) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, phone_number')
+            .eq('user_id', booking.user_id)
+            .single();
+          
+          return {
+            ...booking,
+            profiles: profile || { full_name: 'N/A', phone_number: 'N/A' }
+          };
+        })
+      );
+
+      setActiveBookings(bookingsWithProfiles);
+
+      // Calculate booking trends (last 7 days)
+      const last7Days = Array.from({ length: 7 }, (_, i) => {
+        const date = subDays(new Date(), 6 - i);
+        return {
+          date: format(date, 'MMM dd'),
+          bookings: 0,
+          revenue: 0,
+        };
+      });
+
+      bookings?.forEach(booking => {
+        const bookingDate = new Date(booking.created_at);
+        const dayIndex = last7Days.findIndex(day => {
+          const targetDate = subDays(new Date(), 6 - last7Days.indexOf(day));
+          return format(bookingDate, 'MMM dd') === format(targetDate, 'MMM dd');
+        });
+        
+        if (dayIndex !== -1) {
+          last7Days[dayIndex].bookings += 1;
+          last7Days[dayIndex].revenue += Number(booking.total_amount);
+        }
+      });
+
+      setBookingTrends(last7Days);
+      setRevenueTrends(last7Days);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const metricCards = [
     { 
-      title: "Active Bookings", 
-      value: "12", 
+      title: "Total Bookings", 
+      value: metrics.totalBookings.toString(), 
       icon: Calendar,
       color: "text-primary"
     },
     { 
       title: "Total Revenue", 
-      value: "₹45,890", 
+      value: `₹${metrics.totalRevenue.toLocaleString('en-IN')}`, 
       icon: DollarSign,
       color: "text-green-600"
     },
     { 
+      title: "Total Partners", 
+      value: metrics.totalPartners.toString(), 
+      icon: Users,
+      color: "text-purple-600"
+    },
+    { 
       title: "Available Cycles", 
-      value: "8", 
-      icon: Bike,
+      value: metrics.availableCycles.toString(), 
+      icon: Package,
       color: "text-blue-600"
     },
     { 
-      title: "Maintenance Needed", 
-      value: "2", 
-      icon: AlertTriangle,
+      title: "Cycles in Use", 
+      value: metrics.cyclesInUse.toString(), 
+      icon: Bike,
       color: "text-orange-600"
+    },
+    { 
+      title: "Active Bookings", 
+      value: metrics.activeBookings.toString(), 
+      icon: TrendingUp,
+      color: "text-indigo-600"
     },
   ];
 
-  const activeBookings = [
-    {
-      id: "BLT-001234",
-      name: "Rahul Sharma",
-      phone: "+91 98765 43210",
-      duration: "One Week",
-      startDate: "05 Nov 2025, 10:00 AM",
-      returnDate: "12 Nov 2025, 10:00 AM"
-    },
-    {
-      id: "BLT-001235",
-      name: "Priya Singh",
-      phone: "+91 87654 32109",
-      duration: "One Day",
-      startDate: "06 Nov 2025, 09:00 AM",
-      returnDate: "07 Nov 2025, 09:00 AM"
-    },
-  ];
+  if (loading) {
+    return <div className="p-8">Loading dashboard...</div>;
+  }
 
   return (
     <div className="p-8">
@@ -65,8 +199,8 @@ const Dashboard = () => {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {metrics.map((metric) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {metricCards.map((metric) => (
           <Card key={metric.title} className="hover:shadow-warm transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -81,10 +215,73 @@ const Dashboard = () => {
         ))}
       </div>
 
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <Card className="shadow-warm">
+          <CardHeader>
+            <CardTitle>Booking Trends (Last 7 Days)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{
+                bookings: {
+                  label: "Bookings",
+                  color: "hsl(var(--primary))",
+                },
+              }}
+              className="h-[300px]"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={bookingTrends}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="bookings" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-warm">
+          <CardHeader>
+            <CardTitle>Revenue Trends (Last 7 Days)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{
+                revenue: {
+                  label: "Revenue",
+                  color: "hsl(var(--green-600))",
+                },
+              }}
+              className="h-[300px]"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={revenueTrends}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="revenue" 
+                    stroke="hsl(142, 76%, 36%)" 
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(142, 76%, 36%)" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Active Bookings Table */}
       <Card className="shadow-warm">
         <CardHeader>
-          <CardTitle>Active Bookings</CardTitle>
+          <CardTitle>Recent Active Bookings</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -94,26 +291,44 @@ const Dashboard = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Duration</TableHead>
-                <TableHead>Start Date</TableHead>
+                <TableHead>Pickup Date</TableHead>
                 <TableHead>Return Date</TableHead>
+                <TableHead>Amount</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activeBookings.map((booking) => (
-                <TableRow key={booking.id} className="cursor-pointer hover:bg-muted/50">
-                  <TableCell className="font-mono font-semibold">{booking.id}</TableCell>
-                  <TableCell className="font-medium text-primary">{booking.name}</TableCell>
-                  <TableCell>{booking.phone}</TableCell>
-                  <TableCell>{booking.duration}</TableCell>
-                  <TableCell>{booking.startDate}</TableCell>
-                  <TableCell>{booking.returnDate}</TableCell>
+              {activeBookings.length > 0 ? (
+                activeBookings.map((booking) => (
+                  <TableRow key={booking.id} className="cursor-pointer hover:bg-muted/50">
+                    <TableCell className="font-mono font-semibold">{booking.booking_id}</TableCell>
+                    <TableCell className="font-medium text-primary">{booking.profiles?.full_name}</TableCell>
+                    <TableCell>{booking.profiles?.phone_number}</TableCell>
+                    <TableCell>{booking.duration_type}</TableCell>
+                    <TableCell>{format(new Date(booking.pickup_date), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell>{format(new Date(booking.return_date), 'MMM dd, yyyy')}</TableCell>
+                    <TableCell className="font-semibold">₹{booking.total_amount}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    No active bookings
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+const Dashboard = () => {
+  return (
+    <RoleGuard allowedRoles={['admin', 'manager', 'viewer']}>
+      <DashboardContent />
+    </RoleGuard>
   );
 };
 
