@@ -108,8 +108,7 @@ Happy cycling! 🚴‍♂️`;
     // Send WhatsApp message via Twilio
     const ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
     const AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const MESSAGING_SID = 'MG707430180e002cc56834ddd91fc904c2';
-    const FROM_NUMBER = '8217824840';
+    const FROM_NUMBER = 'whatsapp:+918217824840';
     
     const phoneNumber = profile.phone_number.startsWith('+91') 
       ? profile.phone_number 
@@ -126,10 +125,9 @@ Happy cycling! 🚴‍♂️`;
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          From: `whatsapp:+91${FROM_NUMBER}`,
+          From: FROM_NUMBER,
           To: `whatsapp:${phoneNumber}`,
           Body: message,
-          MessagingServiceSid: MESSAGING_SID,
         }),
       }
     );
