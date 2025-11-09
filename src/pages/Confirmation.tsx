@@ -120,26 +120,57 @@ const Confirmation = () => {
                 </div>
               </div>
 
-              {accessories.length > 0 && (
-                <div className="border-t pt-4">
-                  <p className="font-medium mb-2">Accessories</p>
-                  <div className="space-y-1">
-                    {accessories.map((acc: any) => (
-                      <p key={acc.id} className="text-sm text-muted-foreground">
-                        • {acc.name} ({acc.days} day{acc.days > 1 ? 's' : ''}) - ₹
-                        {acc.pricePerDay * acc.days}
-                      </p>
-                    ))}
+              {/* Price Breakdown */}
+              <div className="border-t pt-4">
+                <p className="font-medium mb-3">Payment Breakdown</p>
+                <div className="space-y-2 text-sm">
+                  {/* Cycle Rental */}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Cycle × {selectedDuration === "One Day" ? "1 day" : selectedDuration === "One Week" ? "7 days" : "30 days"}
+                    </span>
+                    <span>₹{bookingData.basePrice || 0}</span>
+                  </div>
+
+                  {/* Accessories */}
+                  {accessories.length > 0 && accessories.map((acc: any) => (
+                    <div key={acc.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {acc.name} × {acc.days} {acc.days > 1 ? 'days' : 'day'}
+                      </span>
+                      <span>₹{acc.pricePerDay * acc.days}</span>
+                    </div>
+                  ))}
+
+                  {/* GST */}
+                  <div className="flex justify-between text-sm border-t pt-2">
+                    <span className="text-muted-foreground">GST (18%)</span>
+                    <span>₹{bookingData.gst || Math.round((bookingData.basePrice + bookingData.accessoriesTotal) * 0.18)}</span>
+                  </div>
+
+                  {/* Subtotal */}
+                  <div className="flex justify-between font-semibold border-t pt-2">
+                    <span>Subtotal</span>
+                    <span>₹{(bookingData.basePrice || 0) + (bookingData.accessoriesTotal || 0) + (bookingData.gst || 0)}</span>
+                  </div>
+
+                  {/* Security Deposit - Highlighted */}
+                  <div className="flex justify-between items-center bg-green-50 dark:bg-green-950 -mx-4 px-4 py-2 rounded mt-2">
+                    <span className="flex items-center gap-1 font-medium">
+                      <span className="text-green-600 dark:text-green-400">🔒</span>
+                      <span>Security Deposit</span>
+                      <span className="text-xs text-muted-foreground">(Refundable)</span>
+                    </span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">₹{bookingData.securityDeposit || 0}</span>
+                  </div>
+
+                  {/* Total */}
+                  <div className="flex justify-between border-t pt-3 mt-3">
+                    <span className="font-bold text-lg">Total Paid</span>
+                    <span className="font-bold text-primary text-xl">₹{totalAmount}</span>
                   </div>
                 </div>
-              )}
-
-              <div className="border-t pt-4">
-                <div className="flex justify-between mb-2">
-                  <span className="font-medium">Total Paid</span>
-                  <span className="font-bold text-primary text-xl">₹{totalAmount}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">Payment ID: {paymentId}</p>
+                <p className="text-xs text-muted-foreground mt-2">Payment ID: {paymentId}</p>
               </div>
             </CardContent>
           </Card>

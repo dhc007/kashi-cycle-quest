@@ -655,15 +655,17 @@ const Book = () => {
                             accept="image/jpeg,image/png"
                             onFileSelect={setLivePhoto}
                             maxSize={10}
-                            description="Take a clear photo of yourself"
+                            captureMode="camera"
+                            description="Use your camera to capture a live photo of yourself"
                           />
                           
                           <FileUpload
-                            label="ID Proof (Aadhar Card or Driving License)"
+                            label="ID Proof (Aadhar Card)"
                             accept="image/jpeg,image/png,application/pdf"
                             onFileSelect={setIdProof}
                             maxSize={10}
-                            description="Upload a clear copy of your ID"
+                            captureMode="both"
+                            description="Capture with camera or upload your Aadhar Card"
                           />
                         </CardContent>
                       </Card>

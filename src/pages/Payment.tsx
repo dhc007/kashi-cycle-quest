@@ -23,25 +23,8 @@ const Payment = () => {
   const [insurance, setInsurance] = useState(false);
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Authentication Required",
-          description: "Please log in to continue with booking",
-          variant: "destructive",
-        });
-        navigate("/");
-        return;
-      }
-      setUser(user);
-    };
-
-    checkAuth();
-
     // Load Razorpay script
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -51,7 +34,7 @@ const Payment = () => {
     return () => {
       document.body.removeChild(script);
     };
-  }, [navigate, toast]);
+  }, []);
 
   // Get booking data from sessionStorage
   const getBookingData = () => {
@@ -135,25 +118,17 @@ const Payment = () => {
   const totalAmount = subtotal + (insurance ? insuranceCost : 0) + gst + securityDeposit;
 
   const handlePayment = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to continue",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
-      // Upload files if needed
+      // Upload files if needed (using phone number as identifier)
       let photoUrl = null;
       let idProofUrl = null;
+      const phoneFolder = phoneNumber || Date.now().toString();
 
       if (livePhoto) {
         const photoExt = livePhoto.name.split('.').pop();
-        const photoPath = `${user.id}/live_photo_${Date.now()}.${photoExt}`;
+        const photoPath = `${phoneFolder}/live_photo_${Date.now()}.${photoExt}`;
         const { error: photoError } = await supabase.storage
           .from('documents')
           .upload(photoPath, livePhoto);
@@ -166,7 +141,7 @@ const Payment = () => {
 
       if (idProof) {
         const idExt = idProof.name.split('.').pop();
-        const idPath = `${user.id}/id_proof_${Date.now()}.${idExt}`;
+        const idPath = `${phoneFolder}/id_proof_${Date.now()}.${idExt}`;
         const { error: idError } = await supabase.storage
           .from('documents')
           .upload(idPath, idProof);
@@ -383,21 +358,39 @@ const Payment = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span>Cycle Rental ({selectedDuration})</span>
-                    <span className="font-semibold">₹{basePrice}</span>
+                  {/* Cycle Rental Breakdown */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        {cycleName} × {selectedDuration === "One Day" ? "1 day" : selectedDuration === "One Week" ? "7 days" : "30 days"}
+                      </span>
+                      <span className="font-semibold">₹{basePrice}</span>
+                    </div>
                   </div>
                   
-                  {accessoriesTotal > 0 && (
-                    <div className="flex justify-between">
-                      <span>Accessories</span>
-                      <span className="font-semibold">₹{accessoriesTotal}</span>
+                  {/* Accessories Breakdown */}
+                  {accessories.length > 0 && (
+                    <div className="space-y-1 pt-2 border-t">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Accessories:</p>
+                      {accessories.map((acc: any) => (
+                        <div key={acc.id} className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">
+                            {acc.name} × {acc.days} {acc.days > 1 ? 'days' : 'day'}
+                          </span>
+                          <span>₹{acc.pricePerDay * acc.days}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                   
-                  <div className="flex justify-between">
-                    <span>Security Deposit (Refundable)</span>
-                    <span className="font-semibold">₹{securityDeposit}</span>
+                  {/* Security Deposit */}
+                  <div className="flex justify-between items-center pt-2 border-t bg-green-50 dark:bg-green-950 -mx-4 px-4 py-2 rounded">
+                    <span className="flex items-center gap-1">
+                      <span className="text-green-600 dark:text-green-400">🔒</span>
+                      <span className="font-medium">Security Deposit</span>
+                      <span className="text-xs text-muted-foreground">(Fully Refundable)</span>
+                    </span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">₹{securityDeposit}</span>
                   </div>
 
                   <div className="border-t pt-3">

@@ -22,12 +22,55 @@ serve(async (req) => {
       }
     );
 
+    // Try to get authenticated user, but allow anonymous bookings
     const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error('Unauthorized');
+    
+    let userId = user?.id;
+    
+    // If no authenticated user, create anonymous user with phone number
+    if (!userId) {
+      const bookingData = await req.json();
+      const phoneNumber = bookingData.profile?.phone_number;
+      
+      if (!phoneNumber) {
+        throw new Error('Phone number required for booking');
+      }
+
+      // Create anonymous user with phone as email
+      const anonymousEmail = `${phoneNumber}@bolt91.app`;
+      const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
+        email: anonymousEmail,
+        password: Math.random().toString(36).slice(-12) + Date.now(),
+        options: {
+          data: {
+            phone_number: phoneNumber,
+            is_anonymous: true
+          }
+        }
+      });
+
+      if (signUpError) {
+        // User might already exist, try to get by phone
+        console.log('Anonymous user creation failed, user may exist:', signUpError);
+        
+        // Check if profile exists with this phone
+        const { data: existingProfile } = await supabaseClient
+          .from('profiles')
+          .select('user_id')
+          .eq('phone_number', phoneNumber)
+          .single();
+        
+        if (existingProfile) {
+          userId = existingProfile.user_id;
+        } else {
+          throw new Error('Unable to create booking user');
+        }
+      } else {
+        userId = signUpData.user?.id;
+      }
     }
 
-    const bookingData = await req.json();
+    const bookingData = userId ? await req.json() : JSON.parse(await req.text());
     
     // Generate booking ID
     const bookingId = `BLT${Date.now().toString().slice(-8)}`;
@@ -60,18 +103,22 @@ serve(async (req) => {
       }
     }
 
+    if (!userId) {
+      throw new Error('User ID not available');
+    }
+
     // Create or update profile
     const { data: existingProfile } = await supabaseClient
       .from('profiles')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (!existingProfile) {
       const { error: profileError } = await supabaseClient
         .from('profiles')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           first_name: bookingData.profile.first_name,
           last_name: bookingData.profile.last_name,
           phone_number: bookingData.profile.phone_number,
@@ -90,7 +137,7 @@ serve(async (req) => {
       .from('bookings')
       .insert({
         booking_id: bookingId,
-        user_id: user.id,
+        user_id: userId,
         cycle_id: bookingData.cycle_id,
         partner_id: bookingData.partner_id || null,
         pickup_date: bookingData.pickup_date,

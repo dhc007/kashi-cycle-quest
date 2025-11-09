@@ -10,6 +10,7 @@ interface FileUploadProps {
   onFileSelect: (file: File | null) => void;
   maxSize?: number; // in MB
   description?: string;
+  captureMode?: 'camera' | 'upload' | 'both'; // NEW: Control capture behavior
 }
 
 export const FileUpload = ({ 
@@ -17,7 +18,8 @@ export const FileUpload = ({
   accept, 
   onFileSelect, 
   maxSize = 10,
-  description 
+  description,
+  captureMode = 'both' // Default to both upload and camera
 }: FileUploadProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -77,6 +79,7 @@ export const FileUpload = ({
             onChange={handleFileChange}
             className="hidden"
             id={`file-${label.replace(/\s/g, "-")}`}
+            {...(captureMode === 'camera' ? { capture: 'user' } : {})}
           />
           <label
             htmlFor={`file-${label.replace(/\s/g, "-")}`}
@@ -84,7 +87,7 @@ export const FileUpload = ({
           >
             <Upload className="w-8 h-8 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              Click to upload or drag and drop
+              {captureMode === 'camera' ? 'Click to capture photo' : 'Click to upload or drag and drop'}
             </span>
             <span className="text-xs text-muted-foreground">
               Max file size: {maxSize}MB

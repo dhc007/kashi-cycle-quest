@@ -23,11 +23,9 @@ serve(async (req) => {
       }
     );
 
+    // Try to get user but don't require it for payment verification
     const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error('Unauthorized');
-    }
-
+    
     const { 
       razorpay_order_id, 
       razorpay_payment_id, 
@@ -73,7 +71,6 @@ serve(async (req) => {
         payment_method: 'razorpay',
       })
       .eq('booking_id', booking_id)
-      .eq('user_id', user.id)
       .select()
       .single();
 
@@ -83,6 +80,22 @@ serve(async (req) => {
     }
 
     console.log('Payment verified and booking updated:', booking_id);
+
+    // Send WhatsApp confirmation (non-blocking)
+    try {
+      supabaseClient.functions.invoke('send-whatsapp-confirmation', {
+        body: { booking_id }
+      }).then(result => {
+        if (result.error) {
+          console.error('WhatsApp notification failed:', result.error);
+        } else {
+          console.log('WhatsApp notification sent successfully');
+        }
+      });
+    } catch (whatsappError) {
+      // Log but don't fail the payment
+      console.error('Error triggering WhatsApp:', whatsappError);
+    }
 
     return new Response(
       JSON.stringify({ success: true, booking }),
