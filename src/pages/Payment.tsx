@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 
+import { Bike } from "lucide-react";
+
 declare global {
   interface Window {
     Razorpay: any;
@@ -20,6 +22,7 @@ const Payment = () => {
   const { toast } = useToast();
   const [insurance, setInsurance] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -71,10 +74,14 @@ const Payment = () => {
     selectedTime,
     selectedDuration,
     returnDate,
+    returnTime,
+    cycleName,
+    cycleModel,
     accessories = [],
     phoneNumber,
     email,
-    fullName,
+    firstName,
+    lastName,
     emergencyName,
     emergencyPhone,
     cycleId,
@@ -193,7 +200,8 @@ const Payment = () => {
             pricePerDay: acc.pricePerDay,
           })),
           profile: {
-            full_name: fullName,
+            first_name: firstName,
+            last_name: lastName,
             phone_number: phoneNumber,
             email: email,
             emergency_contact_name: emergencyName,
@@ -264,7 +272,7 @@ const Payment = () => {
           }
         },
         prefill: {
-          name: fullName,
+          name: `${firstName} ${lastName}`,
           email: email || '',
           contact: phoneNumber || '',
         },
@@ -274,6 +282,12 @@ const Payment = () => {
       };
 
       const razorpay = new window.Razorpay(options);
+      
+      // Set payment processing state when Razorpay is opened
+      razorpay.on('payment.submit', () => {
+        setProcessingPayment(true);
+      });
+      
       razorpay.open();
       setLoading(false);
 
@@ -292,6 +306,19 @@ const Payment = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
+      {/* Payment Processing Overlay */}
+      {processingPayment && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="text-center text-white space-y-4">
+            <div className="animate-spin">
+              <Bike className="w-16 h-16 mx-auto" />
+            </div>
+            <p className="text-xl font-semibold">Payment Processing...</p>
+            <p className="text-sm text-muted-foreground">Please wait</p>
+          </div>
+        </div>
+      )}
+      
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold mb-8">Payment</h1>
@@ -304,10 +331,26 @@ const Payment = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2 text-sm">
+                  {cycleName && cycleModel && (
+                    <div>
+                      <p className="font-medium flex items-center gap-2">
+                        <Bike className="w-4 h-4 text-primary" />
+                        Cycle
+                      </p>
+                      <p className="text-muted-foreground ml-6">{cycleName}</p>
+                      <p className="text-xs text-muted-foreground ml-6">{cycleModel}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="font-medium">Pickup</p>
                     <p className="text-muted-foreground">
                       {selectedDate && format(new Date(selectedDate), "PPP")} at {selectedTime}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium">Return</p>
+                    <p className="text-muted-foreground">
+                      {returnDate && format(new Date(returnDate), "PPP")} at {returnTime || selectedTime}
                     </p>
                   </div>
                   <div>

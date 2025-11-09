@@ -42,7 +42,8 @@ const Book = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [livePhoto, setLivePhoto] = useState<File | null>(null);
   const [idProof, setIdProof] = useState<File | null>(null);
   const [emergencyName, setEmergencyName] = useState("");
@@ -193,7 +194,7 @@ const Book = () => {
   // Validate checkout form
   const canProceedToPayment = () => {
     const isPhoneValid = phoneNumber.length === 10;
-    return isPhoneValid && fullName && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
+    return isPhoneValid && firstName && lastName && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
   };
 
   // Handle payment navigation
@@ -255,6 +256,7 @@ const Book = () => {
         selectedTime,
         selectedDuration,
         returnDate: returnDate ? format(returnDate, 'yyyy-MM-dd') : null,
+        returnTime: selectedTime,
         accessories: accessories.filter(acc => acc.days > 0).map(acc => ({
           id: acc.id,
           name: acc.name,
@@ -263,10 +265,13 @@ const Book = () => {
         })),
         phoneNumber,
         email,
-        fullName,
+        firstName,
+        lastName,
         emergencyName,
         emergencyPhone,
         cycleId: cycleData.id,
+        cycleName: cycleData.name,
+        cycleModel: cycleData.model,
         partnerId: selectedPartner,
         basePrice: getBasePrice(),
         accessoriesTotal,
@@ -597,16 +602,29 @@ const Book = () => {
                           <CardTitle className="text-base">Contact Verification</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="fullName">Full Name</Label>
-                            <Input
-                              id="fullName"
-                              type="text"
-                              placeholder="Your full name"
-                              value={fullName}
-                              onChange={(e) => setFullName(e.target.value)}
-                              required
-                            />
+                          <div className="grid md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="firstName">First Name</Label>
+                              <Input
+                                id="firstName"
+                                type="text"
+                                placeholder="First name"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="lastName">Last Name</Label>
+                              <Input
+                                id="lastName"
+                                type="text"
+                                placeholder="Last name"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                required
+                              />
+                            </div>
                           </div>
 
                           <PhoneInput
@@ -761,6 +779,20 @@ const Book = () => {
                   <span className="font-mono font-semibold">BLT-{Date.now().toString().slice(-6)}</span>
                 </div>
 
+                {/* Cycle Information */}
+                {cycleData && (
+                  <div className="space-y-2 pb-3 border-b animate-fade-in">
+                    <p className="font-medium flex items-center gap-2">
+                      <Bike className="w-4 h-4 text-primary" />
+                      Cycle
+                    </p>
+                    <div className="ml-6 space-y-1">
+                      <p className="font-semibold">{cycleData.name}</p>
+                      <p className="text-xs text-muted-foreground">{cycleData.model}</p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Date & Time */}
                 {selectedDate && selectedTime && (
                   <div className="space-y-2 animate-fade-in">
@@ -787,13 +819,22 @@ const Book = () => {
 
                 {/* Duration & Return Date */}
                 {selectedDuration && returnDate && (
-                  <div className="space-y-2 animate-fade-in">
+                  <div className="space-y-2 pb-3 border-b animate-fade-in">
                     <div className="flex items-start gap-2">
                       <Clock className="w-4 h-4 text-primary mt-0.5" />
                       <div className="flex-1">
                         <p className="font-medium">Duration: {selectedDuration}</p>
                         <p className="text-muted-foreground">
                           Return: {format(returnDate, "PPP")}
+                        </p>
+                        <p className="text-muted-foreground">
+                          at {selectedTime && (() => {
+                            const [hour, minute] = selectedTime.split(':');
+                            const h = parseInt(hour);
+                            const period = h >= 12 ? 'PM' : 'AM';
+                            const displayHour = h > 12 ? h - 12 : h === 0 ? 12 : h;
+                            return `${displayHour}:${minute} ${period}`;
+                          })()}
                         </p>
                       </div>
                     </div>

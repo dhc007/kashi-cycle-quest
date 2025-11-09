@@ -25,6 +25,8 @@ import Signup from "./pages/Signup";
 import BookingHistory from "./pages/BookingHistory";
 import ManageBooking from "./pages/ManageBooking";
 
+import UserLogin from "./pages/UserLogin";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -35,12 +37,13 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
-        <Route path="/book" element={<Book />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/confirmation" element={<Confirmation />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/bookings" element={<BookingHistory />} />
-        <Route path="/manage-booking" element={<ManageBooking />} />
+          <Route path="/book" element={<Book />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/confirmation" element={<Confirmation />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/user-login" element={<UserLogin />} />
+          <Route path="/bookings" element={<BookingHistory />} />
+          <Route path="/manage-booking" element={<ManageBooking />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

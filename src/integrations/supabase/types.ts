@@ -181,7 +181,7 @@ export type Database = {
           insurance_cost: number
           late_fee: number | null
           notes: string | null
-          partner_id: string
+          partner_id: string | null
           payment_id: string | null
           payment_method: string | null
           payment_status: string
@@ -192,6 +192,7 @@ export type Database = {
           razorpay_signature: string | null
           refund_amount: number | null
           return_date: string
+          return_time: string | null
           security_deposit: number
           total_amount: number
           updated_at: string
@@ -226,7 +227,7 @@ export type Database = {
           insurance_cost?: number
           late_fee?: number | null
           notes?: string | null
-          partner_id: string
+          partner_id?: string | null
           payment_id?: string | null
           payment_method?: string | null
           payment_status?: string
@@ -237,6 +238,7 @@ export type Database = {
           razorpay_signature?: string | null
           refund_amount?: number | null
           return_date: string
+          return_time?: string | null
           security_deposit: number
           total_amount: number
           updated_at?: string
@@ -271,7 +273,7 @@ export type Database = {
           insurance_cost?: number
           late_fee?: number | null
           notes?: string | null
-          partner_id?: string
+          partner_id?: string | null
           payment_id?: string | null
           payment_method?: string | null
           payment_status?: string
@@ -282,6 +284,7 @@ export type Database = {
           razorpay_signature?: string | null
           refund_amount?: number | null
           return_date?: string
+          return_time?: string | null
           security_deposit?: number
           total_amount?: number
           updated_at?: string
@@ -587,15 +590,44 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_otps: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          otp_code: string
+          phone_number: string
+          verified: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          otp_code: string
+          phone_number: string
+          verified?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          otp_code?: string
+          phone_number?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           email: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
+          first_name: string
           full_name: string
           id: string
           id_proof_url: string | null
+          last_name: string
           phone_number: string
           photo_url: string | null
           updated_at: string
@@ -606,9 +638,11 @@ export type Database = {
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
+          first_name: string
           full_name: string
           id?: string
           id_proof_url?: string | null
+          last_name: string
           phone_number: string
           photo_url?: string | null
           updated_at?: string
@@ -619,9 +653,11 @@ export type Database = {
           email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
+          first_name?: string
           full_name?: string
           id?: string
           id_proof_url?: string | null
+          last_name?: string
           phone_number?: string
           photo_url?: string | null
           updated_at?: string

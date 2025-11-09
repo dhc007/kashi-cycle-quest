@@ -72,7 +72,8 @@ serve(async (req) => {
         .from('profiles')
         .insert({
           user_id: user.id,
-          full_name: bookingData.profile.full_name,
+          first_name: bookingData.profile.first_name,
+          last_name: bookingData.profile.last_name,
           phone_number: bookingData.profile.phone_number,
           email: bookingData.profile.email,
           emergency_contact_name: bookingData.profile.emergency_contact_name,
@@ -95,6 +96,7 @@ serve(async (req) => {
         pickup_date: bookingData.pickup_date,
         pickup_time: bookingData.pickup_time,
         return_date: bookingData.return_date,
+        return_time: bookingData.return_time || bookingData.pickup_time,
         duration_type: bookingData.duration_type,
         cycle_rental_cost: bookingData.cycle_rental_cost,
         accessories_cost: bookingData.accessories_cost,

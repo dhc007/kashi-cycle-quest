@@ -95,18 +95,14 @@ export default function ManageBooking() {
       // Get the profile to verify last name
       const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("full_name")
+        .select("last_name")
         .eq("user_id", bookingData.user_id)
         .single();
 
       if (profileError) throw profileError;
 
-      // Extract last name and compare (case-insensitive)
-      const fullName = profileData?.full_name || "";
-      const nameParts = fullName.trim().split(" ");
-      const profileLastName = nameParts[nameParts.length - 1] || "";
-
-      if (profileLastName.toLowerCase() !== lastName.trim().toLowerCase()) {
+      // Compare last name (case-insensitive)
+      if (profileData?.last_name?.toLowerCase() !== lastName.trim().toLowerCase()) {
         toast({
           title: "Invalid Information",
           description: "Last name does not match our records",

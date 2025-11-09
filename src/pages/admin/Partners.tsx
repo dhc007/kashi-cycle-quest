@@ -9,7 +9,13 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
-import { Plus, Pencil, Trash2, QrCode } from "lucide-react";
+import { Plus, Pencil, Trash2, QrCode, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import QRCode from "react-qr-code";
 
 interface Partner {
@@ -121,6 +127,22 @@ const PartnersContent = () => {
   };
 
   const handleDelete = async (id: string) => {
+    // Check if partner has any active or upcoming bookings
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('partner_id', id)
+      .in('booking_status', ['confirmed', 'active']);
+
+    if (bookings && bookings.length > 0) {
+      toast({
+        title: "Cannot Delete Partner",
+        description: "This partner has active or upcoming bookings. Please complete or cancel them first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!confirm("Are you sure you want to delete this partner?")) return;
 
     try {
@@ -352,22 +374,26 @@ const PartnersContent = () => {
                         <QrCode className="h-4 w-4" />
                       </Button>
                       {canEdit && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(partner)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(partner.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEditDialog(partner)}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(partner.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
                   </TableCell>
