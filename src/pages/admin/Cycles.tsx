@@ -93,7 +93,22 @@ const Cycles = () => {
       } else {
         const { error } = await supabase
           .from('cycles')
-          .insert([{ ...formData, price_per_hour: 0 }]);
+          .insert([{ 
+            name: formData.name!,
+            model: formData.model!,
+            description: formData.description || null,
+            image_url: formData.image_url || null,
+            price_per_hour: 0,
+            price_per_day: formData.price_per_day!,
+            price_per_week: formData.price_per_week!,
+            price_per_month: formData.price_per_month || null,
+            security_deposit_day: formData.security_deposit_day!,
+            security_deposit_week: formData.security_deposit_week!,
+            security_deposit_month: formData.security_deposit_month!,
+            total_quantity: formData.total_quantity!,
+            available_quantity: formData.available_quantity!,
+            is_active: formData.is_active!,
+          }]);
 
         if (error) throw error;
 
