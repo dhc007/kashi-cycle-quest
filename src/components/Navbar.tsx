@@ -20,9 +20,6 @@ export const Navbar = () => {
           <Button variant="ghost" asChild>
             <Link to="/bookings">My Bookings</Link>
           </Button>
-          <Button asChild className="bg-gradient-primary hover:opacity-90">
-            <Link to="/admin">Admin</Link>
-          </Button>
         </div>
       </div>
     </nav>

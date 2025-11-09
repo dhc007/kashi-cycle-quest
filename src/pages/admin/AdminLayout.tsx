@@ -27,13 +27,13 @@ const AdminLayout = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card">
+      <aside className="w-64 border-r border-border bg-card flex flex-col">
         <div className="p-6 border-b border-border">
           <img src={bolt91Logo} alt="Bolt91 Admin" className="h-10" />
           <p className="text-xs text-muted-foreground mt-2">Admin Panel</p>
         </div>
         
-        <nav className="p-4 space-y-2">
+        <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -52,7 +52,7 @@ const AdminLayout = () => {
           })}
         </nav>
 
-        <div className="absolute bottom-4 left-4 right-4">
+        <div className="p-4 border-t border-border">
           <Button variant="outline" className="w-full justify-start" asChild>
             <Link to="/">
               <LogOut className="w-4 h-4 mr-2" />

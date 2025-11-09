@@ -16,7 +16,7 @@ const Home = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ 
             backgroundImage: `url(${heroCycle})`,
-            filter: 'brightness(0.4)'
+            filter: 'brightness(0.7)'
           }}
         />
         <div className="absolute inset-0 bg-gradient-hero" />

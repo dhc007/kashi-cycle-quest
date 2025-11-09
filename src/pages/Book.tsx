@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Clock, Bike, Glasses, Camera, HardHat, Wrench, Plus, Minus, User, Phone as PhoneIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Bike, Camera, Plus, Minus, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
 import { FileUpload } from "@/components/FileUpload";
@@ -20,7 +20,7 @@ interface Accessory {
   id: string;
   name: string;
   pricePerDay: number;
-  icon: any;
+  imageUrl: string | null;
   days: number;
   available: number;
 }
@@ -70,19 +70,12 @@ const Book = () => {
 
         if (accessoriesError) throw accessoriesError;
 
-        const iconMap: Record<string, any> = {
-          'Meta Ray-Ban Glasses': Glasses,
-          'GoPro Camera': Camera,
-          'Smart Helmet': HardHat,
-          'Pump': Wrench,
-        };
-
         setAccessories(
-          accessoriesData.map((acc) => ({
+          (accessoriesData || []).map((acc) => ({
             id: acc.id,
             name: acc.name,
             pricePerDay: Number(acc.price_per_day),
-            icon: iconMap[acc.name] || Camera,
+            imageUrl: acc.image_url,
             days: 0,
             available: acc.available_quantity || 0,
           }))
@@ -149,7 +142,7 @@ const Book = () => {
     if (selectedDuration === "One Day") return 1;
     if (selectedDuration === "One Week") return 7;
     if (selectedDuration === "One Month") return 30;
-    return 365; // One Year
+    return 30;
   };
 
   const maxAccessoryDays = getMaxDays();
@@ -160,11 +153,6 @@ const Book = () => {
     if (selectedDuration === "One Day") return addDays(selectedDate, 1);
     if (selectedDuration === "One Week") return addWeeks(selectedDate, 1);
     if (selectedDuration === "One Month") return addMonths(selectedDate, 1);
-    if (selectedDuration === "One Year") {
-      const yearLater = new Date(selectedDate);
-      yearLater.setFullYear(yearLater.getFullYear() + 1);
-      return yearLater;
-    }
     return null;
   };
 
@@ -175,15 +163,17 @@ const Book = () => {
     if (!cycleData) return 0;
     if (selectedDuration === "One Day") return Number(cycleData.price_per_day);
     if (selectedDuration === "One Week") return Number(cycleData.price_per_week);
-    if (selectedDuration === "One Month") return Number(cycleData.price_per_day) * 30;
-    if (selectedDuration === "One Year") return Number(cycleData.price_per_year || 50000);
+    if (selectedDuration === "One Month") return Number(cycleData.price_per_month || cycleData.price_per_day * 30);
     return 0;
   };
 
-  // Get security deposit
+  // Get security deposit based on duration
   const getSecurityDeposit = () => {
     if (!cycleData) return 0;
-    return Number(cycleData.security_deposit);
+    if (selectedDuration === "One Day") return Number(cycleData.security_deposit_day || 2000);
+    if (selectedDuration === "One Week") return Number(cycleData.security_deposit_week || 3000);
+    if (selectedDuration === "One Month") return Number(cycleData.security_deposit_month || 5000);
+    return Number(cycleData.security_deposit || 2000);
   };
 
   // Calculate accessories total
@@ -202,7 +192,6 @@ const Book = () => {
 
   // Validate checkout form
   const canProceedToPayment = () => {
-    // Check if phone number is valid (10 digits)
     const isPhoneValid = phoneNumber.length === 10;
     return isPhoneValid && fullName && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
   };
@@ -259,10 +248,8 @@ const Book = () => {
         filePromises.push(promise);
       }
 
-      // Wait for all files to be processed
       await Promise.all(filePromises);
 
-      // Store all booking data in sessionStorage to avoid serialization issues
       const bookingData = {
         selectedDate,
         selectedTime,
@@ -287,8 +274,6 @@ const Book = () => {
       };
       
       sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
-
-      // Navigate without state to avoid DataCloneError
       navigate("/payment");
     } catch (error) {
       console.error('Error storing files:', error);
@@ -442,12 +427,26 @@ const Book = () => {
                       Choose Rental Duration
                     </h3>
                     
-                    <div className="grid md:grid-cols-4 gap-4">
+                    <div className="grid md:grid-cols-3 gap-4">
                       {cycleData && [
-                        { duration: "One Day", price: `₹${cycleData.price_per_day}`, deposit: `₹${cycleData.security_deposit}`, hours: "24 hours" },
-                        { duration: "One Week", price: `₹${cycleData.price_per_week}`, deposit: `₹${cycleData.security_deposit}`, hours: "7 days" },
-                        { duration: "One Month", price: `₹${Number(cycleData.price_per_day) * 30}`, deposit: `₹${cycleData.security_deposit}`, hours: "30 days" },
-                        { duration: "One Year", price: `₹${cycleData.price_per_year || 50000}`, deposit: `₹${cycleData.security_deposit}`, hours: "365 days" }
+                        { 
+                          duration: "One Day", 
+                          price: `₹${cycleData.price_per_day}`, 
+                          deposit: `₹${cycleData.security_deposit_day || 2000}`, 
+                          hours: "24 hours" 
+                        },
+                        { 
+                          duration: "One Week", 
+                          price: `₹${cycleData.price_per_week}`, 
+                          deposit: `₹${cycleData.security_deposit_week || 3000}`, 
+                          hours: "7 days" 
+                        },
+                        { 
+                          duration: "One Month", 
+                          price: `₹${cycleData.price_per_month || Number(cycleData.price_per_day) * 30}`, 
+                          deposit: `₹${cycleData.security_deposit_month || 5000}`, 
+                          hours: "30 days" 
+                        }
                       ].map((option) => (
                         <Card 
                           key={option.duration}
@@ -498,72 +497,77 @@ const Book = () => {
                     </p>
 
                     <div className="space-y-4">
-                      {accessories.map((accessory) => {
-                        const IconComponent = accessory.icon;
-                        return (
-                          <Card 
-                            key={accessory.id}
-                            className={cn(
-                              "transition-all hover:shadow-warm",
-                              accessory.days > 0 && "border-primary bg-primary/5"
-                            )}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-center gap-4">
-                                <div className="flex-shrink-0">
-                                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                    <IconComponent className="w-6 h-6 text-primary" />
+                      {accessories.map((accessory) => (
+                        <Card 
+                          key={accessory.id}
+                          className={cn(
+                            "transition-all hover:shadow-warm",
+                            accessory.days > 0 && "border-primary bg-primary/5"
+                          )}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-center gap-4">
+                              <div className="flex-shrink-0">
+                                {accessory.imageUrl ? (
+                                  <img 
+                                    src={accessory.imageUrl} 
+                                    alt={accessory.name}
+                                    className="w-16 h-16 object-cover rounded-lg"
+                                  />
+                                ) : (
+                                  <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <Camera className="w-8 h-8 text-primary" />
                                   </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex-1">
+                                <h4 className="font-semibold">{accessory.name}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  ₹{accessory.pricePerDay}/day • Max {maxAccessoryDays} day{maxAccessoryDays > 1 ? 's' : ''}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => updateAccessoryDays(accessory.id, -1)}
+                                  disabled={accessory.days === 0}
+                                  className="h-8 w-8"
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </Button>
+                                
+                                <div className="w-12 text-center">
+                                  <span className="font-semibold text-lg">{accessory.days}</span>
+                                  <p className="text-xs text-muted-foreground">day{accessory.days !== 1 ? 's' : ''}</p>
                                 </div>
                                 
-                                <div className="flex-1">
-                                  <h4 className="font-semibold">{accessory.name}</h4>
-                                  <p className="text-sm text-muted-foreground">
-                                    ₹{accessory.pricePerDay}/day • Max {maxAccessoryDays} day{maxAccessoryDays > 1 ? 's' : ''}
-                                  </p>
-                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => updateAccessoryDays(accessory.id, 1)}
+                                  disabled={accessory.days >= maxAccessoryDays}
+                                  className="h-8 w-8"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </Button>
 
-                                <div className="flex items-center gap-3">
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => updateAccessoryDays(accessory.id, -1)}
-                                    disabled={accessory.days === 0}
-                                    className="h-8 w-8"
-                                  >
-                                    <Minus className="w-4 h-4" />
-                                  </Button>
-                                  
-                                  <div className="w-12 text-center">
-                                    <span className="font-semibold text-lg">{accessory.days}</span>
-                                    <p className="text-xs text-muted-foreground">day{accessory.days !== 1 ? 's' : ''}</p>
-                                  </div>
-                                  
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => updateAccessoryDays(accessory.id, 1)}
-                                    disabled={accessory.days >= maxAccessoryDays}
-                                    className="h-8 w-8"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </Button>
-
-                                  <div className="w-24 text-right">
-                                    {accessory.days > 0 ? (
-                                      <span className="font-bold text-primary">
-                                        ₹{accessory.pricePerDay * accessory.days}
-                                      </span>
-                                    ) : (
-                                      <span className="text-muted-foreground text-sm">Not added</span>
-                                    )}
-                                  </div>
+                                <div className="w-24 text-right">
+                                  {accessory.days > 0 ? (
+                                    <span className="font-bold text-primary">
+                                      ₹{accessory.pricePerDay * accessory.days}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">Not added</span>
+                                  )}
                                 </div>
                               </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   </div>
 
@@ -828,29 +832,26 @@ const Book = () => {
                         <span className="font-semibold">₹{accessoriesTotal}</span>
                       </div>
                     )}
-                    
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Security Deposit</span>
-                      <span className="text-muted-foreground">₹{getSecurityDeposit()} (Refundable)</span>
-                    </div>
-                    
-                    <div className="flex justify-between pt-3 border-t">
-                      <span className="font-semibold">Total Amount</span>
-                      <span className="font-bold text-primary text-lg">
-                        ₹{getBasePrice() + accessoriesTotal + getSecurityDeposit()}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center mt-1">
-                      (Includes ₹{getSecurityDeposit()} refundable deposit)
-                    </p>
-                  </div>
-                )}
 
-                {!selectedDate && !selectedTime && !selectedDuration && (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground text-xs">
-                      Start by selecting your pickup date & time
-                    </p>
+                    <div className="flex justify-between pt-2 border-t">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="font-semibold">₹{getBasePrice() + accessoriesTotal}</span>
+                    </div>
+
+                    <div className="flex justify-between text-primary font-bold">
+                      <span>Security Deposit</span>
+                      <span>₹{getSecurityDeposit()}</span>
+                    </div>
+
+                    <div className="pt-3 border-t">
+                      <div className="flex justify-between text-lg font-bold">
+                        <span>Total Amount</span>
+                        <span className="text-primary">₹{getBasePrice() + accessoriesTotal + getSecurityDeposit()}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        *Security deposit is fully refundable
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -859,8 +860,8 @@ const Book = () => {
         </div>
       </div>
     </div>
-  </div>
-</div>
+    </div>
+    </div>
   );
 };
 

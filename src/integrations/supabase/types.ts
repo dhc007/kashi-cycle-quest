@@ -215,9 +215,13 @@ export type Database = {
           name: string
           price_per_day: number
           price_per_hour: number
+          price_per_month: number | null
           price_per_week: number
           price_per_year: number | null
           security_deposit: number
+          security_deposit_day: number
+          security_deposit_month: number
+          security_deposit_week: number
           specifications: Json | null
           total_quantity: number
           updated_at: string
@@ -233,9 +237,13 @@ export type Database = {
           name: string
           price_per_day: number
           price_per_hour: number
+          price_per_month?: number | null
           price_per_week: number
           price_per_year?: number | null
           security_deposit?: number
+          security_deposit_day?: number
+          security_deposit_month?: number
+          security_deposit_week?: number
           specifications?: Json | null
           total_quantity?: number
           updated_at?: string
@@ -251,9 +259,13 @@ export type Database = {
           name?: string
           price_per_day?: number
           price_per_hour?: number
+          price_per_month?: number | null
           price_per_week?: number
           price_per_year?: number | null
           security_deposit?: number
+          security_deposit_day?: number
+          security_deposit_month?: number
+          security_deposit_week?: number
           specifications?: Json | null
           total_quantity?: number
           updated_at?: string

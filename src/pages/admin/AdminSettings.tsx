@@ -18,8 +18,10 @@ const AdminSettings = () => {
   const [pricePerHour, setPricePerHour] = useState("");
   const [pricePerDay, setPricePerDay] = useState("");
   const [pricePerWeek, setPricePerWeek] = useState("");
-  const [pricePerYear, setPricePerYear] = useState("");
-  const [securityDeposit, setSecurityDeposit] = useState("");
+  const [pricePerMonth, setPricePerMonth] = useState("");
+  const [securityDepositDay, setSecurityDepositDay] = useState("");
+  const [securityDepositWeek, setSecurityDepositWeek] = useState("");
+  const [securityDepositMonth, setSecurityDepositMonth] = useState("");
 
   // Accessories
   const [accessories, setAccessories] = useState<any[]>([]);
@@ -40,7 +42,6 @@ const AdminSettings = () => {
         return;
       }
 
-      // Check if user is admin
       const { data: roleData } = await supabase
         .from('user_roles')
         .select('role')
@@ -72,11 +73,13 @@ const AdminSettings = () => {
 
       if (cycleData) {
         setCycleId(cycleData.id);
-        setPricePerHour(cycleData.price_per_hour.toString());
-        setPricePerDay(cycleData.price_per_day.toString());
-        setPricePerWeek(cycleData.price_per_week.toString());
-        setPricePerYear(cycleData.price_per_year?.toString() || '50000');
-        setSecurityDeposit(cycleData.security_deposit.toString());
+        setPricePerHour(cycleData.price_per_hour?.toString() || '');
+        setPricePerDay(cycleData.price_per_day?.toString() || '');
+        setPricePerWeek(cycleData.price_per_week?.toString() || '');
+        setPricePerMonth(cycleData.price_per_month?.toString() || '');
+        setSecurityDepositDay(cycleData.security_deposit_day?.toString() || '2000');
+        setSecurityDepositWeek(cycleData.security_deposit_week?.toString() || '3000');
+        setSecurityDepositMonth(cycleData.security_deposit_month?.toString() || '5000');
       }
 
       // Load accessories
@@ -108,11 +111,13 @@ const AdminSettings = () => {
       const { error } = await supabase
         .from('cycles')
         .update({
-          price_per_hour: parseFloat(pricePerHour),
+          price_per_hour: pricePerHour ? parseFloat(pricePerHour) : null,
           price_per_day: parseFloat(pricePerDay),
           price_per_week: parseFloat(pricePerWeek),
-          price_per_year: parseFloat(pricePerYear),
-          security_deposit: parseFloat(securityDeposit),
+          price_per_month: pricePerMonth ? parseFloat(pricePerMonth) : null,
+          security_deposit_day: parseFloat(securityDepositDay),
+          security_deposit_week: parseFloat(securityDepositWeek),
+          security_deposit_month: parseFloat(securityDepositMonth),
           updated_at: new Date().toISOString(),
         })
         .eq('id', cycleId);
@@ -154,7 +159,6 @@ const AdminSettings = () => {
         description: "Accessory price updated",
       });
 
-      // Update local state
       setAccessories(prev => prev.map(acc => 
         acc.id === id ? { ...acc, price_per_day: parseFloat(newPrice) } : acc
       ));
@@ -217,19 +221,7 @@ const AdminSettings = () => {
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="pricePerHour">Price per Hour (₹)</Label>
-                <Input
-                  id="pricePerHour"
-                  type="number"
-                  step="0.01"
-                  value={pricePerHour}
-                  onChange={(e) => setPricePerHour(e.target.value)}
-                  placeholder="50"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="pricePerDay">Price per Day (₹)</Label>
+                <Label htmlFor="pricePerDay">Price per Day (₹) *</Label>
                 <Input
                   id="pricePerDay"
                   type="number"
@@ -241,7 +233,7 @@ const AdminSettings = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pricePerWeek">Price per Week (₹)</Label>
+                <Label htmlFor="pricePerWeek">Price per Week (₹) *</Label>
                 <Input
                   id="pricePerWeek"
                   type="number"
@@ -253,26 +245,50 @@ const AdminSettings = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pricePerYear">Price per Year (₹)</Label>
+                <Label htmlFor="pricePerMonth">Price per Month (₹)</Label>
                 <Input
-                  id="pricePerYear"
+                  id="pricePerMonth"
                   type="number"
                   step="0.01"
-                  value={pricePerYear}
-                  onChange={(e) => setPricePerYear(e.target.value)}
-                  placeholder="50000"
+                  value={pricePerMonth}
+                  onChange={(e) => setPricePerMonth(e.target.value)}
+                  placeholder="4999"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="securityDeposit">Security Deposit (₹)</Label>
+                <Label htmlFor="securityDepositDay">Security Deposit - Day (₹) *</Label>
                 <Input
-                  id="securityDeposit"
+                  id="securityDepositDay"
                   type="number"
                   step="0.01"
-                  value={securityDeposit}
-                  onChange={(e) => setSecurityDeposit(e.target.value)}
-                  placeholder="500"
+                  value={securityDepositDay}
+                  onChange={(e) => setSecurityDepositDay(e.target.value)}
+                  placeholder="2000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="securityDepositWeek">Security Deposit - Week (₹) *</Label>
+                <Input
+                  id="securityDepositWeek"
+                  type="number"
+                  step="0.01"
+                  value={securityDepositWeek}
+                  onChange={(e) => setSecurityDepositWeek(e.target.value)}
+                  placeholder="3000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="securityDepositMonth">Security Deposit - Month (₹) *</Label>
+                <Input
+                  id="securityDepositMonth"
+                  type="number"
+                  step="0.01"
+                  value={securityDepositMonth}
+                  onChange={(e) => setSecurityDepositMonth(e.target.value)}
+                  placeholder="5000"
                 />
               </div>
             </div>
