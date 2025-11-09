@@ -124,6 +124,22 @@ const PartnersContent = () => {
     if (!confirm("Are you sure you want to delete this partner?")) return;
 
     try {
+      // Check if partner has any active or upcoming bookings
+      const { data: activeBookings } = await supabase
+        .from('bookings')
+        .select('id, booking_status')
+        .eq('partner_id', id)
+        .in('booking_status', ['confirmed', 'active']);
+
+      if (activeBookings && activeBookings.length > 0) {
+        toast({
+          title: "Cannot Delete Partner",
+          description: `This partner has ${activeBookings.length} active or upcoming booking(s). Partners can only be deleted after all bookings are completed or cancelled.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('partners')
         .delete()

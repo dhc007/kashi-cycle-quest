@@ -18,6 +18,9 @@ import { format, subDays, startOfDay, endOfDay } from "date-fns";
 interface DashboardMetrics {
   totalBookings: number;
   totalRevenue: number;
+  netRevenue: number;
+  refundsProcessed: number;
+  cancelledBookings: number;
   totalPartners: number;
   availableCycles: number;
   cyclesInUse: number;
@@ -43,6 +46,9 @@ const DashboardContent = () => {
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalBookings: 0,
     totalRevenue: 0,
+    netRevenue: 0,
+    refundsProcessed: 0,
+    cancelledBookings: 0,
     totalPartners: 0,
     availableCycles: 0,
     cyclesInUse: 0,
@@ -77,17 +83,25 @@ const DashboardContent = () => {
         .select('*')
         .eq('is_active', true);
 
-      // Calculate metrics
+      // Calculate metrics (exclude cancelled bookings from revenue)
       const totalBookings = bookings?.length || 0;
-      const totalRevenue = bookings?.reduce((sum, b) => sum + Number(b.total_amount), 0) || 0;
+      const activeBookings = bookings?.filter(b => b.booking_status !== 'cancelled') || [];
+      const cancelledBookings = bookings?.filter(b => b.booking_status === 'cancelled') || [];
+      const totalRevenue = activeBookings.reduce((sum, b) => sum + Number(b.total_amount), 0);
+      const refundsProcessed = cancelledBookings.reduce((sum, b) => sum + Number(b.refund_amount || 0), 0);
+      const netRevenue = totalRevenue - refundsProcessed;
       const totalPartners = partners?.length || 0;
       const availableCycles = cycles?.reduce((sum, c) => sum + c.available_quantity, 0) || 0;
       const cyclesInUse = cycles?.reduce((sum, c) => sum + (c.total_quantity - c.available_quantity), 0) || 0;
       const activeBookingsCount = bookings?.filter(b => b.booking_status === 'active' || b.booking_status === 'confirmed').length || 0;
+      const cancelledBookingsCount = cancelledBookings.length;
 
       setMetrics({
         totalBookings,
         totalRevenue,
+        netRevenue,
+        refundsProcessed,
+        cancelledBookings: cancelledBookingsCount,
         totalPartners,
         availableCycles,
         cyclesInUse,
@@ -156,10 +170,34 @@ const DashboardContent = () => {
       color: "text-primary"
     },
     { 
-      title: "Total Revenue", 
+      title: "Gross Revenue", 
       value: `₹${metrics.totalRevenue.toLocaleString('en-IN')}`, 
       icon: DollarSign,
       color: "text-green-600"
+    },
+    { 
+      title: "Net Revenue", 
+      value: `₹${metrics.netRevenue.toLocaleString('en-IN')}`, 
+      icon: DollarSign,
+      color: "text-emerald-600"
+    },
+    { 
+      title: "Cancelled Bookings", 
+      value: metrics.cancelledBookings.toString(), 
+      icon: Calendar,
+      color: "text-red-600"
+    },
+    { 
+      title: "Refunds Processed", 
+      value: `₹${metrics.refundsProcessed.toLocaleString('en-IN')}`, 
+      icon: DollarSign,
+      color: "text-red-500"
+    },
+    { 
+      title: "Active Bookings", 
+      value: metrics.activeBookings.toString(), 
+      icon: TrendingUp,
+      color: "text-indigo-600"
     },
     { 
       title: "Total Partners", 
@@ -179,12 +217,6 @@ const DashboardContent = () => {
       icon: Bike,
       color: "text-orange-600"
     },
-    { 
-      title: "Active Bookings", 
-      value: metrics.activeBookings.toString(), 
-      icon: TrendingUp,
-      color: "text-indigo-600"
-    },
   ];
 
   if (loading) {
@@ -199,7 +231,7 @@ const DashboardContent = () => {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 mb-8">
         {metricCards.map((metric) => (
           <Card key={metric.title} className="hover:shadow-warm transition-all">
             <CardHeader className="flex flex-row items-center justify-between pb-2">

@@ -18,6 +18,8 @@ import PartnersMap from "./pages/admin/PartnersMap";
 import AdminSettings from "./pages/admin/AdminSettings";
 import Users from "./pages/admin/Users";
 import Cancellations from "./pages/admin/Cancellations";
+import CycleReturn from "./pages/admin/CycleReturn";
+import Maintenance from "./pages/admin/Maintenance";
 import NotFound from "./pages/NotFound";
 import Signup from "./pages/Signup";
 import BookingHistory from "./pages/BookingHistory";
@@ -52,6 +54,8 @@ const App = () => (
             <Route path="partners-map" element={<PartnersMap />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="users" element={<Users />} />
+            <Route path="cycle-return" element={<CycleReturn />} />
+            <Route path="maintenance" element={<Maintenance />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

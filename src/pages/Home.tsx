@@ -173,9 +173,6 @@ const Home = () => {
       <footer className="bg-secondary text-secondary-foreground py-8 mt-16">
         <div className="container mx-auto px-4 text-center">
           <p className="mb-2">Bolt91 - By BlueBolt Electrical Pvt Ltd</p>
-          <p className="text-sm text-secondary-foreground/70">
-            Pickup Location: Live Free Hostel Varanasi
-          </p>
           <p className="text-sm text-secondary-foreground/70 mt-4">
             © 2025 Bolt91. All rights reserved.
           </p>

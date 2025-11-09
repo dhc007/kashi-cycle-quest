@@ -9,7 +9,9 @@ import {
   Map,
   Settings,
   LogOut,
-  XCircle
+  XCircle,
+  PackageCheck,
+  Wrench
 } from "lucide-react";
 import bolt91Logo from "@/assets/bolt91-logo.png";
 
@@ -25,6 +27,8 @@ const AdminLayout = () => {
     { icon: Users, label: "Partners", path: "/admin/partners" },
     { icon: Map, label: "Partner Map", path: "/admin/partners-map" },
     { icon: Users, label: "Customers", path: "/admin/users" },
+    { icon: PackageCheck, label: "Cycle Returns", path: "/admin/cycle-return" },
+    { icon: Wrench, label: "Maintenance", path: "/admin/maintenance" },
     { icon: Settings, label: "Settings", path: "/admin/settings" },
   ];
 

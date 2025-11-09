@@ -101,6 +101,56 @@ export type Database = {
           },
         ]
       }
+      booking_extensions: {
+        Row: {
+          additional_cost: number
+          approved_at: string | null
+          approved_by: string | null
+          booking_id: string
+          created_at: string
+          id: string
+          rejection_reason: string | null
+          requested_at: string
+          requested_return_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          additional_cost: number
+          approved_at?: string | null
+          approved_by?: string | null
+          booking_id: string
+          created_at?: string
+          id?: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_return_date: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          additional_cost?: number
+          approved_at?: string | null
+          approved_by?: string | null
+          booking_id?: string
+          created_at?: string
+          id?: string
+          rejection_reason?: string | null
+          requested_at?: string
+          requested_return_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_extensions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           accessories_cost: number
@@ -113,13 +163,23 @@ export type Database = {
           cancelled_at: string | null
           cancelled_by: string | null
           created_at: string
+          cycle_condition: string | null
           cycle_id: string
+          cycle_inspected_at: string | null
           cycle_rental_cost: number
+          cycle_returned_at: string | null
+          deposit_refund_amount: number | null
+          deposit_returned_at: string | null
           duration_type: string
+          extension_additional_cost: number | null
+          extension_approved_at: string | null
+          extension_requested_at: string | null
+          extension_return_date: string | null
           gst: number
           has_insurance: boolean
           id: string
           insurance_cost: number
+          late_fee: number | null
           notes: string | null
           partner_id: string
           payment_id: string | null
@@ -148,13 +208,23 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string
+          cycle_condition?: string | null
           cycle_id: string
+          cycle_inspected_at?: string | null
           cycle_rental_cost: number
+          cycle_returned_at?: string | null
+          deposit_refund_amount?: number | null
+          deposit_returned_at?: string | null
           duration_type: string
+          extension_additional_cost?: number | null
+          extension_approved_at?: string | null
+          extension_requested_at?: string | null
+          extension_return_date?: string | null
           gst: number
           has_insurance?: boolean
           id?: string
           insurance_cost?: number
+          late_fee?: number | null
           notes?: string | null
           partner_id: string
           payment_id?: string | null
@@ -183,13 +253,23 @@ export type Database = {
           cancelled_at?: string | null
           cancelled_by?: string | null
           created_at?: string
+          cycle_condition?: string | null
           cycle_id?: string
+          cycle_inspected_at?: string | null
           cycle_rental_cost?: number
+          cycle_returned_at?: string | null
+          deposit_refund_amount?: number | null
+          deposit_returned_at?: string | null
           duration_type?: string
+          extension_additional_cost?: number | null
+          extension_approved_at?: string | null
+          extension_requested_at?: string | null
+          extension_return_date?: string | null
           gst?: number
           has_insurance?: boolean
           id?: string
           insurance_cost?: number
+          late_fee?: number | null
           notes?: string | null
           partner_id?: string
           payment_id?: string | null
@@ -220,6 +300,56 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cycle_maintenance: {
+        Row: {
+          completed_at: string | null
+          cost: number | null
+          created_at: string
+          cycle_id: string
+          description: string | null
+          id: string
+          maintenance_type: string
+          performed_by: string | null
+          reported_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          cost?: number | null
+          created_at?: string
+          cycle_id: string
+          description?: string | null
+          id?: string
+          maintenance_type: string
+          performed_by?: string | null
+          reported_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          cost?: number | null
+          created_at?: string
+          cycle_id?: string
+          description?: string | null
+          id?: string
+          maintenance_type?: string
+          performed_by?: string | null
+          reported_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cycle_maintenance_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "cycles"
             referencedColumns: ["id"]
           },
         ]
@@ -292,6 +422,116 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      damage_reports: {
+        Row: {
+          additional_charge_paid: boolean | null
+          booking_id: string
+          created_at: string
+          created_by: string | null
+          cycle_id: string
+          damage_cost: number
+          damage_description: string
+          deducted_from_deposit: boolean | null
+          id: string
+          photo_urls: string[] | null
+          reported_at: string
+          updated_at: string
+        }
+        Insert: {
+          additional_charge_paid?: boolean | null
+          booking_id: string
+          created_at?: string
+          created_by?: string | null
+          cycle_id: string
+          damage_cost?: number
+          damage_description: string
+          deducted_from_deposit?: boolean | null
+          id?: string
+          photo_urls?: string[] | null
+          reported_at?: string
+          updated_at?: string
+        }
+        Update: {
+          additional_charge_paid?: boolean | null
+          booking_id?: string
+          created_at?: string
+          created_by?: string | null
+          cycle_id?: string
+          damage_cost?: number
+          damage_description?: string
+          deducted_from_deposit?: boolean | null
+          id?: string
+          photo_urls?: string[] | null
+          reported_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "damage_reports_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "damage_reports_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "cycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          email_sent: boolean | null
+          id: string
+          message: string
+          read_at: string | null
+          sent_at: string | null
+          sms_sent: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          email_sent?: boolean | null
+          id?: string
+          message: string
+          read_at?: string | null
+          sent_at?: string | null
+          sms_sent?: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          email_sent?: boolean | null
+          id?: string
+          message?: string
+          read_at?: string | null
+          sent_at?: string | null
+          sms_sent?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partners: {
         Row: {
