@@ -278,8 +278,10 @@ export type Database = {
           city: string
           created_at: string
           email: string | null
+          google_maps_link: string | null
           id: string
           is_active: boolean
+          landmark: string | null
           latitude: number | null
           longitude: number | null
           name: string
@@ -293,8 +295,10 @@ export type Database = {
           city: string
           created_at?: string
           email?: string | null
+          google_maps_link?: string | null
           id?: string
           is_active?: boolean
+          landmark?: string | null
           latitude?: number | null
           longitude?: number | null
           name: string
@@ -308,8 +312,10 @@ export type Database = {
           city?: string
           created_at?: string
           email?: string | null
+          google_maps_link?: string | null
           id?: string
           is_active?: boolean
+          landmark?: string | null
           latitude?: number | null
           longitude?: number | null
           name?: string

@@ -18,9 +18,11 @@ interface Partner {
   email: string | null;
   phone_number: string;
   address: string;
+  landmark: string | null;
   city: string;
   state: string;
   pincode: string;
+  google_maps_link: string | null;
   latitude: number | null;
   longitude: number | null;
   is_active: boolean;
@@ -71,11 +73,11 @@ const PartnersContent = () => {
             email: formData.email || null,
             phone_number: formData.phone_number,
             address: formData.address,
+            landmark: formData.landmark || null,
             city: formData.city,
             state: formData.state,
             pincode: formData.pincode,
-            latitude: formData.latitude || null,
-            longitude: formData.longitude || null,
+            google_maps_link: formData.google_maps_link || null,
             is_active: formData.is_active,
           })
           .eq('id', editingId);
@@ -89,11 +91,11 @@ const PartnersContent = () => {
             email: formData.email || null,
             phone_number: formData.phone_number!,
             address: formData.address!,
+            landmark: formData.landmark || null,
             city: formData.city!,
             state: formData.state!,
             pincode: formData.pincode!,
-            latitude: formData.latitude || null,
-            longitude: formData.longitude || null,
+            google_maps_link: formData.google_maps_link || null,
             is_active: formData.is_active ?? true,
           }]);
 
@@ -224,6 +226,14 @@ const PartnersContent = () => {
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="landmark">Landmark</Label>
+                  <Input
+                    id="landmark"
+                    value={formData.landmark || ''}
+                    onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
+                  />
+                </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="city">City *</Label>
@@ -250,27 +260,15 @@ const PartnersContent = () => {
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="latitude">Latitude</Label>
-                    <Input
-                      id="latitude"
-                      type="number"
-                      step="any"
-                      value={formData.latitude || ''}
-                      onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || null })}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="longitude">Longitude</Label>
-                    <Input
-                      id="longitude"
-                      type="number"
-                      step="any"
-                      value={formData.longitude || ''}
-                      onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || null })}
-                    />
-                  </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="google_maps_link">Google Maps Link</Label>
+                  <Input
+                    id="google_maps_link"
+                    type="url"
+                    placeholder="https://maps.app.goo.gl/..."
+                    value={formData.google_maps_link || ''}
+                    onChange={(e) => setFormData({ ...formData, google_maps_link: e.target.value })}
+                  />
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch
