@@ -17,9 +17,11 @@ import Partners from "./pages/admin/Partners";
 import PartnersMap from "./pages/admin/PartnersMap";
 import AdminSettings from "./pages/admin/AdminSettings";
 import Users from "./pages/admin/Users";
+import Cancellations from "./pages/admin/Cancellations";
 import NotFound from "./pages/NotFound";
 import Signup from "./pages/Signup";
 import BookingHistory from "./pages/BookingHistory";
+import ManageBooking from "./pages/ManageBooking";
 
 const queryClient = new QueryClient();
 
@@ -36,12 +38,14 @@ const App = () => (
         <Route path="/confirmation" element={<Confirmation />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/bookings" element={<BookingHistory />} />
+        <Route path="/manage-booking" element={<ManageBooking />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="bookings" element={<Bookings />} />
+            <Route path="cancellations" element={<Cancellations />} />
             <Route path="cycles" element={<Cycles />} />
             <Route path="accessories" element={<Accessories />} />
             <Route path="partners" element={<Partners />} />

@@ -8,7 +8,8 @@ import {
   Users, 
   Map,
   Settings,
-  LogOut
+  LogOut,
+  XCircle
 } from "lucide-react";
 import bolt91Logo from "@/assets/bolt91-logo.png";
 
@@ -18,6 +19,7 @@ const AdminLayout = () => {
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
     { icon: Calendar, label: "Bookings", path: "/admin/bookings" },
+    { icon: XCircle, label: "Cancellations", path: "/admin/cancellations" },
     { icon: Bike, label: "Cycles", path: "/admin/cycles" },
     { icon: Package, label: "Accessories", path: "/admin/accessories" },
     { icon: Users, label: "Partners", path: "/admin/partners" },

@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { FileUpload } from "@/components/FileUpload";
 import { Bike, Plus, Pencil, Trash2 } from "lucide-react";
 
 interface Cycle {
@@ -34,6 +35,8 @@ const Cycles = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<Cycle | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<Partial<Cycle>>({
     name: "",
     model: "",
@@ -74,14 +77,39 @@ const Cycles = () => {
     }
   };
 
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('cycles')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('cycles')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setUploadingImage(true);
     
     try {
+      let imageUrl = formData.image_url;
+
+      // Upload new image if selected
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
       if (editingCycle) {
         const { error } = await supabase
           .from('cycles')
-          .update(formData)
+          .update({ ...formData, image_url: imageUrl })
           .eq('id', editingCycle.id);
 
         if (error) throw error;
@@ -97,7 +125,7 @@ const Cycles = () => {
             name: formData.name!,
             model: formData.model!,
             description: formData.description || null,
-            image_url: formData.image_url || null,
+            image_url: imageUrl || null,
             price_per_hour: 0,
             price_per_day: formData.price_per_day!,
             price_per_week: formData.price_per_week!,
@@ -120,6 +148,7 @@ const Cycles = () => {
 
       setDialogOpen(false);
       setEditingCycle(null);
+      setImageFile(null);
       setFormData({
         name: "",
         model: "",
@@ -142,6 +171,8 @@ const Cycles = () => {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -268,6 +299,14 @@ const Cycles = () => {
                   placeholder="https://..."
                 />
               </div>
+
+              <FileUpload
+                label="Upload Cycle Image"
+                accept="image/*"
+                onFileSelect={(file) => setImageFile(file)}
+                maxSize={5}
+                description="Upload a cycle image (max 5MB)"
+              />
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">

@@ -77,23 +77,29 @@ const BookingsContent = () => {
 
       if (error) throw error;
 
-      // Fetch profile data separately for each booking
-      const bookingsWithProfiles = await Promise.all(
+      // Fetch profile and accessories data for each booking
+      const bookingsWithDetails = await Promise.all(
         (data || []).map(async (booking) => {
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name, phone_number, email')
             .eq('user_id', booking.user_id)
             .single();
+
+          const { data: accessories } = await supabase
+            .from('booking_accessories')
+            .select('quantity, days, price_per_day, total_cost, accessories(name)')
+            .eq('booking_id', booking.id);
           
           return {
             ...booking,
-            profiles: profile || { full_name: 'N/A', phone_number: 'N/A', email: null }
+            profiles: profile || { full_name: 'N/A', phone_number: 'N/A', email: null },
+            booking_accessories: accessories || []
           };
         })
       );
 
-      setBookings(bookingsWithProfiles);
+      setBookings(bookingsWithDetails);
     } catch (error: any) {
       toast({
         title: "Error",

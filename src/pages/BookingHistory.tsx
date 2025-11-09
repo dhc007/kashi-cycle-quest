@@ -73,8 +73,23 @@ const BookingHistory = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
-      setBookings(data || []);
+      
+      // Fetch accessories for each booking
+      const bookingsWithAccessories = await Promise.all(
+        (data || []).map(async (booking) => {
+          const { data: accessories } = await supabase
+            .from('booking_accessories')
+            .select('quantity, days, price_per_day, total_cost, accessories(name)')
+            .eq('booking_id', booking.id);
+          
+          return {
+            ...booking,
+            booking_accessories: accessories || []
+          };
+        })
+      );
+      
+      setBookings(bookingsWithAccessories);
     } catch (error: any) {
       console.error('Error loading bookings:', error);
       toast({

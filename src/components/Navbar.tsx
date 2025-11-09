@@ -18,6 +18,9 @@ export const Navbar = () => {
             <Link to="/book">Book Now</Link>
           </Button>
           <Button variant="ghost" asChild>
+            <Link to="/manage-booking">Manage My Booking</Link>
+          </Button>
+          <Button variant="ghost" asChild>
             <Link to="/bookings">My Bookings</Link>
           </Button>
         </div>

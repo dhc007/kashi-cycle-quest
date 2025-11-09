@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
+import { FileUpload } from "@/components/FileUpload";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 
 interface Accessory {
@@ -28,6 +29,8 @@ const AccessoriesContent = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState<Partial<Accessory>>({});
   const { toast } = useToast();
   const { canEdit } = useUserRoles();
@@ -56,15 +59,41 @@ const AccessoriesContent = () => {
     }
   };
 
+  const uploadImage = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('accessories')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('accessories')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleSave = async () => {
+    setUploadingImage(true);
     try {
+      let imageUrl = formData.image_url;
+
+      // Upload new image if selected
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile);
+      }
+
       if (editingId) {
         const { error } = await supabase
           .from('accessories')
           .update({
             name: formData.name,
             description: formData.description || null,
-            image_url: formData.image_url || null,
+            image_url: imageUrl || null,
             price_per_day: formData.price_per_day,
             total_quantity: formData.total_quantity,
             available_quantity: formData.available_quantity,
@@ -79,7 +108,7 @@ const AccessoriesContent = () => {
           .insert([{
             name: formData.name!,
             description: formData.description || null,
-            image_url: formData.image_url || null,
+            image_url: imageUrl || null,
             price_per_day: formData.price_per_day!,
             total_quantity: formData.total_quantity!,
             available_quantity: formData.available_quantity!,
@@ -97,6 +126,7 @@ const AccessoriesContent = () => {
       loadAccessories();
       setDialogOpen(false);
       setEditingId(null);
+      setImageFile(null);
       setFormData({});
     } catch (error: any) {
       toast({
@@ -104,6 +134,8 @@ const AccessoriesContent = () => {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -198,6 +230,14 @@ const AccessoriesContent = () => {
                     placeholder="https://..."
                   />
                 </div>
+
+                <FileUpload
+                  label="Upload Accessory Image"
+                  accept="image/*"
+                  onFileSelect={(file) => setImageFile(file)}
+                  maxSize={5}
+                  description="Upload an accessory image (max 5MB)"
+                />
                 <div className="grid gap-2">
                   <Label htmlFor="price_per_day">Price per Day (₹) *</Label>
                   <Input
