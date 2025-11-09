@@ -10,7 +10,8 @@ interface UserData {
   email: string;
   created_at: string;
   profile?: {
-    full_name: string;
+    first_name: string;
+    last_name: string;
     phone_number: string;
   };
   roles: string[];
@@ -93,7 +94,8 @@ const Users = () => {
           email: profile.email || '',
           created_at: profile.created_at,
           profile: {
-            full_name: profile.full_name,
+            first_name: profile.first_name,
+            last_name: profile.last_name,
             phone_number: profile.phone_number,
           },
           roles: userRoles,
@@ -143,46 +145,48 @@ const Users = () => {
   );
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <UsersIcon className="w-8 h-8" />
+    <div className="p-4 md:p-8">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+          <UsersIcon className="w-6 h-6 md:w-8 md:h-8" />
           Customers
         </h1>
-        <p className="text-muted-foreground">View all customer accounts</p>
+        <p className="text-muted-foreground text-sm md:text-base">View all customer accounts</p>
       </div>
 
       <Card className="shadow-warm">
         <CardHeader>
-          <CardTitle>All Customers ({customers.length})</CardTitle>
+          <CardTitle className="text-lg md:text-xl">All Customers ({customers.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             {customers.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors gap-3"
               >
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold">{user.profile?.full_name || 'Unknown'}</h3>
+                    <h3 className="font-semibold truncate">
+                      {user.profile?.first_name} {user.profile?.last_name || 'Unknown'}
+                    </h3>
                   </div>
                   
-                  <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Mail className="w-4 h-4" />
-                      {user.email}
+                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 truncate">
+                      <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                      <span className="truncate">{user.email}</span>
                     </div>
                     {user.profile?.phone_number && (
                       <div className="flex items-center gap-1">
-                        <Phone className="w-4 h-4" />
+                        <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                         {user.profile.phone_number}
                       </div>
                     )}
-                    <div>
+                    <div className="whitespace-nowrap">
                       Bookings: {user.bookingCount}
                     </div>
-                    <div>
+                    <div className="whitespace-nowrap">
                       Joined: {format(new Date(user.created_at), 'PP')}
                     </div>
                   </div>
@@ -191,7 +195,7 @@ const Users = () => {
             ))}
 
             {customers.length === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
+              <div className="text-center py-8 md:py-12 text-muted-foreground text-sm md:text-base">
                 No customers found
               </div>
             )}

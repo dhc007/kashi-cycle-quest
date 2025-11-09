@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
-import { format } from "date-fns";
-import { Eye, Search } from "lucide-react";
+import { format, isBefore, isAfter, startOfDay } from "date-fns";
+import { Eye, Search, Calendar, CheckCircle, XCircle, Clock } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -19,6 +20,7 @@ interface Booking {
   partner_id: string;
   pickup_date: string;
   return_date: string;
+  return_time: string;
   pickup_time: string;
   duration_type: string;
   booking_status: string;
@@ -31,7 +33,8 @@ interface Booking {
   refund_amount: number;
   cancellation_requested_at: string | null;
   profiles?: {
-    full_name: string;
+    first_name: string;
+    last_name: string;
     phone_number: string;
     email: string | null;
   };
@@ -82,7 +85,7 @@ const BookingsContent = () => {
         (data || []).map(async (booking) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, phone_number, email')
+            .select('first_name, last_name, phone_number, email')
             .eq('user_id', booking.user_id)
             .single();
 
@@ -93,7 +96,7 @@ const BookingsContent = () => {
           
           return {
             ...booking,
-            profiles: profile || { full_name: 'N/A', phone_number: 'N/A', email: null },
+            profiles: profile || { first_name: 'N/A', last_name: '', phone_number: 'N/A', email: null },
             booking_accessories: accessories || []
           };
         })
@@ -120,11 +123,14 @@ const BookingsContent = () => {
 
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(b =>
-        b.booking_id.toLowerCase().includes(term) ||
-        b.profiles?.full_name?.toLowerCase().includes(term) ||
-        b.profiles?.phone_number?.includes(term)
-      );
+      filtered = filtered.filter(b => {
+        const fullName = `${b.profiles?.first_name || ''} ${b.profiles?.last_name || ''}`.toLowerCase();
+        return (
+          b.booking_id.toLowerCase().includes(term) ||
+          fullName.includes(term) ||
+          b.profiles?.phone_number?.includes(term)
+        );
+      });
     }
 
     setFilteredBookings(filtered);
@@ -207,157 +213,287 @@ const BookingsContent = () => {
     }
   };
 
+  const today = startOfDay(new Date());
+
+  const upcomingBookings = filteredBookings.filter(b => 
+    b.booking_status === 'confirmed' && isAfter(new Date(b.pickup_date), today)
+  );
+  
+  const activeBookings = filteredBookings.filter(b => 
+    b.booking_status === 'active' || 
+    (b.booking_status === 'confirmed' && !isAfter(new Date(b.pickup_date), today))
+  );
+  
+  const completedBookings = filteredBookings.filter(b => 
+    b.booking_status === 'completed'
+  );
+  
+  const cancelledBookings = filteredBookings.filter(b => 
+    b.booking_status === 'cancelled'
+  );
+
+  const renderBookingCard = (booking: Booking) => (
+    <div key={booking.id} className="border rounded-lg p-4 space-y-3 hover:bg-accent/50 transition-colors">
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="font-mono text-sm font-semibold truncate">{booking.booking_id}</p>
+          <p className="font-medium truncate">
+            {booking.profiles?.first_name} {booking.profiles?.last_name}
+          </p>
+          <p className="text-xs text-muted-foreground">{booking.profiles?.phone_number}</p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => viewDetails(booking)}>
+          <Eye className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <p className="text-muted-foreground text-xs">Cycle</p>
+          <p className="truncate">{booking.cycles?.name}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Partner</p>
+          <p className="truncate">{booking.partners?.city}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Pickup</p>
+          <p>{format(new Date(booking.pickup_date), 'MMM dd')}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground text-xs">Return</p>
+          <p>{format(new Date(booking.return_date), 'MMM dd')}</p>
+        </div>
+      </div>
+      
+      <div className="flex justify-between items-center pt-2 border-t">
+        <span className="font-semibold">₹{booking.total_amount}</span>
+        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(booking.booking_status)}`}>
+          {booking.booking_status}
+        </span>
+      </div>
+    </div>
+  );
+
+  const renderBookingTable = (bookings: Booking[]) => (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="min-w-[120px]">Booking ID</TableHead>
+            <TableHead className="min-w-[150px]">Customer</TableHead>
+            <TableHead className="min-w-[120px]">Cycle</TableHead>
+            <TableHead className="min-w-[120px]">Partner</TableHead>
+            <TableHead className="min-w-[100px]">Pickup</TableHead>
+            <TableHead className="min-w-[100px]">Return</TableHead>
+            <TableHead className="min-w-[80px]">Amount</TableHead>
+            <TableHead className="min-w-[100px]">Payment</TableHead>
+            <TableHead className="min-w-[130px]">Status</TableHead>
+            <TableHead className="min-w-[80px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {bookings.map((booking) => (
+            <TableRow key={booking.id}>
+              <TableCell className="font-mono text-sm">{booking.booking_id}</TableCell>
+              <TableCell>
+                <div>
+                  <div className="font-medium">
+                    {booking.profiles?.first_name} {booking.profiles?.last_name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{booking.profiles?.phone_number}</div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="text-sm">
+                  {booking.cycles?.name}
+                  <div className="text-xs text-muted-foreground">{booking.cycles?.model}</div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="text-sm">
+                  {booking.partners?.name}
+                  <div className="text-xs text-muted-foreground">{booking.partners?.city}</div>
+                </div>
+              </TableCell>
+              <TableCell className="text-sm">
+                {format(new Date(booking.pickup_date), 'MMM dd, yyyy')}
+              </TableCell>
+              <TableCell className="text-sm">
+                {format(new Date(booking.return_date), 'MMM dd, yyyy')}
+              </TableCell>
+              <TableCell className="font-semibold">₹{booking.total_amount}</TableCell>
+              <TableCell>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  booking.payment_status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {booking.payment_status}
+                </span>
+              </TableCell>
+              <TableCell>
+                {canEdit ? (
+                  <Select
+                    value={booking.booking_status}
+                    onValueChange={(value) => updateBookingStatus(booking.id, value)}
+                  >
+                    <SelectTrigger className="w-[130px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(booking.booking_status)}`}>
+                    {booking.booking_status}
+                  </span>
+                )}
+              </TableCell>
+              <TableCell>
+                <Button variant="ghost" size="sm" onClick={() => viewDetails(booking)}>
+                  <Eye className="h-4 w-4" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return <div className="p-4 md:p-8">Loading...</div>;
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Bookings Management</h1>
-        <p className="text-muted-foreground">View and manage all bookings</p>
+    <div className="p-4 md:p-8">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl md:text-3xl font-bold">Bookings Management</h1>
+        <p className="text-muted-foreground text-sm md:text-base">View and manage all bookings</p>
       </div>
 
       <Card className="shadow-warm mb-6">
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by booking ID, customer name, or phone..."
+                placeholder="Search by booking ID, name, or phone..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         </CardContent>
       </Card>
 
       <Card className="shadow-warm">
-        <CardHeader>
-          <CardTitle>All Bookings ({filteredBookings.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Booking ID</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Cycle</TableHead>
-                  <TableHead>Partner</TableHead>
-                  <TableHead>Pickup Date</TableHead>
-                  <TableHead>Return Date</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Payment</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Cancellation</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredBookings.map((booking) => (
-                  <TableRow key={booking.id}>
-                    <TableCell className="font-mono text-sm">{booking.booking_id}</TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{booking.profiles?.full_name}</div>
-                        <div className="text-xs text-muted-foreground">{booking.profiles?.phone_number}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {booking.cycles?.name}
-                        <div className="text-xs text-muted-foreground">{booking.cycles?.model}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {booking.partners?.name}
-                        <div className="text-xs text-muted-foreground">{booking.partners?.city}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {format(new Date(booking.pickup_date), 'MMM dd, yyyy')}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {format(new Date(booking.return_date), 'MMM dd, yyyy')}
-                    </TableCell>
-                    <TableCell className="font-semibold">₹{booking.total_amount}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        booking.payment_status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {booking.payment_status}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {canEdit ? (
-                        <Select
-                          value={booking.booking_status}
-                          onValueChange={(value) => updateBookingStatus(booking.id, value)}
-                        >
-                          <SelectTrigger className="w-[130px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="confirmed">Confirmed</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(booking.booking_status)}`}>
-                          {booking.booking_status}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {booking.cancellation_status === 'requested' ? (
-                        <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
-                          Pending
-                        </span>
-                      ) : booking.cancellation_status === 'approved' ? (
-                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                          Approved
-                        </span>
-                      ) : booking.cancellation_status === 'rejected' ? (
-                        <span className="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
-                          Rejected
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => viewDetails(booking)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+        <Tabs defaultValue="upcoming" className="w-full">
+          <div className="border-b px-4 md:px-6">
+            <TabsList className="w-full justify-start h-auto flex-wrap bg-transparent p-0">
+              <TabsTrigger 
+                value="upcoming" 
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
+              >
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Upcoming</span>
+                <span className="sm:hidden">Up</span>
+                <span className="ml-1 text-xs">({upcomingBookings.length})</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="active"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
+              >
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Active</span>
+                <span className="sm:hidden">Act</span>
+                <span className="ml-1 text-xs">({activeBookings.length})</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="completed"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
+              >
+                <CheckCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Completed</span>
+                <span className="sm:hidden">Done</span>
+                <span className="ml-1 text-xs">({completedBookings.length})</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="cancelled"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
+              >
+                <XCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Cancelled</span>
+                <span className="sm:hidden">Can</span>
+                <span className="ml-1 text-xs">({cancelledBookings.length})</span>
+              </TabsTrigger>
+            </TabsList>
           </div>
-        </CardContent>
+
+          <TabsContent value="upcoming" className="p-4 md:p-6">
+            <div className="md:hidden space-y-3">
+              {upcomingBookings.map(renderBookingCard)}
+              {upcomingBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No upcoming bookings</p>
+              )}
+            </div>
+            <div className="hidden md:block">
+              {renderBookingTable(upcomingBookings)}
+              {upcomingBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No upcoming bookings</p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="active" className="p-4 md:p-6">
+            <div className="md:hidden space-y-3">
+              {activeBookings.map(renderBookingCard)}
+              {activeBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No active bookings</p>
+              )}
+            </div>
+            <div className="hidden md:block">
+              {renderBookingTable(activeBookings)}
+              {activeBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No active bookings</p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="completed" className="p-4 md:p-6">
+            <div className="md:hidden space-y-3">
+              {completedBookings.map(renderBookingCard)}
+              {completedBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No completed bookings</p>
+              )}
+            </div>
+            <div className="hidden md:block">
+              {renderBookingTable(completedBookings)}
+              {completedBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No completed bookings</p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="cancelled" className="p-4 md:p-6">
+            <div className="md:hidden space-y-3">
+              {cancelledBookings.map(renderBookingCard)}
+              {cancelledBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No cancelled bookings</p>
+              )}
+            </div>
+            <div className="hidden md:block">
+              {renderBookingTable(cancelledBookings)}
+              {cancelledBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No cancelled bookings</p>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </Card>
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
@@ -380,7 +516,9 @@ const BookingsContent = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Customer Name</p>
-                  <p>{selectedBooking.profiles?.full_name}</p>
+                  <p>
+                    {selectedBooking.profiles?.first_name} {selectedBooking.profiles?.last_name}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Phone</p>
@@ -400,7 +538,7 @@ const BookingsContent = () => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Return Date</p>
-                  <p>{format(new Date(selectedBooking.return_date), 'PPP')}</p>
+                  <p>{format(new Date(selectedBooking.return_date), 'PPP')} at {selectedBooking.return_time || '10:00 AM'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Cycle</p>
