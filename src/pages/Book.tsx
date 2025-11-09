@@ -38,6 +38,11 @@ const Book = () => {
   const [loading, setLoading] = useState(true);
   const [partnerId, setPartnerId] = useState<string | null>(null);
 
+  // Authentication state
+  const [user, setUser] = useState<any>(null);
+  const [session, setSession] = useState<any>(null);
+  const [profileData, setProfileData] = useState<any>(null);
+
   // Step 4 - Checkout
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneVerified, setPhoneVerified] = useState(false);
@@ -48,6 +53,61 @@ const Book = () => {
   const [idProof, setIdProof] = useState<File | null>(null);
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
+
+  // Check authentication and load profile
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch profile data when user is authenticated
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserProfile(user.id);
+    } else if (user) {
+      // User is logged in but no profile data yet
+      setPhoneVerified(true);
+    }
+  }, [user]);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      if (data) {
+        setProfileData(data);
+        // Pre-fill form fields
+        setFirstName(data.first_name || '');
+        setLastName(data.last_name || '');
+        setPhoneNumber(data.phone_number || '');
+        setEmail(data.email || '');
+        setEmergencyName(data.emergency_contact_name || '');
+        setEmergencyPhone(data.emergency_contact_phone || '');
+        // Mark phone as verified since they're logged in
+        setPhoneVerified(true);
+      } else if (error) {
+        console.log('Profile not found, user can create one during booking');
+        setPhoneVerified(true);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
 
   // Read partner ID from URL
   useEffect(() => {
@@ -190,7 +250,10 @@ const Book = () => {
 
   // Validate checkout form
   const canProceedToPayment = () => {
-    return phoneVerified && firstName && lastName && livePhoto && idProof;
+    // For logged-in users: just need basic info (phone already verified)
+    // For non-logged-in users: require phone verification
+    const isPhoneValid = user ? phoneNumber.length === 10 : phoneVerified;
+    return isPhoneValid && firstName && lastName && livePhoto && idProof;
   };
 
   // Handle payment navigation
@@ -585,6 +648,16 @@ const Book = () => {
 
               {step === 4 && (
                 <div className="space-y-6">
+                  {/* Logged in indicator */}
+                  {user && (
+                    <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm text-green-800 dark:text-green-200 flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
+                        Logged in as {user.email || phoneNumber}
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
                       <User className="w-5 h-5 text-primary" />
@@ -623,12 +696,32 @@ const Book = () => {
                             </div>
                           </div>
 
-                          <PhoneInput
-                            value={phoneNumber}
-                            onChange={setPhoneNumber}
-                            onVerified={setPhoneVerified}
-                            verified={phoneVerified}
-                          />
+                          {/* Phone Input - Conditional based on authentication */}
+                          {!user ? (
+                            <PhoneInput
+                              value={phoneNumber}
+                              onChange={setPhoneNumber}
+                              onVerified={setPhoneVerified}
+                              verified={phoneVerified}
+                            />
+                          ) : (
+                            <div className="space-y-2">
+                              <Label htmlFor="phoneVerified">Phone Number</Label>
+                              <Input
+                                id="phoneVerified"
+                                type="tel"
+                                value={phoneNumber}
+                                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                                maxLength={10}
+                                placeholder="10-digit mobile number"
+                                className="bg-muted"
+                              />
+                              <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-2">
+                                <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
+                                Verified account
+                              </p>
+                            </div>
+                          )}
                           
                           <div className="space-y-2">
                             <Label htmlFor="email">Email Address (Optional)</Label>

@@ -22,10 +22,9 @@ serve(async (req) => {
       }
     );
 
+    // Allow both authenticated and non-authenticated users
     const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-      throw new Error('Unauthorized');
-    }
+    console.log('Creating Razorpay order for user:', user?.id || 'anonymous');
 
     const { amount, currency, receipt } = await req.json();
 
