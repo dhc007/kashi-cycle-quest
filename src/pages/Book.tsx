@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ interface Accessory {
 const Book = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>();
@@ -35,6 +36,7 @@ const Book = () => {
   const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [cycleData, setCycleData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [partnerId, setPartnerId] = useState<string | null>(null);
 
   // Step 4 - Checkout
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -46,6 +48,15 @@ const Book = () => {
   const [idProof, setIdProof] = useState<File | null>(null);
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
+
+  // Read partner ID from URL
+  useEffect(() => {
+    const partnerParam = searchParams.get('partner');
+    if (partnerParam) {
+      setPartnerId(partnerParam);
+      console.log('Booking via partner:', partnerParam);
+    }
+  }, [searchParams]);
 
   // Load cycles, accessories, and partners data
   useEffect(() => {
@@ -243,6 +254,7 @@ const Book = () => {
         selectedDuration,
         returnDate: returnDate ? format(returnDate, 'yyyy-MM-dd') : null,
         returnTime: selectedTime,
+        partnerId,
         accessories: accessories.filter(acc => acc.days > 0).map(acc => ({
           id: acc.id,
           name: acc.name,

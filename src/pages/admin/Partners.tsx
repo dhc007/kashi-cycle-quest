@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
-import { Plus, Pencil, Trash2, QrCode, MoreVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, QrCode, MoreVertical, Download, Copy, BarChart3 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +36,9 @@ interface Partner {
 }
 
 const PartnersContent = () => {
+  const navigate = useNavigate();
   const [partners, setPartners] = useState<Partner[]>([]);
+  const [partnerStats, setPartnerStats] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
@@ -47,6 +50,7 @@ const PartnersContent = () => {
 
   useEffect(() => {
     loadPartners();
+    loadPartnerStats();
   }, []);
 
   const loadPartners = async () => {
@@ -66,6 +70,28 @@ const PartnersContent = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPartnerStats = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('partner_id')
+        .not('partner_id', 'is', null);
+
+      if (error) throw error;
+
+      const stats: Record<string, number> = {};
+      data?.forEach((booking) => {
+        if (booking.partner_id) {
+          stats[booking.partner_id] = (stats[booking.partner_id] || 0) + 1;
+        }
+      });
+
+      setPartnerStats(stats);
+    } catch (error) {
+      console.error('Error loading partner stats:', error);
     }
   };
 
@@ -205,6 +231,40 @@ const PartnersContent = () => {
     return `${window.location.origin}/book?partner=${partnerId}`;
   };
 
+  const downloadQRCode = () => {
+    if (!selectedPartnerId) return;
+    
+    const svg = document.getElementById('partner-qr-code');
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL('image/png');
+      
+      const downloadLink = document.createElement('a');
+      downloadLink.download = `partner-qr-${selectedPartnerId}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+    
+    img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
+  };
+
+  const copyBookingLink = (partnerId: string) => {
+    navigator.clipboard.writeText(getBookingUrl(partnerId));
+    toast({ 
+      title: "Link Copied!", 
+      description: "Share this link with customers" 
+    });
+  };
+
   if (loading) {
     return <div className="p-8">Loading...</div>;
   }
@@ -339,6 +399,7 @@ const PartnersContent = () => {
                 <TableHead>Name</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Contact</TableHead>
+                <TableHead>Bookings</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -357,6 +418,22 @@ const PartnersContent = () => {
                     <div className="text-sm">
                       {partner.phone_number}
                       {partner.email && <div className="text-xs text-muted-foreground">{partner.email}</div>}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-primary text-lg">
+                        {partnerStats[partner.id] || 0}
+                      </span>
+                      {partnerStats[partner.id] > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/admin/bookings?partner=${partner.id}`)}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -407,21 +484,44 @@ const PartnersContent = () => {
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Partner QR Code</DialogTitle>
+            <DialogTitle>Partner QR Code & Booking Link</DialogTitle>
           </DialogHeader>
           {selectedPartnerId && (
             <div className="flex flex-col items-center gap-4 py-4">
               <div className="bg-white p-4 rounded-lg">
-                <QRCode value={getBookingUrl(selectedPartnerId)} size={256} />
+                <QRCode 
+                  id="partner-qr-code"
+                  value={getBookingUrl(selectedPartnerId)} 
+                  size={256} 
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={downloadQRCode}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download QR
+                </Button>
               </div>
               <p className="text-sm text-muted-foreground text-center">
-                Scan this QR code to book with this partner
+                Scan this QR code or share the link below to book with this partner
               </p>
-              <Input
-                readOnly
-                value={getBookingUrl(selectedPartnerId)}
-                className="text-center"
-              />
+              <div className="flex gap-2 w-full">
+                <Input
+                  readOnly
+                  value={getBookingUrl(selectedPartnerId)}
+                  className="text-center"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copyBookingLink(selectedPartnerId)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
