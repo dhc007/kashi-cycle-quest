@@ -7,22 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Navbar } from "@/components/Navbar";
-import { OTPDialog } from "@/components/OTPDialog";
 import { Loader2 } from "lucide-react";
 
 export default function UserLogin() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otp, setOtp] = useState("");
-  const [generatedOTP, setGeneratedOTP] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [showOTPDialog, setShowOTPDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-
-  const generateMockOTP = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
 
   const sendOTP = async () => {
     if (phoneNumber.length !== 10) {
@@ -37,30 +30,18 @@ export default function UserLogin() {
     setLoading(true);
     
     try {
-      const mockOTP = generateMockOTP();
-      setGeneratedOTP(mockOTP);
-      
-      // Store OTP in database with expiry
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
-      
-      const { error } = await supabase
-        .from('phone_otps')
-        .insert({
-          phone_number: phoneNumber,
-          otp_code: mockOTP,
-          expires_at: expiresAt.toISOString(),
-          verified: false,
-        });
+      const { data, error } = await supabase.functions.invoke('send-verification', {
+        body: { phoneNumber }
+      });
 
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Failed to send OTP');
 
       setOtpSent(true);
-      setShowOTPDialog(true);
       
       toast({
         title: "OTP Sent",
-        description: "A 6-digit code has been generated for your phone",
+        description: "A 6-digit code has been sent to your phone",
       });
     } catch (error: any) {
       toast({
@@ -86,19 +67,13 @@ export default function UserLogin() {
     setLoading(true);
 
     try {
-      // Verify OTP from database
-      const { data: otpData, error: otpError } = await supabase
-        .from('phone_otps')
-        .select('*')
-        .eq('phone_number', phoneNumber)
-        .eq('otp_code', otp)
-        .eq('verified', false)
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+      // Verify OTP via Twilio
+      const { data, error } = await supabase.functions.invoke('verify-otp', {
+        body: { phoneNumber, code: otp }
+      });
 
-      if (otpError || !otpData) {
+      if (error) throw error;
+      if (!data?.success) {
         toast({
           title: "Invalid OTP",
           description: "The code you entered is incorrect or has expired",
@@ -108,13 +83,7 @@ export default function UserLogin() {
         return;
       }
 
-      // Mark OTP as verified
-      await supabase
-        .from('phone_otps')
-        .update({ verified: true })
-        .eq('id', otpData.id);
-
-      // Create or sign in user with phone number
+      // OTP verified! Now authenticate user
       // Using phone as email format for Supabase auth
       const email = `${phoneNumber}@bolt91.app`;
       const password = `bolt91_${phoneNumber}_secure`;
@@ -235,7 +204,6 @@ export default function UserLogin() {
                   onClick={() => {
                     setOtpSent(false);
                     setOtp("");
-                    setGeneratedOTP("");
                   }}
                   className="w-full"
                 >
@@ -246,12 +214,6 @@ export default function UserLogin() {
           </CardContent>
         </Card>
       </div>
-
-      <OTPDialog
-        open={showOTPDialog}
-        onOpenChange={setShowOTPDialog}
-        otpCode={generatedOTP}
-      />
     </div>
   );
 }

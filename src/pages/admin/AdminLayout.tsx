@@ -24,8 +24,6 @@ const AdminLayout = () => {
     { icon: XCircle, label: "Cancellations", path: "/admin/cancellations" },
     { icon: Bike, label: "Cycles", path: "/admin/cycles" },
     { icon: Package, label: "Accessories", path: "/admin/accessories" },
-    { icon: Users, label: "Partners", path: "/admin/partners" },
-    { icon: Map, label: "Partner Map", path: "/admin/partners-map" },
     { icon: Users, label: "Customers", path: "/admin/users" },
     { icon: PackageCheck, label: "Cycle Returns", path: "/admin/cycle-return" },
     { icon: Wrench, label: "Maintenance", path: "/admin/maintenance" },

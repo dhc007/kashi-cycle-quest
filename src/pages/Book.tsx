@@ -34,8 +34,6 @@ const Book = () => {
   const [selectedDuration, setSelectedDuration] = useState<string>();
   const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [cycleData, setCycleData] = useState<any>(null);
-  const [partnersData, setPartnersData] = useState<any[]>([]);
-  const [selectedPartner, setSelectedPartner] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   // Step 4 - Checkout
@@ -81,18 +79,6 @@ const Book = () => {
             available: acc.available_quantity || 0,
           }))
         );
-
-        // Load partners
-        const { data: partnersData, error: partnersError } = await supabase
-          .from('partners')
-          .select('*')
-          .eq('is_active', true);
-
-        if (partnersError) throw partnersError;
-        setPartnersData(partnersData || []);
-        if (partnersData && partnersData.length > 0) {
-          setSelectedPartner(partnersData[0].id);
-        }
 
       } catch (error: any) {
         console.error('Error loading data:', error);
@@ -208,10 +194,10 @@ const Book = () => {
       return;
     }
 
-    if (!cycleData || !selectedPartner) {
+    if (!cycleData) {
       toast({
         title: "Error",
-        description: "Missing cycle or partner data",
+        description: "Missing cycle data",
         variant: "destructive",
       });
       return;
@@ -272,7 +258,6 @@ const Book = () => {
         cycleId: cycleData.id,
         cycleName: cycleData.name,
         cycleModel: cycleData.model,
-        partnerId: selectedPartner,
         basePrice: getBasePrice(),
         accessoriesTotal,
         securityDeposit: getSecurityDeposit(),
@@ -699,47 +684,6 @@ const Book = () => {
                               maxLength={10}
                             />
                           </div>
-                        </CardContent>
-                      </Card>
-
-                      {/* Pickup Location */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-base">Pickup Location</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {partnersData.length > 0 && (
-                            <Select value={selectedPartner} onValueChange={setSelectedPartner}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select pickup location" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {partnersData.map((partner) => (
-                                  <SelectItem key={partner.id} value={partner.id}>
-                                    {partner.name} - {partner.city}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                          {selectedPartner && partnersData.length > 0 && (
-                            <div className="mt-4 space-y-2">
-                              {(() => {
-                                const partner = partnersData.find(p => p.id === selectedPartner);
-                                return partner ? (
-                                  <>
-                                    <p className="font-medium">{partner.name}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                      {partner.address}, {partner.city}, {partner.state} {partner.pincode}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                      📞 {partner.phone_number}
-                                    </p>
-                                  </>
-                                ) : null;
-                              })()}
-                            </div>
-                          )}
                         </CardContent>
                       </Card>
                     </div>

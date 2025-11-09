@@ -92,7 +92,7 @@ serve(async (req) => {
         booking_id: bookingId,
         user_id: user.id,
         cycle_id: bookingData.cycle_id,
-        partner_id: bookingData.partner_id,
+        partner_id: bookingData.partner_id || null,
         pickup_date: bookingData.pickup_date,
         pickup_time: bookingData.pickup_time,
         return_date: bookingData.return_date,
