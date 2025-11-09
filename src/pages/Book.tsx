@@ -190,7 +190,7 @@ const Book = () => {
 
   // Validate checkout form
   const canProceedToPayment = () => {
-    return phoneVerified && firstName && lastName && livePhoto && idProof && emergencyName && emergencyPhone.length === 10;
+    return phoneVerified && firstName && lastName && livePhoto && idProof;
   };
 
   // Handle payment navigation
@@ -672,7 +672,7 @@ const Book = () => {
                       {/* Emergency Contact */}
                       <Card>
                         <CardHeader>
-                          <CardTitle className="text-base">Emergency Contact</CardTitle>
+                          <CardTitle className="text-base">Emergency Contact (Optional)</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                           <div className="space-y-2">
@@ -680,7 +680,7 @@ const Book = () => {
                             <Input
                               id="emergencyName"
                               type="text"
-                              placeholder="Full name"
+                              placeholder="Full name (optional)"
                               value={emergencyName}
                               onChange={(e) => setEmergencyName(e.target.value)}
                             />
@@ -691,7 +691,7 @@ const Book = () => {
                             <Input
                               id="emergencyPhone"
                               type="tel"
-                              placeholder="10-digit mobile number"
+                              placeholder="10-digit mobile number (optional)"
                               value={emergencyPhone}
                               onChange={(e) => setEmergencyPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                               maxLength={10}
