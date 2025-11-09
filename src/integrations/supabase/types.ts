@@ -624,7 +624,7 @@ export type Database = {
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           first_name: string
-          full_name: string
+          full_name: string | null
           id: string
           id_proof_url: string | null
           last_name: string
@@ -639,7 +639,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           first_name: string
-          full_name: string
+          full_name?: string | null
           id?: string
           id_proof_url?: string | null
           last_name: string
@@ -654,7 +654,7 @@ export type Database = {
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           first_name?: string
-          full_name?: string
+          full_name?: string | null
           id?: string
           id_proof_url?: string | null
           last_name?: string
