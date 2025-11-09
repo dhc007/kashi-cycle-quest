@@ -36,37 +36,38 @@ serve(async (req) => {
         throw new Error('Phone number required for booking');
       }
 
-      // Create anonymous user with phone as email
-      const anonymousEmail = `${phoneNumber}@bolt91.app`;
-      const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
-        email: anonymousEmail,
-        password: Math.random().toString(36).slice(-12) + Date.now(),
-        options: {
-          data: {
-            phone_number: phoneNumber,
-            is_anonymous: true
-          }
-        }
-      });
-
-      if (signUpError) {
-        // User might already exist, try to get by phone
-        console.log('Anonymous user creation failed, user may exist:', signUpError);
-        
-        // Check if profile exists with this phone
-        const { data: existingProfile } = await supabaseClient
-          .from('profiles')
-          .select('user_id')
-          .eq('phone_number', phoneNumber)
-          .single();
-        
-        if (existingProfile) {
-          userId = existingProfile.user_id;
-        } else {
-          throw new Error('Unable to create booking user');
-        }
+      // Check if user already exists with this phone
+      const { data: existingProfile } = await supabaseClient
+        .from('profiles')
+        .select('user_id')
+        .eq('phone_number', phoneNumber)
+        .maybeSingle();
+      
+      if (existingProfile) {
+        // User exists, reuse their account
+        userId = existingProfile.user_id;
+        console.log('Reusing existing user for phone:', phoneNumber);
       } else {
+        // Create new anonymous user with phone as email
+        const anonymousEmail = `${phoneNumber}@bolt91.app`;
+        const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
+          email: anonymousEmail,
+          password: crypto.randomUUID(), // Secure random password
+          options: {
+            data: {
+              phone_number: phoneNumber,
+              is_anonymous: true
+            }
+          }
+        });
+
+        if (signUpError) {
+          console.error('Failed to create anonymous user:', signUpError);
+          throw new Error('Unable to create booking user: ' + signUpError.message);
+        }
+        
         userId = signUpData.user?.id;
+        console.log('Created new anonymous user');
       }
     }
 

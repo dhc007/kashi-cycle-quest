@@ -24,7 +24,6 @@ serve(async (req) => {
       .from('bookings')
       .select(`
         *,
-        profiles!inner(phone_number, first_name, last_name),
         cycles!inner(name, model),
         booking_accessories(
           quantity,
@@ -40,6 +39,18 @@ serve(async (req) => {
     if (bookingError) {
       console.error('Error fetching booking:', bookingError);
       throw bookingError;
+    }
+
+    // Fetch profile separately using the foreign key relationship
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('phone_number, first_name, last_name')
+      .eq('user_id', booking.user_id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+      throw profileError;
     }
 
     // Calculate duration in days
@@ -100,9 +111,9 @@ Happy cycling! 🚴‍♂️`;
     const MESSAGING_SID = 'MG707430180e002cc56834ddd91fc904c2';
     const FROM_NUMBER = '8217824840';
     
-    const phoneNumber = booking.profiles.phone_number.startsWith('+91') 
-      ? booking.profiles.phone_number 
-      : `+91${booking.profiles.phone_number}`;
+    const phoneNumber = profile.phone_number.startsWith('+91') 
+      ? profile.phone_number 
+      : `+91${profile.phone_number}`;
 
     console.log('Sending WhatsApp to:', phoneNumber);
 
