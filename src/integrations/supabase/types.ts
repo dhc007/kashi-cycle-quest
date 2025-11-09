@@ -106,6 +106,12 @@ export type Database = {
           accessories_cost: number
           booking_id: string
           booking_status: string
+          cancellation_fee: number | null
+          cancellation_reason: string | null
+          cancellation_requested_at: string | null
+          cancellation_status: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           cycle_id: string
           cycle_rental_cost: number
@@ -124,6 +130,7 @@ export type Database = {
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
           razorpay_signature: string | null
+          refund_amount: number | null
           return_date: string
           security_deposit: number
           total_amount: number
@@ -134,6 +141,12 @@ export type Database = {
           accessories_cost?: number
           booking_id: string
           booking_status?: string
+          cancellation_fee?: number | null
+          cancellation_reason?: string | null
+          cancellation_requested_at?: string | null
+          cancellation_status?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           cycle_id: string
           cycle_rental_cost: number
@@ -152,6 +165,7 @@ export type Database = {
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
+          refund_amount?: number | null
           return_date: string
           security_deposit: number
           total_amount: number
@@ -162,6 +176,12 @@ export type Database = {
           accessories_cost?: number
           booking_id?: string
           booking_status?: string
+          cancellation_fee?: number | null
+          cancellation_reason?: string | null
+          cancellation_requested_at?: string | null
+          cancellation_status?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           cycle_id?: string
           cycle_rental_cost?: number
@@ -180,6 +200,7 @@ export type Database = {
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
           razorpay_signature?: string | null
+          refund_amount?: number | null
           return_date?: string
           security_deposit?: number
           total_amount?: number
