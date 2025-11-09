@@ -330,8 +330,8 @@ const Book = () => {
 
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-3 gap-6">
-            {/* Main Booking Form - Left Side */}
-            <div className="lg:col-span-2">
+            {/* Main Booking Form - Second on mobile, First on desktop */}
+            <div className="lg:col-span-2 order-2 lg:order-1">
               <Card className="shadow-warm">
                 <CardHeader>
                   <CardTitle className="text-2xl">Book Your Electric Bicycle</CardTitle>
@@ -745,8 +745,8 @@ const Book = () => {
           </Card>
         </div>
 
-        {/* Booking Summary - Right Side */}
-        <div className="lg:col-span-1">
+        {/* Booking Summary - First on mobile, Second on desktop */}
+        <div className="lg:col-span-1 order-1 lg:order-2">
           <Card className="shadow-warm border-primary/20 animate-fade-in lg:sticky lg:top-24">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
