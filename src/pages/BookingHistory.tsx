@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { Calendar, Clock, MapPin, Package, CreditCard } from "lucide-react";
+import { Calendar, Clock, MapPin, Package, CreditCard, XCircle } from "lucide-react";
+import { CancellationDialog } from "@/components/CancellationDialog";
 
 interface Booking {
   id: string;
@@ -23,6 +25,10 @@ interface Booking {
   security_deposit: number;
   has_insurance: boolean;
   created_at: string;
+  cancellation_status: string;
+  cancellation_reason: string | null;
+  cancellation_fee: number;
+  refund_amount: number;
   cycles: {
     name: string;
     model: string;
@@ -37,51 +43,67 @@ interface Booking {
 const BookingHistory = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const loadBookings = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          toast({
-            title: "Authentication Required",
-            description: "Please log in to view your bookings",
-            variant: "destructive",
-          });
-          navigate("/");
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from('bookings')
-          .select(`
-            *,
-            cycles (name, model),
-            partners (name, address, city)
-          `)
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        setBookings(data || []);
-      } catch (error: any) {
-        console.error('Error loading bookings:', error);
+  const loadBookings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
         toast({
-          title: "Error",
-          description: "Failed to load bookings",
+          title: "Authentication Required",
+          description: "Please log in to view your bookings",
           variant: "destructive",
         });
-      } finally {
-        setLoading(false);
+        navigate("/");
+        return;
       }
-    };
 
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          cycles (name, model),
+          partners (name, address, city)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setBookings(data || []);
+    } catch (error: any) {
+      console.error('Error loading bookings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load bookings",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadBookings();
-  }, [navigate, toast]);
+  }, []);
+
+  const canCancelBooking = (booking: Booking) => {
+    return (
+      booking.booking_status === 'confirmed' &&
+      booking.payment_status === 'completed' &&
+      booking.cancellation_status === 'none' &&
+      new Date(booking.pickup_date) > new Date()
+    );
+  };
+
+  const handleCancelClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setCancelDialogOpen(true);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -95,6 +117,19 @@ const BookingHistory = () => {
         return 'bg-red-500';
       default:
         return 'bg-gray-500';
+    }
+  };
+
+  const getCancellationStatusColor = (status: string) => {
+    switch (status) {
+      case 'requested':
+        return 'bg-yellow-500';
+      case 'approved':
+        return 'bg-green-500';
+      case 'rejected':
+        return 'bg-red-500';
+      default:
+        return '';
     }
   };
 
@@ -155,13 +190,18 @@ const BookingHistory = () => {
                       <CardTitle className="text-xl mb-2">
                         {booking.cycles?.name} - {booking.cycles?.model}
                       </CardTitle>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Badge className={getStatusColor(booking.booking_status)}>
                           {booking.booking_status}
                         </Badge>
                         <Badge className={getPaymentStatusColor(booking.payment_status)}>
                           {booking.payment_status}
                         </Badge>
+                        {booking.cancellation_status !== 'none' && (
+                          <Badge className={getCancellationStatusColor(booking.cancellation_status)}>
+                            Cancellation: {booking.cancellation_status}
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
@@ -249,10 +289,51 @@ const BookingHistory = () => {
                       <p className="text-sm text-green-700 dark:text-green-300">✓ Insurance Included</p>
                     </div>
                   )}
+
+                  {booking.cancellation_status === 'requested' && booking.cancellation_reason && (
+                    <div className="bg-yellow-50 dark:bg-yellow-950 p-3 rounded-md">
+                      <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                        Cancellation Pending Approval
+                      </p>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                        Reason: {booking.cancellation_reason}
+                      </p>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                        Refund Amount: ₹{booking.refund_amount?.toLocaleString() || 0}
+                      </p>
+                    </div>
+                  )}
+
+                  {canCancelBooking(booking) && (
+                    <div className="pt-4 border-t flex justify-end">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleCancelClick(booking)}
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Request Cancellation
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}
           </div>
+        )}
+
+        {selectedBooking && (
+          <CancellationDialog
+            open={cancelDialogOpen}
+            onOpenChange={setCancelDialogOpen}
+            bookingId={selectedBooking.id}
+            pickupDate={selectedBooking.pickup_date}
+            totalAmount={selectedBooking.total_amount}
+            onSuccess={() => {
+              loadBookings();
+              setSelectedBooking(null);
+            }}
+          />
         )}
       </div>
     </div>

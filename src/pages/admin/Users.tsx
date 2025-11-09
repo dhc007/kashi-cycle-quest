@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Users as UsersIcon, Shield, UserX, Mail, Phone } from "lucide-react";
+import { Users as UsersIcon, UserX, Mail, Phone } from "lucide-react";
 import { format } from "date-fns";
 
 interface UserData {
@@ -114,48 +112,6 @@ const Users = () => {
     }
   };
 
-  const toggleAdminRole = async (userId: string, currentRoles: string[]) => {
-    try {
-      const hasAdmin = currentRoles.includes('admin');
-
-      if (hasAdmin) {
-        // Remove admin role
-        const { error } = await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', userId)
-          .eq('role', 'admin');
-
-        if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Admin role removed",
-        });
-      } else {
-        // Add admin role
-        const { error } = await supabase
-          .from('user_roles')
-          .insert({ user_id: userId, role: 'admin' });
-
-        if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Admin role granted",
-        });
-      }
-
-      await loadUsers();
-    } catch (error: any) {
-      console.error('Error toggling admin role:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update role",
-        variant: "destructive",
-      });
-    }
-  };
 
   if (loading) {
     return (
@@ -179,23 +135,30 @@ const Users = () => {
     );
   }
 
+  // Filter out users with admin, manager, or viewer roles
+  const customers = users.filter(user => 
+    !user.roles.includes('admin') && 
+    !user.roles.includes('manager') && 
+    !user.roles.includes('viewer')
+  );
+
   return (
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <UsersIcon className="w-8 h-8" />
-          User Management
+          Customers
         </h1>
-        <p className="text-muted-foreground">Manage users and their roles</p>
+        <p className="text-muted-foreground">View all customer accounts</p>
       </div>
 
       <Card className="shadow-warm">
         <CardHeader>
-          <CardTitle>All Users ({users.length})</CardTitle>
+          <CardTitle>All Customers ({customers.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {users.map((user) => (
+            {customers.map((user) => (
               <div
                 key={user.id}
                 className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
@@ -203,12 +166,6 @@ const Users = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="font-semibold">{user.profile?.full_name || 'Unknown'}</h3>
-                    {user.roles.includes('admin') && (
-                      <Badge className="bg-purple-500">
-                        <Shield className="w-3 h-3 mr-1" />
-                        Admin
-                      </Badge>
-                    )}
                   </div>
                   
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
@@ -230,22 +187,12 @@ const Users = () => {
                     </div>
                   </div>
                 </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant={user.roles.includes('admin') ? 'destructive' : 'default'}
-                    size="sm"
-                    onClick={() => toggleAdminRole(user.id, user.roles)}
-                  >
-                    {user.roles.includes('admin') ? 'Remove Admin' : 'Make Admin'}
-                  </Button>
-                </div>
               </div>
             ))}
 
-            {users.length === 0 && (
+            {customers.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
-                No users found
+                No customers found
               </div>
             )}
           </div>

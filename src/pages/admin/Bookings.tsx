@@ -25,6 +25,11 @@ interface Booking {
   payment_status: string;
   total_amount: number;
   created_at: string;
+  cancellation_status: string;
+  cancellation_reason: string | null;
+  cancellation_fee: number;
+  refund_amount: number;
+  cancellation_requested_at: string | null;
   profiles?: {
     full_name: string;
     phone_number: string;
@@ -143,6 +148,39 @@ const BookingsContent = () => {
     }
   };
 
+  const handleCancellationApproval = async (bookingId: string, approve: boolean) => {
+    try {
+      const updates: any = {
+        cancellation_status: approve ? 'approved' : 'rejected',
+      };
+
+      if (approve) {
+        updates.booking_status = 'cancelled';
+        updates.cancelled_at = new Date().toISOString();
+      }
+
+      const { error } = await supabase
+        .from('bookings')
+        .update(updates)
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Cancellation request ${approve ? 'approved' : 'rejected'}`,
+      });
+
+      loadBookings();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const viewDetails = (booking: Booking) => {
     setSelectedBooking(booking);
     setDetailsOpen(true);
@@ -220,6 +258,7 @@ const BookingsContent = () => {
                   <TableHead>Amount</TableHead>
                   <TableHead>Payment</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Cancellation</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -279,6 +318,23 @@ const BookingsContent = () => {
                         <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(booking.booking_status)}`}>
                           {booking.booking_status}
                         </span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {booking.cancellation_status === 'requested' ? (
+                        <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                          Pending
+                        </span>
+                      ) : booking.cancellation_status === 'approved' ? (
+                        <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                          Approved
+                        </span>
+                      ) : booking.cancellation_status === 'rejected' ? (
+                        <span className="px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
+                          Rejected
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -361,6 +417,55 @@ const BookingsContent = () => {
                   </span>
                 </div>
               </div>
+
+              {selectedBooking.cancellation_status === 'requested' && (
+                <div className="border-t pt-4 mt-4">
+                  <h3 className="font-semibold text-lg mb-4">Cancellation Request</h3>
+                  <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Requested At</p>
+                      <p className="text-sm">{selectedBooking.cancellation_requested_at ? format(new Date(selectedBooking.cancellation_requested_at), 'PPP p') : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Reason</p>
+                      <p className="text-sm">{selectedBooking.cancellation_reason}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Cancellation Fee</p>
+                        <p className="text-sm font-semibold text-red-600">₹{selectedBooking.cancellation_fee}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground">Refund Amount</p>
+                        <p className="text-sm font-semibold text-green-600">₹{selectedBooking.refund_amount}</p>
+                      </div>
+                    </div>
+                    {canEdit && (
+                      <div className="flex gap-3 pt-4">
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            handleCancellationApproval(selectedBooking.id, false);
+                            setDetailsOpen(false);
+                          }}
+                        >
+                          Reject Cancellation
+                        </Button>
+                        <Button
+                          variant="default"
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => {
+                            handleCancellationApproval(selectedBooking.id, true);
+                            setDetailsOpen(false);
+                          }}
+                        >
+                          Approve Cancellation
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

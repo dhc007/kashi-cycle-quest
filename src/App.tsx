@@ -14,6 +14,7 @@ import Bookings from "./pages/admin/Bookings";
 import Cycles from "./pages/admin/Cycles";
 import Accessories from "./pages/admin/Accessories";
 import Partners from "./pages/admin/Partners";
+import PartnersMap from "./pages/admin/PartnersMap";
 import AdminSettings from "./pages/admin/AdminSettings";
 import Users from "./pages/admin/Users";
 import NotFound from "./pages/NotFound";
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="cycles" element={<Cycles />} />
             <Route path="accessories" element={<Accessories />} />
             <Route path="partners" element={<Partners />} />
+            <Route path="partners-map" element={<PartnersMap />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="users" element={<Users />} />
           </Route>

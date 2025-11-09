@@ -6,6 +6,7 @@ import {
   Bike, 
   Package, 
   Users, 
+  Map,
   Settings,
   LogOut
 } from "lucide-react";
@@ -20,7 +21,8 @@ const AdminLayout = () => {
     { icon: Bike, label: "Cycles", path: "/admin/cycles" },
     { icon: Package, label: "Accessories", path: "/admin/accessories" },
     { icon: Users, label: "Partners", path: "/admin/partners" },
-    { icon: Users, label: "Users", path: "/admin/users" },
+    { icon: Map, label: "Partner Map", path: "/admin/partners-map" },
+    { icon: Users, label: "Customers", path: "/admin/users" },
     { icon: Settings, label: "Settings", path: "/admin/settings" },
   ];
 
