@@ -37,7 +37,14 @@ interface Booking {
     name: string;
     address: string;
     city: string;
-  };
+    google_maps_link: string | null;
+  } | null;
+  pickup_locations: {
+    name: string;
+    address: string;
+    city: string;
+    google_maps_link: string | null;
+  } | null;
 }
 
 const BookingHistory = () => {
@@ -67,7 +74,8 @@ const BookingHistory = () => {
         .select(`
           *,
           cycles (name, model),
-          partners (name, address, city)
+          partners (name, address, city, google_maps_link),
+          pickup_locations (name, address, city, google_maps_link)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -258,13 +266,24 @@ const BookingHistory = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-start gap-3">
+                       <div className="flex items-start gap-3">
                         <MapPin className="w-5 h-5 text-primary mt-0.5" />
                         <div>
                           <p className="text-sm font-medium">Pickup Location</p>
                           <p className="text-sm text-muted-foreground">
-                            {booking.partners?.name}, {booking.partners?.city}
+                            {booking.partners?.name || booking.pickup_locations?.name || 'N/A'}, {booking.partners?.city || booking.pickup_locations?.city || ''}
                           </p>
+                          {(booking.partners?.google_maps_link || booking.pickup_locations?.google_maps_link) && (
+                            <a
+                              href={booking.partners?.google_maps_link || booking.pickup_locations?.google_maps_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline flex items-center gap-1 mt-1"
+                            >
+                              <MapPin className="w-3 h-3" />
+                              View on Google Maps
+                            </a>
+                          )}
                         </div>
                       </div>
 

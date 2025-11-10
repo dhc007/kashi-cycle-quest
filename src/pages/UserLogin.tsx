@@ -119,7 +119,18 @@ export default function UserLogin() {
         description: "You have been successfully logged in",
       });
 
-      navigate("/bookings");
+      // Check if user has any bookings
+      const { data: bookingsData } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('user_id', signInData.user.id)
+        .limit(1);
+
+      if (bookingsData && bookingsData.length > 0) {
+        navigate("/bookings");
+      } else {
+        navigate("/book");
+      }
     } catch (error: any) {
       toast({
         title: "Error",

@@ -20,7 +20,6 @@ const Payment = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [insurance, setInsurance] = useState(false);
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
 
@@ -95,10 +94,9 @@ const Payment = () => {
     idProofUrl,
   } = bookingData;
 
-  const insuranceCost = 21;
   const subtotal = basePrice + accessoriesTotal;
   const gst = Math.round(subtotal * 0.18); // 18% GST
-  const totalAmount = subtotal + (insurance ? insuranceCost : 0) + gst + securityDeposit;
+  const totalAmount = subtotal + gst + securityDeposit;
 
   const handlePayment = async () => {
     setLoading(true);
@@ -116,11 +114,11 @@ const Payment = () => {
           duration_type: selectedDuration,
           cycle_rental_cost: basePrice,
           accessories_cost: accessoriesTotal,
-          insurance_cost: insurance ? insuranceCost : 0,
+          insurance_cost: 0,
           gst: gst,
           security_deposit: securityDeposit,
           total_amount: totalAmount,
-          has_insurance: insurance,
+          has_insurance: false,
           accessories: accessories.map((acc: any) => ({
             id: acc.id,
             name: acc.name,
@@ -159,7 +157,7 @@ const Payment = () => {
         key: orderData.key_id,
         amount: totalAmount * 100,
         currency: 'INR',
-        name: 'Bolt91',
+        name: 'Blue Bolt Electric Pvt Ltd',
         description: 'Electric Bicycle Rental',
         order_id: orderData.order.id,
         handler: async function (response: any) {
@@ -184,7 +182,6 @@ const Payment = () => {
             navigate("/confirmation", {
               state: {
                 ...bookingData,
-                insurance,
                 totalAmount,
                 paymentId: response.razorpay_payment_id,
                 bookingId: booking.booking_id,
@@ -346,27 +343,6 @@ const Payment = () => {
                     <span className="font-semibold text-green-600 dark:text-green-400">₹{securityDeposit}</span>
                   </div>
 
-                  <div className="border-t pt-3">
-                    <div className="flex items-start gap-3 mb-3">
-                      <Checkbox
-                        id="insurance"
-                        checked={insurance}
-                        onCheckedChange={(checked) => setInsurance(checked as boolean)}
-                      />
-                      <div className="flex-1">
-                        <label
-                          htmlFor="insurance"
-                          className="text-sm font-medium leading-none cursor-pointer"
-                        >
-                          Add Rider Insurance (₹{insuranceCost})
-                        </label>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Covers rider protection during rental period
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="flex justify-between text-xs">
                     <span>GST (18%)</span>
                     <span>₹{gst}</span>
@@ -375,6 +351,10 @@ const Payment = () => {
                   <div className="border-t pt-3 flex justify-between">
                     <span className="font-bold text-lg">Total Amount</span>
                     <span className="font-bold text-primary text-xl">₹{totalAmount}</span>
+                  </div>
+                  
+                  <div className="text-sm font-semibold text-center">
+                    (Refundable Security Deposit: ₹{securityDeposit})
                   </div>
                 </div>
 

@@ -218,8 +218,8 @@ const Confirmation = () => {
               <Download className="w-4 h-4 mr-2" />
               Download Confirmation
             </Button>
-            <Button variant="outline" onClick={() => navigate("/")}>
-              Return to Home
+            <Button onClick={() => navigate("/bookings")}>
+              View My Bookings
             </Button>
           </div>
         </div>

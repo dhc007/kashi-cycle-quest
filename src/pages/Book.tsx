@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarIcon, Clock, Bike, Camera, Plus, Minus, User, MapPin, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
@@ -37,6 +38,18 @@ interface PickupLocation {
   google_maps_link: string | null;
 }
 
+interface Partner {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  landmark: string | null;
+  phone_number: string;
+  google_maps_link: string | null;
+}
+
 const Book = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,8 +63,10 @@ const Book = () => {
   const [selectedCycle, setSelectedCycle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [partnerData, setPartnerData] = useState<Partner | null>(null);
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<PickupLocation | null>(null);
+  const [numberOfPeople, setNumberOfPeople] = useState(1);
 
   // Authentication state
   const [user, setUser] = useState<any>(null);
@@ -135,14 +150,47 @@ const Book = () => {
     }
   };
 
-  // Read partner ID from URL
+  // Read partner ID from URL and fetch partner data
   useEffect(() => {
     const partnerParam = searchParams.get('partner');
     if (partnerParam) {
       setPartnerId(partnerParam);
       console.log('Booking via partner:', partnerParam);
+      
+      // Fetch partner data
+      const fetchPartnerData = async () => {
+        const { data, error } = await supabase
+          .from('partners')
+          .select('*')
+          .eq('id', partnerParam)
+          .single();
+        
+        if (data && !error) {
+          setPartnerData(data);
+        }
+      };
+      
+      fetchPartnerData();
     }
   }, [searchParams]);
+
+  // Auto-select pickup location based on partner
+  useEffect(() => {
+    if (partnerData && pickupLocations.length > 0) {
+      // For guest house/stay partners, use partner location
+      // For cafe/retail or direct booking, use Bolt 91 Base
+      const bolt91Base = pickupLocations.find(loc => 
+        loc.name.toLowerCase().includes('bolt 91 base') || 
+        loc.name.toLowerCase().includes('bolt91 base')
+      );
+      
+      if (bolt91Base) {
+        setSelectedPickupLocation(bolt91Base);
+      } else if (pickupLocations.length > 0) {
+        setSelectedPickupLocation(pickupLocations[0]);
+      }
+    }
+  }, [partnerData, pickupLocations]);
 
   // Load cycles, accessories, and partners data
   useEffect(() => {
@@ -189,6 +237,16 @@ const Book = () => {
 
         if (locationsError) throw locationsError;
         setPickupLocations(locationsData || []);
+
+        // Auto-select Bolt 91 Base if booking directly or no partner
+        const bolt91Base = (locationsData || []).find(loc => 
+          loc.name.toLowerCase().includes('bolt 91 base') || 
+          loc.name.toLowerCase().includes('bolt91 base')
+        );
+        
+        if (bolt91Base && !partnerId) {
+          setSelectedPickupLocation(bolt91Base);
+        }
 
       } catch (error: any) {
         console.error('Error loading data:', error);
@@ -419,6 +477,7 @@ const Book = () => {
         returnTime: selectedTime,
         partnerId,
         pickupLocationId: selectedPickupLocation?.id,
+        numberOfPeople,
         accessories: accessories.filter(acc => acc.days > 0).map(acc => ({
           id: acc.id,
           name: acc.name,
@@ -434,7 +493,7 @@ const Book = () => {
         cycleId: selectedCycle.id,
         cycleName: selectedCycle.name,
         cycleModel: selectedCycle.model,
-        basePrice: getBasePrice(),
+        basePrice: getBasePrice() * numberOfPeople,
         accessoriesTotal,
         securityDeposit: getSecurityDeposit(),
         livePhotoUrl,
@@ -518,7 +577,7 @@ const Book = () => {
                       Choose when you'd like to start your Kashi adventure
                     </p>
                     
-                    <div className="grid md:grid-cols-2 gap-6">
+                     <div className="grid md:grid-cols-2 gap-6">
                       {/* Date Picker */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Pickup Date</label>
@@ -566,6 +625,22 @@ const Book = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      {/* Number of People */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Number of People</label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={numberOfPeople}
+                          onChange={(e) => setNumberOfPeople(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                          placeholder="How many people?"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {numberOfPeople} cycle{numberOfPeople > 1 ? 's' : ''} will be booked
+                        </p>
                       </div>
                     </div>
 
@@ -811,67 +886,58 @@ const Book = () => {
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <MapPin className="w-5 h-5 text-primary" />
-                      Select Pickup Location
+                      Pickup Location
                     </h3>
-                    <p className="text-muted-foreground mb-4">
-                      Choose where you'd like to pick up your cycle
-                    </p>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {pickupLocations.map((location) => (
-                        <Card
-                          key={location.id}
-                          onClick={() => setSelectedPickupLocation(location)}
-                          className={cn(
-                            "cursor-pointer hover:shadow-warm transition-all",
-                            selectedPickupLocation?.id === location.id
-                              ? "border-primary border-2 shadow-warm bg-primary/5"
-                              : "hover:border-primary"
-                          )}
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-3">
-                              <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                              <div className="flex-1">
-                                <h4 className="font-semibold mb-2">{location.name}</h4>
+                    
+                    {selectedPickupLocation && (
+                      <Card className="border-primary border-2 bg-primary/5">
+                        <CardContent className="p-4">
+                          <div className="flex items-start gap-3">
+                            <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-semibold">{selectedPickupLocation.name}</h4>
+                                <Badge variant="secondary" className="text-xs">Default Location</Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-1">
+                                {selectedPickupLocation.address}
+                              </p>
+                              {selectedPickupLocation.landmark && (
                                 <p className="text-sm text-muted-foreground mb-1">
-                                  {location.address}
+                                  Near {selectedPickupLocation.landmark}
                                 </p>
-                                {location.landmark && (
-                                  <p className="text-sm text-muted-foreground mb-1">
-                                    Near {location.landmark}
-                                  </p>
-                                )}
-                                <p className="text-sm text-muted-foreground mb-2">
-                                  {location.city}, {location.state} - {location.pincode}
-                                </p>
-                                <div className="flex items-center gap-4 mt-2">
+                              )}
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {selectedPickupLocation.city}, {selectedPickupLocation.state} - {selectedPickupLocation.pincode}
+                              </p>
+                              <div className="flex items-center gap-4 mt-2">
+                                <a
+                                  href={`tel:${selectedPickupLocation.phone_number}`}
+                                  className="text-xs text-primary hover:underline flex items-center gap-1"
+                                >
+                                  <Phone className="w-3 h-3" />
+                                  {selectedPickupLocation.phone_number}
+                                </a>
+                                {selectedPickupLocation.google_maps_link && (
                                   <a
-                                    href={`tel:${location.phone_number}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                                    href={selectedPickupLocation.google_maps_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline"
                                   >
-                                    <Phone className="w-3 h-3" />
-                                    {location.phone_number}
+                                    View on Map
                                   </a>
-                                  {location.google_maps_link && (
-                                    <a
-                                      href={location.google_maps_link}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="text-xs text-primary hover:underline"
-                                    >
-                                      View on Map
-                                    </a>
-                                  )}
-                                </div>
+                                )}
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    
+                    <p className="text-xs text-muted-foreground mt-3">
+                      * Pickup location is set based on your booking method
+                    </p>
                   </div>
 
                   <div className="flex gap-4">
@@ -891,6 +957,20 @@ const Book = () => {
 
               {step === (cyclesData.length > 1 ? 6 : 5) && (
                 <div className="space-y-6">
+                  {/* Partner Information */}
+                  {partnerData && (
+                    <Card className="border-primary/50 bg-primary/5">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <MapPin className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-semibold">Booking through:</span>
+                        </div>
+                        <p className="text-lg font-bold text-primary">{partnerData.name}</p>
+                        <p className="text-xs text-muted-foreground">{partnerData.address}, {partnerData.city}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
                   {/* Logged in indicator */}
                   {user && (
                     <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
@@ -939,24 +1019,15 @@ const Book = () => {
                             </div>
                           </div>
 
-                          {/* Phone Input - Conditional based on authentication */}
-                          {!user ? (
-                            <PhoneInput
-                              value={phoneNumber}
-                              onChange={setPhoneNumber}
-                              onVerified={setPhoneVerified}
-                              verified={phoneVerified}
-                            />
-                          ) : (
+                          {/* Phone Input - Read only for authenticated users */}
+                          {user ? (
                             <div className="space-y-2">
                               <Label htmlFor="phoneVerified">Phone Number</Label>
                               <Input
                                 id="phoneVerified"
                                 type="tel"
                                 value={phoneNumber}
-                                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                                maxLength={10}
-                                placeholder="10-digit mobile number"
+                                readOnly
                                 className="bg-muted"
                               />
                               <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-2">
@@ -964,6 +1035,13 @@ const Book = () => {
                                 Verified account
                               </p>
                             </div>
+                          ) : (
+                            <PhoneInput
+                              value={phoneNumber}
+                              onChange={setPhoneNumber}
+                              onVerified={setPhoneVerified}
+                              verified={phoneVerified}
+                            />
                           )}
                           
                           <div className="space-y-2">
@@ -1163,8 +1241,8 @@ const Book = () => {
                 {selectedDuration && (
                   <div className="space-y-2 animate-fade-in">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cycle Rental</span>
-                      <span className="font-semibold">₹{getBasePrice()}</span>
+                      <span className="text-muted-foreground">Cycle Rental × {numberOfPeople}</span>
+                      <span className="font-semibold">₹{getBasePrice() * numberOfPeople}</span>
                     </div>
                     
                     {accessoriesTotal > 0 && (
@@ -1176,7 +1254,7 @@ const Book = () => {
 
                     <div className="flex justify-between pt-2 border-t">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-semibold">₹{getBasePrice() + accessoriesTotal}</span>
+                      <span className="font-semibold">₹{getBasePrice() * numberOfPeople + accessoriesTotal}</span>
                     </div>
 
                     <div className="flex justify-between text-primary font-bold">
@@ -1187,7 +1265,7 @@ const Book = () => {
                     <div className="pt-3 border-t">
                       <div className="flex justify-between text-lg font-bold">
                         <span>Total Amount</span>
-                        <span className="text-primary">₹{getBasePrice() + accessoriesTotal + getSecurityDeposit()}</span>
+                        <span className="text-primary">₹{getBasePrice() * numberOfPeople + accessoriesTotal + getSecurityDeposit()}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         *Security deposit is fully refundable

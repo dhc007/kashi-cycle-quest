@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 import { CancellationDialog } from "@/components/CancellationDialog";
 import { Navbar } from "@/components/Navbar";
 
@@ -37,7 +37,14 @@ interface Booking {
     name: string;
     address: string;
     city: string;
-  };
+    google_maps_link: string | null;
+  } | null;
+  pickup_locations: {
+    name: string;
+    address: string;
+    city: string;
+    google_maps_link: string | null;
+  } | null;
   booking_accessories?: Array<{
     quantity: number;
     days: number;
@@ -75,7 +82,8 @@ export default function ManageBooking() {
         .select(`
           *,
           cycles(name, model),
-          partners(name, address, city)
+          partners(name, address, city, google_maps_link),
+          pickup_locations(name, address, city, google_maps_link)
         `)
         .eq("booking_id", bookingId.toUpperCase())
         .single();
@@ -259,8 +267,19 @@ export default function ManageBooking() {
 
               <div>
                 <p className="text-sm text-muted-foreground">Pickup Location</p>
-                <p className="font-medium">{booking.partners.name}</p>
-                <p className="text-sm">{booking.partners.address}, {booking.partners.city}</p>
+                <p className="font-medium">{booking.partners?.name || booking.pickup_locations?.name || 'N/A'}</p>
+                <p className="text-sm">{booking.partners?.address || booking.pickup_locations?.address || 'N/A'}, {booking.partners?.city || booking.pickup_locations?.city || ''}</p>
+                {(booking.partners?.google_maps_link || booking.pickup_locations?.google_maps_link) && (
+                  <a
+                    href={booking.partners?.google_maps_link || booking.pickup_locations?.google_maps_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline flex items-center gap-1 mt-1"
+                  >
+                    <MapPin className="w-3 h-3" />
+                    View on Google Maps
+                  </a>
+                )}
               </div>
 
               {booking.booking_accessories && booking.booking_accessories.length > 0 && (
