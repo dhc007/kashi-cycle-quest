@@ -20,6 +20,7 @@ import Users from "./pages/admin/Users";
 import Cancellations from "./pages/admin/Cancellations";
 import CycleReturn from "./pages/admin/CycleReturn";
 import Maintenance from "./pages/admin/Maintenance";
+import Coupons from "./pages/admin/Coupons";
 import NotFound from "./pages/NotFound";
 import Signup from "./pages/Signup";
 import BookingHistory from "./pages/BookingHistory";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="users" element={<Users />} />
             <Route path="cycle-return" element={<CycleReturn />} />
             <Route path="maintenance" element={<Maintenance />} />
+            <Route path="coupons" element={<Coupons />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

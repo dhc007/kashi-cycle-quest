@@ -162,6 +162,8 @@ export type Database = {
           cancellation_status: string | null
           cancelled_at: string | null
           cancelled_by: string | null
+          coupon_code: string | null
+          coupon_id: string | null
           created_at: string
           cycle_condition: string | null
           cycle_id: string
@@ -170,6 +172,7 @@ export type Database = {
           cycle_returned_at: string | null
           deposit_refund_amount: number | null
           deposit_returned_at: string | null
+          discount_amount: number | null
           duration_type: string
           extension_additional_cost: number | null
           extension_approved_at: string | null
@@ -209,6 +212,8 @@ export type Database = {
           cancellation_status?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           cycle_condition?: string | null
           cycle_id: string
@@ -217,6 +222,7 @@ export type Database = {
           cycle_returned_at?: string | null
           deposit_refund_amount?: number | null
           deposit_returned_at?: string | null
+          discount_amount?: number | null
           duration_type: string
           extension_additional_cost?: number | null
           extension_approved_at?: string | null
@@ -256,6 +262,8 @@ export type Database = {
           cancellation_status?: string | null
           cancelled_at?: string | null
           cancelled_by?: string | null
+          coupon_code?: string | null
+          coupon_id?: string | null
           created_at?: string
           cycle_condition?: string | null
           cycle_id?: string
@@ -264,6 +272,7 @@ export type Database = {
           cycle_returned_at?: string | null
           deposit_refund_amount?: number | null
           deposit_returned_at?: string | null
+          discount_amount?: number | null
           duration_type?: string
           extension_additional_cost?: number | null
           extension_approved_at?: string | null
@@ -295,6 +304,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "bookings_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_cycle_id_fkey"
             columns: ["cycle_id"]
             isOneToOne: false
@@ -323,6 +339,99 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      coupon_usage: {
+        Row: {
+          booking_id: string
+          coupon_id: string
+          discount_amount: number
+          id: string
+          used_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_id: string
+          coupon_id: string
+          discount_amount: number
+          id?: string
+          used_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_id?: string
+          coupon_id?: string
+          discount_amount?: number
+          id?: string
+          used_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_usage_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usage_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupons: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_order_amount: number | null
+          updated_at: string
+          used_count: number
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_amount?: number | null
+          updated_at?: string
+          used_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_order_amount?: number | null
+          updated_at?: string
+          used_count?: number
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: []
       }
       cycle_maintenance: {
         Row: {
