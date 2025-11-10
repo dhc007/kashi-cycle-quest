@@ -22,21 +22,29 @@ serve(async (req) => {
       }
     );
 
+    // Service role client for admin operations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
+    // Read request body once
+    const bookingData = await req.json();
+
     // Try to get authenticated user, but allow anonymous bookings
     const { data: { user } } = await supabaseClient.auth.getUser();
     
     let userId = user?.id;
     
-    // If no authenticated user, create anonymous user with phone number
+    // If no authenticated user, check if user exists by phone or create one
     if (!userId) {
-      const bookingData = await req.json();
       const phoneNumber = bookingData.profile?.phone_number;
       
       if (!phoneNumber) {
         throw new Error('Phone number required for booking');
       }
 
-      // Check if user already exists with this phone
+      // Check if user already exists with this phone in profiles
       const { data: existingProfile } = await supabaseClient
         .from('profiles')
         .select('user_id')
@@ -48,30 +56,39 @@ serve(async (req) => {
         userId = existingProfile.user_id;
         console.log('Reusing existing user for phone:', phoneNumber);
       } else {
-        // Create new anonymous user with phone as email
+        // Check if auth user exists with this email
         const anonymousEmail = `${phoneNumber}@bolt91.app`;
-        const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({
-          email: anonymousEmail,
-          password: crypto.randomUUID(), // Secure random password
-          options: {
-            data: {
+        
+        // Try to get user by email using admin client
+        const { data: { users: existingUsers } } = await supabaseAdmin.auth.admin.listUsers();
+        const authUser = existingUsers?.find(u => u.email === anonymousEmail);
+        
+        if (authUser) {
+          // Auth user exists but no profile - use existing auth user
+          userId = authUser.id;
+          console.log('Found existing auth user without profile:', anonymousEmail);
+        } else {
+          // Create new anonymous user
+          const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
+            email: anonymousEmail,
+            password: crypto.randomUUID(),
+            email_confirm: true,
+            user_metadata: {
               phone_number: phoneNumber,
               is_anonymous: true
             }
-          }
-        });
+          });
 
-        if (signUpError) {
-          console.error('Failed to create anonymous user:', signUpError);
-          throw new Error('Unable to create booking user: ' + signUpError.message);
+          if (signUpError) {
+            console.error('Failed to create anonymous user:', signUpError);
+            throw new Error('Unable to create booking user: ' + signUpError.message);
+          }
+          
+          userId = signUpData.user?.id;
+          console.log('Created new anonymous user:', anonymousEmail);
         }
-        
-        userId = signUpData.user?.id;
-        console.log('Created new anonymous user');
       }
     }
-
-    const bookingData = userId ? await req.json() : JSON.parse(await req.text());
     
     // Generate booking ID
     const bookingId = `BLT${Date.now().toString().slice(-8)}`;
@@ -113,7 +130,7 @@ serve(async (req) => {
       .from('profiles')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
 
     if (!existingProfile) {
       const { error: profileError } = await supabaseClient
