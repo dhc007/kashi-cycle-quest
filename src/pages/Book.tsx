@@ -621,10 +621,7 @@ const Book = () => {
                               />
                             )}
                             <h4 className="font-semibold text-lg mb-1">{cycle.name}</h4>
-                            <p className="text-sm text-muted-foreground mb-3">{cycle.model}</p>
-                            <div className="flex justify-between items-center text-sm">
-                              <span className="font-semibold text-green-600">{cycle.available_quantity} Available</span>
-                            </div>
+                            <p className="text-sm text-muted-foreground">{cycle.model}</p>
                           </CardContent>
                         </Card>
                       ))}
