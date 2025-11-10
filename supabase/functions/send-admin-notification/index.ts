@@ -54,14 +54,26 @@ serve(async (req) => {
       throw profileError;
     }
 
-    const subtotal = Number(booking.cycle_rental_cost) + Number(booking.accessories_cost || 0);
-    const totalPaid = Number(subtotal) + Number(booking.gst);
     const customerName = `${profile.first_name} ${profile.last_name}`;
     
     const pickupDate = new Date(booking.pickup_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
     const returnDate = new Date(booking.return_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
     
     const locationName = booking.pickup_locations?.name || 'Not specified';
+
+    // Calculate rental days
+    const rentalDays = Math.ceil((new Date(booking.return_date).getTime() - new Date(booking.pickup_date).getTime()) / (1000 * 60 * 60 * 24)) || 1;
+
+    // Build accessories breakdown
+    let accessoriesText = '';
+    if (booking.booking_accessories && booking.booking_accessories.length > 0) {
+      accessoriesText = booking.booking_accessories.map((acc: any) => 
+        `${acc.accessories.name} × ${acc.days} day${acc.days > 1 ? 's' : ''} - ₹${acc.total_cost}`
+      ).join('\n');
+    }
+
+    const subtotal = Number(booking.cycle_rental_cost) + Number(booking.accessories_cost || 0);
+    const totalPaid = Number(booking.total_amount);
 
     const message = `🔔 NEW BOOKING - Bolt91
 
@@ -74,9 +86,12 @@ serve(async (req) => {
 📅 Pickup: ${pickupDate} at ${booking.pickup_time}
 📅 Return: ${returnDate} at ${booking.return_time}
 
-💰 Total: ₹${totalPaid}
-💵 Rental: ₹${booking.cycle_rental_cost}
-🔒 Deposit: ₹${booking.security_deposit}
+💰 Payment Breakdown:
+Cycle × ${rentalDays} day${rentalDays > 1 ? 's' : ''} - ₹${booking.cycle_rental_cost}${accessoriesText ? '\n' + accessoriesText : ''}
+GST (18%) - ₹${booking.gst}
+Subtotal - ₹${subtotal + Number(booking.gst)}
+🔒 Security Deposit - ₹${booking.security_deposit}
+Total Paid - ₹${totalPaid}
 
 View details in admin panel.`;
 

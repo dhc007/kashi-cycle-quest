@@ -55,8 +55,6 @@ serve(async (req) => {
     }
 
     // Format message
-    const subtotal = Number(booking.cycle_rental_cost) + Number(booking.accessories_cost || 0);
-    const totalPaid = Number(subtotal) + Number(booking.gst);
     const customerName = `${profile.first_name} ${profile.last_name}`;
     
     const pickupDate = new Date(booking.pickup_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -64,6 +62,21 @@ serve(async (req) => {
     
     const locationName = booking.pickup_locations?.name || 'Pickup Location';
     const locationAddress = booking.pickup_locations?.address || '';
+
+    // Calculate rental days
+    const rentalDays = Math.ceil((new Date(booking.return_date).getTime() - new Date(booking.pickup_date).getTime()) / (1000 * 60 * 60 * 24)) || 1;
+
+    // Build payment breakdown
+    let breakdownText = `Cycle × ${rentalDays} day${rentalDays > 1 ? 's' : ''} - ₹${booking.cycle_rental_cost}`;
+    
+    if (booking.booking_accessories && booking.booking_accessories.length > 0) {
+      booking.booking_accessories.forEach((acc: any) => {
+        breakdownText += `\n${acc.accessories.name} × ${acc.days} day${acc.days > 1 ? 's' : ''} - ₹${acc.total_cost}`;
+      });
+    }
+
+    const subtotal = Number(booking.cycle_rental_cost) + Number(booking.accessories_cost || 0);
+    const totalWithGst = Number(subtotal) + Number(booking.gst);
 
     // Create WhatsApp link with pre-filled message
     const whatsappMessage = `Hi Bolt91,
@@ -80,7 +93,33 @@ I need assistance with my booking.`;
 
     const encodedMessage = encodeURIComponent(whatsappMessage);
     const customerSupportPhone = Deno.env.get('CUSTOMER_SUPPORT_PHONE') || '919284613155';
-    const whatsappLink = `https://wa.me/${customerSupportPhone}?text=${encodedMessage}`;
+    const fullWhatsappLink = `https://wa.me/${customerSupportPhone}?text=${encodedMessage}`;
+
+    // Shorten URL using spoo.me
+    let whatsappLink = fullWhatsappLink;
+    try {
+      const shortResponse = await fetch('https://spoo.me/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
+        },
+        body: new URLSearchParams({
+          url: fullWhatsappLink,
+          slug: 'bolt91-wa-' + booking.booking_id.substring(0, 8)
+        })
+      });
+
+      if (shortResponse.ok) {
+        const shortData = await shortResponse.json();
+        whatsappLink = shortData.short_url || fullWhatsappLink;
+        console.log('Shortened URL:', whatsappLink);
+      } else {
+        console.log('URL shortening failed, using full URL');
+      }
+    } catch (error) {
+      console.log('URL shortening error:', error, 'using full URL');
+    }
 
     const message = `🎉 Congrats on booking Bolt91 cycle for your Kashi trip!
 
@@ -90,11 +129,14 @@ I need assistance with my booking.`;
 📅 Pickup: ${pickupDate} at ${booking.pickup_time}
 📅 Return: ${returnDate} at ${booking.return_time}
 
-💰 Total Paid: ₹${totalPaid}
-🔒 Deposit: ₹${booking.security_deposit} (Refundable)
+💰 Payment Breakdown:
+${breakdownText}
+GST (18%) - ₹${booking.gst}
+Subtotal - ₹${totalWithGst}
+🔒 Deposit - ₹${booking.security_deposit}
+Total Paid - ₹${booking.total_amount}
 
-Need help? Connect with us:
-${whatsappLink}
+Need help? ${whatsappLink}
 
 Happy cycling! 🚴‍♂️`;
 
