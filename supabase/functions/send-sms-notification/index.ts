@@ -25,6 +25,7 @@ serve(async (req) => {
       .select(`
         *,
         cycles!inner(name, model),
+        pickup_locations(name, address),
         booking_accessories(
           quantity,
           days,
@@ -54,29 +55,47 @@ serve(async (req) => {
     }
 
     // Format message
-    const getDurationDays = (durationType: string) => {
-      if (durationType.includes('Day')) return 1;
-      if (durationType.includes('Week')) return 7;
-      if (durationType.includes('Month')) return 30;
-      return 1;
-    };
-
-    const durationDays = getDurationDays(booking.duration_type);
     const subtotal = Number(booking.cycle_rental_cost) + Number(booking.accessories_cost || 0);
     const totalPaid = Number(subtotal) + Number(booking.gst);
+    const customerName = `${profile.first_name} ${profile.last_name}`;
+    
+    const pickupDate = new Date(booking.pickup_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const returnDate = new Date(booking.return_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    
+    const locationName = booking.pickup_locations?.name || 'Pickup Location';
+    const locationAddress = booking.pickup_locations?.address || '';
 
-    const message = `Thank you for booking with Bolt91!
+    // Create WhatsApp link with pre-filled message
+    const whatsappMessage = `Hi Bolt91,
+
+My booking details:
+Booking ID: ${booking.booking_id}
+Name: ${customerName}
+Phone: ${profile.phone_number}
+Cycle: ${booking.cycles.name} (${booking.cycles.model})
+Pickup: ${pickupDate} at ${booking.pickup_time}
+Location: ${locationName}
+
+I need assistance with my booking.`;
+
+    const encodedMessage = encodeURIComponent(whatsappMessage);
+    const customerSupportPhone = Deno.env.get('CUSTOMER_SUPPORT_PHONE') || '919284613155';
+    const whatsappLink = `https://wa.me/${customerSupportPhone}?text=${encodedMessage}`;
+
+    const message = `🎉 Congrats on booking Bolt91 cycle for your Kashi trip!
 
 📋 Booking ID: ${booking.booking_id}
-
-🚴 ${booking.cycles.name} (${booking.cycles.model})
-📅 Pickup: ${new Date(booking.pickup_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at ${booking.pickup_time}
-📅 Return: ${new Date(booking.return_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at ${booking.return_time}
+🚴 Cycle: ${booking.cycles.name} (${booking.cycles.model})
+📍 Pickup: ${locationName}${locationAddress ? ', ' + locationAddress : ''}
+📅 Pickup: ${pickupDate} at ${booking.pickup_time}
+📅 Return: ${returnDate} at ${booking.return_time}
 
 💰 Total Paid: ₹${totalPaid}
 🔒 Deposit: ₹${booking.security_deposit} (Refundable)
 
-Need help? Contact us!
+Need help? Connect with us:
+${whatsappLink}
+
 Happy cycling! 🚴‍♂️`;
 
     // Send SMS via Twilio

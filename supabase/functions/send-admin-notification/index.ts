@@ -25,6 +25,7 @@ serve(async (req) => {
       .select(`
         *,
         cycles!inner(name, model),
+        pickup_locations(name, address),
         booking_accessories(
           quantity,
           days,
@@ -56,15 +57,24 @@ serve(async (req) => {
     const subtotal = Number(booking.cycle_rental_cost) + Number(booking.accessories_cost || 0);
     const totalPaid = Number(subtotal) + Number(booking.gst);
     const customerName = `${profile.first_name} ${profile.last_name}`;
+    
+    const pickupDate = new Date(booking.pickup_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    const returnDate = new Date(booking.return_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    
+    const locationName = booking.pickup_locations?.name || 'Not specified';
 
     const message = `🔔 NEW BOOKING - Bolt91
 
 📋 ID: ${booking.booking_id}
 👤 Customer: ${customerName}
 📱 Phone: ${profile.phone_number}
-📅 Pickup: ${new Date(booking.pickup_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+🚴 Cycle: ${booking.cycles.name} (${booking.cycles.model})
 
-💰 Amount: ₹${totalPaid}
+📍 Location: ${locationName}
+📅 Pickup: ${pickupDate} at ${booking.pickup_time}
+📅 Return: ${returnDate} at ${booking.return_time}
+
+💰 Total: ₹${totalPaid}
 💵 Rental: ₹${booking.cycle_rental_cost}
 🔒 Deposit: ₹${booking.security_deposit}
 
