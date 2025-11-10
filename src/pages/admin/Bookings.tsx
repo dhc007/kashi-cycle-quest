@@ -26,6 +26,12 @@ interface Booking {
   booking_status: string;
   payment_status: string;
   total_amount: number;
+  cycle_rental_cost: number;
+  accessories_cost: number;
+  insurance_cost: number;
+  gst: number;
+  security_deposit: number;
+  has_insurance: boolean;
   created_at: string;
   cancellation_status: string;
   cancellation_reason: string | null;
@@ -37,6 +43,8 @@ interface Booking {
     last_name: string;
     phone_number: string;
     email: string | null;
+    emergency_contact_name: string | null;
+    emergency_contact_phone: string | null;
   };
   cycles?: {
     name: string;
@@ -46,6 +54,19 @@ interface Booking {
     name: string;
     city: string;
   };
+  pickup_locations?: {
+    name: string;
+    address: string;
+  };
+  booking_accessories?: Array<{
+    quantity: number;
+    days: number;
+    price_per_day: number;
+    total_cost: number;
+    accessories: {
+      name: string;
+    };
+  }>;
 }
 
 const BookingsContent = () => {
@@ -56,6 +77,8 @@ const BookingsContent = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<Booking['profiles'] | null>(null);
   const { toast } = useToast();
   const { canEdit } = useUserRoles();
 
@@ -74,7 +97,8 @@ const BookingsContent = () => {
         .select(`
           *,
           cycles (name, model),
-          partners (name, city)
+          partners (name, city),
+          pickup_locations (name, address)
         `)
         .order('created_at', { ascending: false });
 
@@ -85,7 +109,7 @@ const BookingsContent = () => {
         (data || []).map(async (booking) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('first_name, last_name, phone_number, email')
+            .select('first_name, last_name, phone_number, email, emergency_contact_name, emergency_contact_phone')
             .eq('user_id', booking.user_id)
             .single();
 
@@ -96,7 +120,7 @@ const BookingsContent = () => {
           
           return {
             ...booking,
-            profiles: profile || { first_name: 'N/A', last_name: '', phone_number: 'N/A', email: null },
+            profiles: profile || { first_name: 'N/A', last_name: '', phone_number: 'N/A', email: null, emergency_contact_name: null, emergency_contact_phone: null },
             booking_accessories: accessories || []
           };
         })
@@ -196,6 +220,19 @@ const BookingsContent = () => {
   const viewDetails = (booking: Booking) => {
     setSelectedBooking(booking);
     setDetailsOpen(true);
+  };
+
+  const viewProfile = (profile: Booking['profiles']) => {
+    setSelectedProfile(profile);
+    setProfileDialogOpen(true);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Booking ID copied to clipboard",
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -497,68 +534,161 @@ const BookingsContent = () => {
       </Card>
 
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Booking Details</DialogTitle>
           </DialogHeader>
           {selectedBooking && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6">
+              {/* Booking ID and Status */}
+              <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Booking ID</p>
-                  <p className="font-mono">{selectedBooking.booking_id}</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Booking ID</p>
+                  <button 
+                    onClick={() => copyToClipboard(selectedBooking.booking_id)}
+                    className="font-mono text-lg font-semibold hover:text-primary transition-colors cursor-pointer"
+                  >
+                    {selectedBooking.booking_id}
+                  </button>
+                  <p className="text-xs text-muted-foreground">Click to copy</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Status</p>
-                  <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(selectedBooking.booking_status)}`}>
-                    {selectedBooking.booking_status}
-                  </span>
+                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(selectedBooking.booking_status)}`}>
+                  {selectedBooking.booking_status}
+                </span>
+              </div>
+
+              {/* Customer Information */}
+              <div className="border rounded-lg p-4 bg-accent/50">
+                <h3 className="font-semibold mb-3 flex items-center justify-between">
+                  <span>Customer Information</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => viewProfile(selectedBooking.profiles)}
+                  >
+                    View Full Profile →
+                  </Button>
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">
+                      {selectedBooking.profiles?.first_name} {selectedBooking.profiles?.last_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Phone</p>
+                    <p className="font-medium">{selectedBooking.profiles?.phone_number}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium">{selectedBooking.profiles?.email || 'N/A'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Customer Name</p>
-                  <p>
-                    {selectedBooking.profiles?.first_name} {selectedBooking.profiles?.last_name}
-                  </p>
+              </div>
+
+              {/* Booking Details */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold mb-3">Booking Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Cycle</p>
+                    <p className="font-medium">{selectedBooking.cycles?.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedBooking.cycles?.model}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Duration</p>
+                    <p className="font-medium">{selectedBooking.duration_type}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pickup Location</p>
+                    <p className="font-medium">{selectedBooking.pickup_locations?.name || 'N/A'}</p>
+                    {selectedBooking.pickup_locations?.address && (
+                      <p className="text-xs text-muted-foreground">{selectedBooking.pickup_locations.address}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Partner</p>
+                    <p className="font-medium">{selectedBooking.partners?.name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedBooking.partners?.city}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Pickup Date & Time</p>
+                    <p className="font-medium">{format(new Date(selectedBooking.pickup_date), 'PPP')}</p>
+                    <p className="text-sm">{selectedBooking.pickup_time}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Return Date & Time</p>
+                    <p className="font-medium">{format(new Date(selectedBooking.return_date), 'PPP')}</p>
+                    <p className="text-sm">{selectedBooking.return_time || '10:00 AM'}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Phone</p>
-                  <p>{selectedBooking.profiles?.phone_number}</p>
+              </div>
+
+              {/* Accessories */}
+              {selectedBooking.booking_accessories && selectedBooking.booking_accessories.length > 0 && (
+                <div className="border rounded-lg p-4">
+                  <h3 className="font-semibold mb-3">Accessories</h3>
+                  <div className="space-y-2">
+                    {selectedBooking.booking_accessories.map((accessory, index) => (
+                      <div key={index} className="flex justify-between items-center py-2 border-b last:border-0">
+                        <div>
+                          <p className="font-medium">{accessory.accessories.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Qty: {accessory.quantity} × {accessory.days} days @ ₹{accessory.price_per_day}/day
+                          </p>
+                        </div>
+                        <p className="font-semibold">₹{accessory.total_cost}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p>{selectedBooking.profiles?.email || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Duration</p>
-                  <p>{selectedBooking.duration_type}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Pickup Date</p>
-                  <p>{format(new Date(selectedBooking.pickup_date), 'PPP')} at {selectedBooking.pickup_time}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Return Date</p>
-                  <p>{format(new Date(selectedBooking.return_date), 'PPP')} at {selectedBooking.return_time || '10:00 AM'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Cycle</p>
-                  <p>{selectedBooking.cycles?.name} - {selectedBooking.cycles?.model}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Partner</p>
-                  <p>{selectedBooking.partners?.name}, {selectedBooking.partners?.city}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Amount</p>
-                  <p className="text-lg font-bold">₹{selectedBooking.total_amount}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Payment Status</p>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    selectedBooking.payment_status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {selectedBooking.payment_status}
-                  </span>
+              )}
+
+              {/* Payment Breakdown */}
+              <div className="border rounded-lg p-4 bg-primary/5">
+                <h3 className="font-semibold mb-3">Payment Breakdown</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Cycle Rental</span>
+                    <span className="font-medium">₹{selectedBooking.cycle_rental_cost}</span>
+                  </div>
+                  {selectedBooking.accessories_cost > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Accessories</span>
+                      <span className="font-medium">₹{selectedBooking.accessories_cost}</span>
+                    </div>
+                  )}
+                  {selectedBooking.has_insurance && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Insurance</span>
+                      <span className="font-medium">₹{selectedBooking.insurance_cost}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">GST</span>
+                    <span className="font-medium">₹{selectedBooking.gst}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t">
+                    <span className="font-semibold">Subtotal</span>
+                    <span className="font-semibold">₹{(selectedBooking.cycle_rental_cost + selectedBooking.accessories_cost + selectedBooking.insurance_cost + selectedBooking.gst).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Security Deposit (Refundable)</span>
+                    <span className="font-medium text-green-600">₹{selectedBooking.security_deposit}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t-2 border-primary">
+                    <span className="text-lg font-bold">Total Amount</span>
+                    <span className="text-lg font-bold">₹{selectedBooking.total_amount}</span>
+                  </div>
+                  <div className="flex justify-between pt-1">
+                    <span className="text-sm text-muted-foreground">Payment Status</span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      selectedBooking.payment_status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedBooking.payment_status}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -609,6 +739,52 @@ const BookingsContent = () => {
                     )}
                   </div>
                 </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* User Profile Dialog */}
+      <Dialog open={profileDialogOpen} onOpenChange={setProfileDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Customer Profile</DialogTitle>
+          </DialogHeader>
+          {selectedProfile && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Full Name</p>
+                <p className="font-semibold text-lg">
+                  {selectedProfile.first_name} {selectedProfile.last_name}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Phone Number</p>
+                <p className="font-medium">{selectedProfile.phone_number}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Email</p>
+                <p className="font-medium">{selectedProfile.email || 'Not provided'}</p>
+              </div>
+              {selectedProfile.emergency_contact_name && (
+                <>
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-3">Emergency Contact</h4>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Name</p>
+                        <p className="font-medium">{selectedProfile.emergency_contact_name}</p>
+                      </div>
+                      {selectedProfile.emergency_contact_phone && (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Phone</p>
+                          <p className="font-medium">{selectedProfile.emergency_contact_phone}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           )}
