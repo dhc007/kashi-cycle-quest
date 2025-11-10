@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,10 +73,14 @@ interface Booking {
 }
 
 const BookingsContent = () => {
+  const [searchParams] = useSearchParams();
+  const partnerFilter = searchParams.get("partner");
+  const searchQuery = searchParams.get("search");
+  
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchQuery || "");
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -86,23 +91,29 @@ const BookingsContent = () => {
 
   useEffect(() => {
     loadBookings();
-  }, []);
+  }, [partnerFilter]);
 
   useEffect(() => {
     filterBookings();
-  }, [searchTerm, statusFilter, bookings]);
+  }, [searchTerm, statusFilter, bookings, partnerFilter]);
 
   const loadBookings = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('bookings')
         .select(`
           *,
           cycles (name, model),
           partners (name, city),
           pickup_locations (name, address)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+      
+      // Filter by partner if specified
+      if (partnerFilter) {
+        query = query.eq('partner_id', partnerFilter);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
 

@@ -373,6 +373,21 @@ const Book = () => {
   const updateAccessoryQuantity = (id: string, change: number) => {
     setAccessories(prev => prev.map(acc => {
       if (acc.id === id) {
+        // Check if this accessory is free with any selected cycle
+        const isFreeAccessory = selectedCycles.some(cycle => 
+          cycle?.free_accessories?.includes(id)
+        );
+        
+        // Don't allow adding free accessories
+        if (isFreeAccessory && change > 0) {
+          toast({
+            title: "Already Included",
+            description: "This accessory is already included for free with your selected cycle.",
+            variant: "default",
+          });
+          return acc;
+        }
+        
         const newQuantity = Math.max(0, Math.min(numberOfPeople, acc.quantity + change));
         return { ...acc, quantity: newQuantity, days: newQuantity > 0 ? (acc.days || 1) : 0 };
       }
@@ -742,16 +757,21 @@ const Book = () => {
                         <div className="grid md:grid-cols-2 gap-4">
                           {cyclesData.map((cycle) => {
                             const isSelected = selectedCycles[personIndex]?.id === cycle.id;
+                            const freeAccessories = cycle.free_accessories || [];
+                            const specifications = cycle.specifications || {};
+                            
                             return (
                               <Card
                                 key={cycle.id}
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   const newSelectedCycles = [...selectedCycles];
                                   newSelectedCycles[personIndex] = cycle;
                                   setSelectedCycles(newSelectedCycles);
                                 }}
                                 className={cn(
-                                  "cursor-pointer hover:shadow-warm transition-all",
+                                  "cursor-pointer hover:shadow-warm transition-all select-none",
                                   isSelected
                                     ? "border-primary border-2 shadow-warm bg-primary/5"
                                     : "hover:border-primary"
@@ -762,11 +782,42 @@ const Book = () => {
                                     <img
                                       src={cycle.image_url}
                                       alt={cycle.name}
-                                      className="w-full h-40 object-cover rounded-lg mb-3"
+                                      className="w-full h-40 object-cover rounded-lg mb-3 pointer-events-none"
                                     />
                                   )}
                                   <h4 className="font-semibold text-lg mb-1">{cycle.name}</h4>
-                                  <p className="text-sm text-muted-foreground">{cycle.model}</p>
+                                  <p className="text-sm text-muted-foreground mb-3">{cycle.model}</p>
+                                  
+                                  <div className="grid grid-cols-2 gap-3 text-xs">
+                                    {/* Inclusions */}
+                                    <div className="space-y-1">
+                                      <p className="font-semibold text-primary">Inclusions:</p>
+                                      {freeAccessories.length > 0 ? (
+                                        <ul className="space-y-0.5 text-muted-foreground">
+                                          {freeAccessories.map((acc: string, i: number) => {
+                                            const accessory = accessories.find(a => a.id === acc);
+                                            return accessory ? <li key={i}>• {accessory.name}</li> : null;
+                                          })}
+                                        </ul>
+                                      ) : (
+                                        <p className="text-muted-foreground">No free items</p>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Specifications */}
+                                    <div className="space-y-1">
+                                      <p className="font-semibold text-primary">Specs:</p>
+                                      {Object.keys(specifications).length > 0 ? (
+                                        <ul className="space-y-0.5 text-muted-foreground">
+                                          {Object.entries(specifications).slice(0, 3).map(([key, value]: [string, any]) => (
+                                            <li key={key}>• {key}: {value}</li>
+                                          ))}
+                                        </ul>
+                                      ) : (
+                                        <p className="text-muted-foreground">Standard specs</p>
+                                      )}
+                                    </div>
+                                  </div>
                                 </CardContent>
                               </Card>
                             );
@@ -782,7 +833,10 @@ const Book = () => {
                     </Button>
                     <Button 
                       onClick={() => setStep(3)} 
-                      disabled={selectedCycles.length !== numberOfPeople}
+                      disabled={
+                        selectedCycles.length !== numberOfPeople || 
+                        selectedCycles.filter(c => c).length !== numberOfPeople
+                      }
                       className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                     >
                       Continue to Duration
@@ -869,8 +923,16 @@ const Book = () => {
                     </p>
 
                     <div className="space-y-4">
-                      {accessories.map((accessory) => (
-                        <Card 
+                      {accessories
+                        .filter(accessory => {
+                          // Filter out accessories that are free with any selected cycle
+                          const isFree = selectedCycles.some(cycle => 
+                            cycle?.free_accessories?.includes(accessory.id)
+                          );
+                          return !isFree;
+                        })
+                        .map((accessory) => (
+                         <Card
                           key={accessory.id}
                           className={cn(
                             "transition-all hover:shadow-warm",

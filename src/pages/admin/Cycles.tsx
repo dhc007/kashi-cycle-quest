@@ -10,13 +10,20 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUpload } from "@/components/FileUpload";
-import { Bike, Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { Bike, Plus, Pencil, Trash2, MoreVertical, Copy, Search, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+interface Accessory {
+  id: string;
+  name: string;
+}
 
 interface Cycle {
   id: string;
@@ -33,16 +40,23 @@ interface Cycle {
   total_quantity: number;
   available_quantity: number;
   is_active: boolean;
+  free_accessories: string[] | null;
+  specifications: any;
+  internal_details: any;
 }
 
 const Cycles = () => {
   const { toast } = useToast();
   const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<Cycle | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [accessorySearch, setAccessorySearch] = useState("");
+  const [accessoryPopoverOpen, setAccessoryPopoverOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<Cycle>>({
     name: "",
     model: "",
@@ -54,13 +68,18 @@ const Cycles = () => {
     security_deposit_day: 2000,
     security_deposit_week: 3000,
     security_deposit_month: 5000,
-    total_quantity: 0,
-    available_quantity: 0,
+    total_quantity: 1,
+    available_quantity: 1,
     is_active: true,
+    free_accessories: [],
+    specifications: {},
+    internal_details: { vendor: "", warranty: "", invoice: "" },
   });
+  const [specKey, setSpecKey] = useState("");
+  const [specValue, setSpecValue] = useState("");
 
   useEffect(() => {
-    loadCycles();
+    Promise.all([loadCycles(), loadAccessories()]);
   }, []);
 
   const loadCycles = async () => {
@@ -80,6 +99,20 @@ const Cycles = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAccessories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('accessories')
+        .select('id, name')
+        .eq('is_active', true);
+
+      if (error) throw error;
+      setAccessories(data || []);
+    } catch (error: any) {
+      console.error('Error loading accessories:', error);
     }
   };
 
@@ -108,14 +141,20 @@ const Cycles = () => {
     try {
       let imageUrl = formData.image_url;
 
-      // Upload new image if selected
       if (imageFile) {
         imageUrl = await uploadImage(imageFile);
       }
+      
       if (editingCycle) {
         const { error } = await supabase
           .from('cycles')
-          .update({ ...formData, image_url: imageUrl })
+          .update({ 
+            ...formData, 
+            image_url: imageUrl,
+            free_accessories: formData.free_accessories || [],
+            specifications: formData.specifications || {},
+            internal_details: formData.internal_details || { vendor: "", warranty: "", invoice: "" }
+          })
           .eq('id', editingCycle.id);
 
         if (error) throw error;
@@ -142,6 +181,9 @@ const Cycles = () => {
             total_quantity: formData.total_quantity!,
             available_quantity: formData.available_quantity!,
             is_active: formData.is_active!,
+            free_accessories: formData.free_accessories || [],
+            specifications: formData.specifications || {},
+            internal_details: formData.internal_details || { vendor: "", warranty: "", invoice: "" }
           }]);
 
         if (error) throw error;
@@ -155,21 +197,7 @@ const Cycles = () => {
       setDialogOpen(false);
       setEditingCycle(null);
       setImageFile(null);
-      setFormData({
-        name: "",
-        model: "",
-        description: "",
-        image_url: "",
-        price_per_day: 0,
-        price_per_week: 0,
-        price_per_month: 0,
-        security_deposit_day: 2000,
-        security_deposit_week: 3000,
-        security_deposit_month: 5000,
-        total_quantity: 0,
-        available_quantity: 0,
-        is_active: true,
-      });
+      resetForm();
       loadCycles();
     } catch (error: any) {
       toast({
@@ -182,9 +210,40 @@ const Cycles = () => {
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      model: "",
+      description: "",
+      image_url: "",
+      price_per_day: 0,
+      price_per_week: 0,
+      price_per_month: 0,
+      security_deposit_day: 2000,
+      security_deposit_week: 3000,
+      security_deposit_month: 5000,
+      total_quantity: 1,
+      available_quantity: 1,
+      is_active: true,
+      free_accessories: [],
+      specifications: {},
+      internal_details: { vendor: "", warranty: "", invoice: "" },
+    });
+  };
+
   const handleEdit = (cycle: Cycle) => {
     setEditingCycle(cycle);
     setFormData(cycle);
+    setDialogOpen(true);
+  };
+
+  const handleDuplicate = (cycle: Cycle) => {
+    setEditingCycle(null);
+    setFormData({
+      ...cycle,
+      id: undefined,
+      name: `${cycle.name} (Copy)`,
+    });
     setDialogOpen(true);
   };
 
@@ -236,6 +295,55 @@ const Cycles = () => {
     }
   };
 
+  const addAccessory = (accessoryId: string) => {
+    const current = formData.free_accessories || [];
+    if (!current.includes(accessoryId)) {
+      setFormData({
+        ...formData,
+        free_accessories: [...current, accessoryId]
+      });
+    }
+    setAccessoryPopoverOpen(false);
+    setAccessorySearch("");
+  };
+
+  const removeAccessory = (accessoryId: string) => {
+    const current = formData.free_accessories || [];
+    setFormData({
+      ...formData,
+      free_accessories: current.filter(id => id !== accessoryId)
+    });
+  };
+
+  const addSpecification = () => {
+    if (specKey && specValue) {
+      setFormData({
+        ...formData,
+        specifications: {
+          ...(formData.specifications || {}),
+          [specKey]: specValue
+        }
+      });
+      setSpecKey("");
+      setSpecValue("");
+    }
+  };
+
+  const removeSpecification = (key: string) => {
+    const specs = { ...(formData.specifications || {}) };
+    delete specs[key];
+    setFormData({ ...formData, specifications: specs });
+  };
+
+  const filteredCycles = cycles.filter(cycle =>
+    cycle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    cycle.model.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredAccessories = accessories.filter(acc =>
+    acc.name.toLowerCase().includes(accessorySearch.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="p-8">
@@ -256,12 +364,12 @@ const Cycles = () => {
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-primary hover:opacity-90">
+            <Button className="bg-gradient-primary hover:opacity-90" onClick={resetForm}>
               <Plus className="w-4 h-4 mr-2" />
               Add Cycle
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingCycle ? 'Edit Cycle' : 'Add New Cycle'}</DialogTitle>
             </DialogHeader>
@@ -313,6 +421,137 @@ const Cycles = () => {
                 maxSize={5}
                 description="Upload a cycle image (max 5MB)"
               />
+
+              {/* Free Accessories */}
+              <div className="space-y-2">
+                <Label>Free Accessories (Included with cycle)</Label>
+                <Popover open={accessoryPopoverOpen} onOpenChange={setAccessoryPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Free Accessory
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Search accessories..." 
+                        value={accessorySearch}
+                        onValueChange={setAccessorySearch}
+                      />
+                      <CommandEmpty>No accessory found.</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-auto">
+                        {filteredAccessories.map((acc) => (
+                          <CommandItem
+                            key={acc.id}
+                            value={acc.name}
+                            onSelect={() => addAccessory(acc.id)}
+                          >
+                            {acc.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {(formData.free_accessories || []).map(accId => {
+                    const acc = accessories.find(a => a.id === accId);
+                    return acc ? (
+                      <Badge key={accId} variant="secondary" className="gap-1">
+                        {acc.name}
+                        <X 
+                          className="w-3 h-3 cursor-pointer" 
+                          onClick={() => removeAccessory(accId)}
+                        />
+                      </Badge>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+
+              {/* Specifications */}
+              <div className="space-y-2">
+                <Label>Specifications</Label>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Key (e.g., Battery)"
+                    value={specKey}
+                    onChange={(e) => setSpecKey(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Value (e.g., 48V 12Ah)"
+                    value={specValue}
+                    onChange={(e) => setSpecValue(e.target.value)}
+                  />
+                  <Button type="button" onClick={addSpecification} variant="outline">
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {Object.entries(formData.specifications || {}).map(([key, value]) => (
+                    <Badge key={key} variant="secondary" className="gap-1">
+                      {key}: {value as string}
+                      <X 
+                        className="w-3 h-3 cursor-pointer" 
+                        onClick={() => removeSpecification(key)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Internal Details */}
+              <div className="space-y-2 border p-4 rounded-lg">
+                <Label className="text-base font-semibold">Internal Details (Admin Only)</Label>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="vendor">Vendor</Label>
+                    <Input
+                      id="vendor"
+                      value={formData.internal_details?.vendor || ""}
+                      onChange={(e) => setFormData({
+                        ...formData, 
+                        internal_details: { 
+                          ...(formData.internal_details || {}), 
+                          vendor: e.target.value 
+                        }
+                      })}
+                      placeholder="Vendor name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="warranty">Warranty</Label>
+                    <Input
+                      id="warranty"
+                      value={formData.internal_details?.warranty || ""}
+                      onChange={(e) => setFormData({
+                        ...formData, 
+                        internal_details: { 
+                          ...(formData.internal_details || {}), 
+                          warranty: e.target.value 
+                        }
+                      })}
+                      placeholder="Warranty period"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="invoice">Invoice</Label>
+                    <Input
+                      id="invoice"
+                      value={formData.internal_details?.invoice || ""}
+                      onChange={(e) => setFormData({
+                        ...formData, 
+                        internal_details: { 
+                          ...(formData.internal_details || {}), 
+                          invoice: e.target.value 
+                        }
+                      })}
+                      placeholder="Invoice number"
+                    />
+                  </div>
+                </div>
+              </div>
 
               <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
@@ -388,7 +627,9 @@ const Cycles = () => {
                     value={formData.total_quantity}
                     onChange={(e) => setFormData({...formData, total_quantity: Number(e.target.value)})}
                     required
+                    min="1"
                   />
+                  <p className="text-xs text-muted-foreground">Note: Each cycle is unique. Quantity represents individual units.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="available_quantity">Available Quantity *</Label>
@@ -398,21 +639,35 @@ const Cycles = () => {
                     value={formData.available_quantity}
                     onChange={(e) => setFormData({...formData, available_quantity: Number(e.target.value)})}
                     required
+                    min="0"
                   />
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90">
-                {editingCycle ? 'Update Cycle' : 'Create Cycle'}
+              <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90" disabled={uploadingImage}>
+                {uploadingImage ? 'Saving...' : (editingCycle ? 'Update Cycle' : 'Create Cycle')}
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Search cycles by name or model..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
       <Card className="shadow-warm">
         <CardHeader>
-          <CardTitle>All Cycles ({cycles.length})</CardTitle>
+          <CardTitle>All Cycles ({filteredCycles.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -427,63 +682,80 @@ const Cycles = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {cycles.map((cycle) => (
-                <TableRow key={cycle.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-semibold">{cycle.name}</p>
-                      <p className="text-sm text-muted-foreground">{cycle.model}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <p>Day: ₹{cycle.price_per_day}</p>
-                      <p>Week: ₹{cycle.price_per_week}</p>
-                      {cycle.price_per_month && <p>Month: ₹{cycle.price_per_month}</p>}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <p>Day: ₹{cycle.security_deposit_day}</p>
-                      <p>Week: ₹{cycle.security_deposit_week}</p>
-                      <p>Month: ₹{cycle.security_deposit_month}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {cycle.available_quantity} / {cycle.total_quantity}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={cycle.is_active ? "default" : "secondary"}>
-                      {cycle.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEdit(cycle)}>
-                          <Pencil className="w-4 h-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => toggleActive(cycle)}>
-                          {cycle.is_active ? 'Deactivate' : 'Activate'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDelete(cycle.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filteredCycles.map((cycle) => {
+                const isUnavailable = cycle.available_quantity === 0;
+                return (
+                  <TableRow key={cycle.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-semibold">{cycle.name}</p>
+                        <p className="text-sm text-muted-foreground">{cycle.model}</p>
+                        {cycle.free_accessories && cycle.free_accessories.length > 0 && (
+                          <p className="text-xs text-primary mt-1">
+                            +{cycle.free_accessories.length} free accessories
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <p>Day: ₹{cycle.price_per_day}</p>
+                        <p>Week: ₹{cycle.price_per_week}</p>
+                        {cycle.price_per_month && <p>Month: ₹{cycle.price_per_month}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <p>Day: ₹{cycle.security_deposit_day}</p>
+                        <p>Week: ₹{cycle.security_deposit_week}</p>
+                        <p>Month: ₹{cycle.security_deposit_month}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <p>{cycle.available_quantity} / {cycle.total_quantity}</p>
+                        {isUnavailable && (
+                          <Badge variant="destructive" className="text-xs mt-1">Unavailable</Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={cycle.is_active ? "default" : "secondary"}>
+                        {cycle.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(cycle)}>
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDuplicate(cycle)}>
+                            <Copy className="w-4 h-4 mr-2" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => toggleActive(cycle)}>
+                            {cycle.is_active ? 'Deactivate' : 'Activate'}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(cycle.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

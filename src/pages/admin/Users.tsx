@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Users as UsersIcon, UserX, Mail, Phone } from "lucide-react";
+import { Users as UsersIcon, UserX, Mail, Phone, Search } from "lucide-react";
 import { format } from "date-fns";
 
 interface UserData {
@@ -15,14 +18,21 @@ interface UserData {
     phone_number: string;
   };
   roles: string[];
-  bookingCount: number;
+  bookings: Array<{
+    id: string;
+    booking_id: string;
+    created_at: string;
+    booking_status: string;
+  }>;
 }
 
 const Users = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     checkAdminAndLoadData();
@@ -65,29 +75,26 @@ const Users = () => {
 
   const loadUsers = async () => {
     try {
-      // Get all users from auth (through profiles)
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
 
       if (profilesError) throw profilesError;
 
-      // Get all user roles
       const { data: rolesData } = await supabase
         .from('user_roles')
         .select('user_id, role');
 
-      // Get booking counts
       const { data: bookingsData } = await supabase
         .from('bookings')
-        .select('user_id');
+        .select('id, booking_id, user_id, created_at, booking_status')
+        .order('created_at', { ascending: false });
 
       const usersMap: Record<string, UserData> = {};
 
-      // Build users map
       profilesData?.forEach((profile) => {
         const userRoles = rolesData?.filter(r => r.user_id === profile.user_id).map(r => r.role) || [];
-        const bookingCount = bookingsData?.filter(b => b.user_id === profile.user_id).length || 0;
+        const userBookings = bookingsData?.filter(b => b.user_id === profile.user_id) || [];
 
         usersMap[profile.user_id] = {
           id: profile.user_id,
@@ -99,7 +106,7 @@ const Users = () => {
             phone_number: profile.phone_number,
           },
           roles: userRoles,
-          bookingCount,
+          bookings: userBookings,
         };
       });
 
@@ -113,7 +120,6 @@ const Users = () => {
       });
     }
   };
-
 
   if (loading) {
     return (
@@ -137,11 +143,17 @@ const Users = () => {
     );
   }
 
-  // Filter out users with admin, manager, or viewer roles
   const customers = users.filter(user => 
     !user.roles.includes('admin') && 
     !user.roles.includes('manager') && 
     !user.roles.includes('viewer')
+  );
+
+  const filteredCustomers = customers.filter(user =>
+    user.profile?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.profile?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.profile?.phone_number?.includes(searchTerm)
   );
 
   return (
@@ -151,54 +163,99 @@ const Users = () => {
           <UsersIcon className="w-6 h-6 md:w-8 md:h-8" />
           Customers
         </h1>
-        <p className="text-muted-foreground text-sm md:text-base">View all customer accounts</p>
+        <p className="text-muted-foreground text-sm md:text-base">View all customer accounts and bookings</p>
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Search by name, email, or phone..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
       </div>
 
       <Card className="shadow-warm">
         <CardHeader>
-          <CardTitle className="text-lg md:text-xl">All Customers ({customers.length})</CardTitle>
+          <CardTitle className="text-lg md:text-xl">All Customers ({filteredCustomers.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3 md:space-y-4">
-            {customers.map((user) => (
-              <div
-                key={user.id}
-                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 md:p-4 border rounded-lg hover:bg-accent/50 transition-colors gap-3"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold truncate">
-                      {user.profile?.first_name} {user.profile?.last_name || 'Unknown'}
-                    </h3>
-                  </div>
-                  
-                  <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1 truncate">
-                      <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                      <span className="truncate">{user.email}</span>
-                    </div>
-                    {user.profile?.phone_number && (
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                        {user.profile.phone_number}
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Past Bookings</TableHead>
+                  <TableHead>Joined</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCustomers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-semibold">
+                          {user.profile?.first_name} {user.profile?.last_name || 'Unknown'}
+                        </p>
                       </div>
-                    )}
-                    <div className="whitespace-nowrap">
-                      Bookings: {user.bookingCount}
-                    </div>
-                    <div className="whitespace-nowrap">
-                      Joined: {format(new Date(user.created_at), 'PP')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-xs">{user.email}</span>
+                        </div>
+                        {user.profile?.phone_number && (
+                          <div className="flex items-center gap-1">
+                            <Phone className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-xs">{user.profile.phone_number}</span>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-primary">{user.bookings.length} bookings</p>
+                        {user.bookings.length > 0 && (
+                          <div className="space-y-0.5">
+                            {user.bookings.slice(0, 3).map((booking) => (
+                              <button
+                                key={booking.id}
+                                onClick={() => navigate(`/admin/bookings?search=${booking.booking_id}`)}
+                                className="text-xs text-primary hover:underline block"
+                              >
+                                #{booking.booking_id}
+                              </button>
+                            ))}
+                            {user.bookings.length > 3 && (
+                              <p className="text-xs text-muted-foreground">
+                                +{user.bookings.length - 3} more
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm">{format(new Date(user.created_at), 'PP')}</span>
+                    </TableCell>
+                  </TableRow>
+                ))}
 
-            {customers.length === 0 && (
-              <div className="text-center py-8 md:py-12 text-muted-foreground text-sm md:text-base">
-                No customers found
-              </div>
-            )}
+                {filteredCustomers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No customers found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
