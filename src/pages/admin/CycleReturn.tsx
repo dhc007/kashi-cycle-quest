@@ -137,6 +137,15 @@ const CycleReturnContent = () => {
   const handleCycleReturn = async () => {
     if (!selectedBooking) return;
 
+    if (returnPhotos.length === 0) {
+      toast({
+        title: "Photos Required",
+        description: "Please upload at least 1 photo of the cycle condition",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setProcessing(true);
     try {
       const lateFee = calculateLateFee(selectedBooking.return_date);
@@ -425,6 +434,43 @@ const CycleReturnContent = () => {
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label>Upload Photos * (Max 6, Required for all conditions)</Label>
+                <Input
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    handlePhotoSelect(files);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {returnPhotos.length}/6 files selected. At least 1 photo required.
+                </p>
+                {returnPhotos.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {returnPhotos.map((file, index) => (
+                      <div key={index} className="relative">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Photo ${index + 1}`}
+                          className="w-20 h-20 object-cover rounded border"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6"
+                          onClick={() => removePhoto(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {(cycleCondition === "damaged" || cycleCondition === "fair") && (
                 <>
                   <div className="space-y-2">
@@ -444,42 +490,6 @@ const CycleReturnContent = () => {
                       placeholder="Describe the damage or wear..."
                       rows={3}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Upload Photos (Max 6)</Label>
-                    <Input
-                      type="file"
-                      accept="image/*,video/*"
-                      multiple
-                      onChange={(e) => {
-                        const files = Array.from(e.target.files || []);
-                        handlePhotoSelect(files);
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {returnPhotos.length}/6 files selected
-                    </p>
-                    {returnPhotos.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {returnPhotos.map((file, index) => (
-                          <div key={index} className="relative">
-                            <img
-                              src={URL.createObjectURL(file)}
-                              alt={`Photo ${index + 1}`}
-                              className="w-20 h-20 object-cover rounded border"
-                            />
-                            <Button
-                              variant="destructive"
-                              size="icon"
-                              className="absolute -top-2 -right-2 h-6 w-6"
-                              onClick={() => removePhoto(index)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </>
               )}

@@ -39,8 +39,6 @@ interface Cycle {
   security_deposit_day: number;
   security_deposit_week: number;
   security_deposit_month: number;
-  total_quantity: number;
-  available_quantity: number;
   is_active: boolean;
   free_accessories: string[] | null;
   specifications: any;
@@ -75,8 +73,6 @@ const Cycles = () => {
     security_deposit_day: 2000,
     security_deposit_week: 3000,
     security_deposit_month: 5000,
-    total_quantity: 1,
-    available_quantity: 1,
     is_active: true,
     free_accessories: [],
     specifications: {},
@@ -221,8 +217,8 @@ const Cycles = () => {
             security_deposit_day: formData.security_deposit_day!,
             security_deposit_week: formData.security_deposit_week!,
             security_deposit_month: formData.security_deposit_month!,
-            total_quantity: formData.total_quantity!,
-            available_quantity: formData.available_quantity!,
+            total_quantity: 1,
+            available_quantity: 1,
             is_active: formData.is_active!,
             free_accessories: formData.free_accessories || [],
             specifications: formData.specifications || {},
@@ -267,8 +263,6 @@ const Cycles = () => {
       security_deposit_day: 2000,
       security_deposit_week: 3000,
       security_deposit_month: 5000,
-      total_quantity: 1,
-      available_quantity: 1,
       is_active: true,
       free_accessories: [],
       specifications: {},
@@ -792,14 +786,12 @@ const Cycles = () => {
                 <TableHead>Name/Model</TableHead>
                 <TableHead>Pricing</TableHead>
                 <TableHead>Deposits</TableHead>
-                <TableHead>Quantity</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCycles.map((cycle) => {
-                const isUnavailable = cycle.available_quantity === 0;
                 return (
                   <TableRow key={cycle.id}>
                     <TableCell>
@@ -825,14 +817,6 @@ const Cycles = () => {
                         <p>Day: ₹{cycle.security_deposit_day}</p>
                         <p>Week: ₹{cycle.security_deposit_week}</p>
                         <p>Month: ₹{cycle.security_deposit_month}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p>{cycle.available_quantity} / {cycle.total_quantity}</p>
-                        {isUnavailable && (
-                          <Badge variant="destructive" className="text-xs mt-1">Unavailable</Badge>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>

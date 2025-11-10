@@ -16,6 +16,8 @@ interface UserData {
     first_name: string;
     last_name: string;
     phone_number: string;
+    live_photo_url: string | null;
+    id_proof_url: string | null;
   };
   roles: string[];
   bookings: Array<{
@@ -104,6 +106,8 @@ const Users = () => {
             first_name: profile.first_name,
             last_name: profile.last_name,
             phone_number: profile.phone_number,
+            live_photo_url: profile.live_photo_url,
+            id_proof_url: profile.id_proof_url,
           },
           roles: userRoles,
           bookings: userBookings,
@@ -188,15 +192,18 @@ const Users = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">Sr.</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>Documents</TableHead>
                   <TableHead>Past Bookings</TableHead>
                   <TableHead>Joined</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((user) => (
+                {filteredCustomers.map((user, index) => (
                   <TableRow key={user.id}>
+                    <TableCell className="font-medium">{index + 1}</TableCell>
                     <TableCell>
                       <div>
                         <p className="font-semibold">
@@ -215,6 +222,28 @@ const Users = () => {
                             <Phone className="w-3 h-3 text-muted-foreground" />
                             <span className="text-xs">{user.profile.phone_number}</span>
                           </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        {user.profile?.live_photo_url && (
+                          <a href={user.profile.live_photo_url} target="_blank" rel="noopener noreferrer">
+                            <img 
+                              src={user.profile.live_photo_url} 
+                              alt="Live Photo" 
+                              className="w-12 h-12 object-cover rounded border hover:opacity-80 transition-opacity cursor-pointer"
+                            />
+                          </a>
+                        )}
+                        {user.profile?.id_proof_url && (
+                          <a href={user.profile.id_proof_url} target="_blank" rel="noopener noreferrer">
+                            <img 
+                              src={user.profile.id_proof_url} 
+                              alt="Aadhar" 
+                              className="w-12 h-12 object-cover rounded border hover:opacity-80 transition-opacity cursor-pointer"
+                            />
+                          </a>
                         )}
                       </div>
                     </TableCell>
@@ -252,7 +281,7 @@ const Users = () => {
 
                 {filteredCustomers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No customers found
                     </TableCell>
                   </TableRow>
