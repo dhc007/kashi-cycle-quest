@@ -2,19 +2,19 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  Bike, 
-  Package, 
-  Users, 
+import {
+  LayoutDashboard,
+  Calendar,
+  Bike,
+  Package,
+  Users,
   MapPin,
   Settings,
   LogOut,
   XCircle,
   PackageCheck,
   Wrench,
-  Tag
+  Tag,
 } from "lucide-react";
 import bolt91Logo from "@/assets/bolt91-logo.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,10 +22,10 @@ import { supabase } from "@/integrations/supabase/client";
 const AdminLayout = () => {
   const location = useLocation();
   const [pendingCancellations, setPendingCancellations] = useState(0);
-  
+
   useEffect(() => {
     loadPendingCancellations();
-    
+
     // Poll every 30 seconds for updates
     const interval = setInterval(loadPendingCancellations, 30000);
     return () => clearInterval(interval);
@@ -33,21 +33,21 @@ const AdminLayout = () => {
 
   const loadPendingCancellations = async () => {
     const { count } = await supabase
-      .from('bookings')
-      .select('*', { count: 'exact', head: true })
-      .eq('cancellation_status', 'requested');
-    
+      .from("bookings")
+      .select("*", { count: "exact", head: true })
+      .eq("cancellation_status", "requested");
+
     setPendingCancellations(count || 0);
   };
-  
+
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
     { icon: Calendar, label: "Bookings", path: "/admin/bookings" },
-    { 
-      icon: XCircle, 
-      label: "User Cancellations", 
+    {
+      icon: XCircle,
+      label: "Cancellations Request",
       path: "/admin/cancellations",
-      badge: pendingCancellations 
+      badge: pendingCancellations,
     },
     { icon: Bike, label: "Cycles", path: "/admin/cycles" },
     { icon: Package, label: "Accessories", path: "/admin/accessories" },
@@ -68,7 +68,7 @@ const AdminLayout = () => {
           <img src={bolt91Logo} alt="Bolt91 Admin" className="h-10" />
           <p className="text-xs text-muted-foreground mt-2">Admin Panel</p>
         </div>
-        
+
         <nav className="p-4 space-y-2 flex-1 overflow-y-auto">
           {menuItems.map((item) => {
             const isActive = location.pathname === item.path;
@@ -77,7 +77,7 @@ const AdminLayout = () => {
                 key={item.path}
                 asChild
                 variant={isActive ? "default" : "ghost"}
-                className={`w-full justify-start ${isActive ? 'bg-primary text-primary-foreground' : ''}`}
+                className={`w-full justify-start ${isActive ? "bg-primary text-primary-foreground" : ""}`}
               >
                 <Link to={item.path} className="flex items-center justify-between w-full">
                   <span className="flex items-center">
