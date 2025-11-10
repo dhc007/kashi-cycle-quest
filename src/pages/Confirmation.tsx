@@ -34,7 +34,7 @@ const Confirmation = () => {
     `Hi Bolt91!\nMy Booking ID is: ${bookingId}\nI need assistance with my booking.`
   );
 
-  const whatsappNumber = "917709892835";
+  const whatsappNumber = "+919845205530";
 
   return (
     <div className="min-h-screen bg-background">
