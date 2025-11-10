@@ -71,6 +71,17 @@ const Book = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user && session === null) {
+      toast({
+        title: "Login Required",
+        description: "Please login to book a ride",
+      });
+      navigate("/user-login");
+    }
+  }, [user, session, loading, navigate, toast]);
+
   // Fetch profile data when user is authenticated
   useEffect(() => {
     if (user?.id) {
