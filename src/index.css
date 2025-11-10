@@ -118,6 +118,46 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Mobile Responsiveness - Prevent horizontal overflow */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  
+  /* Ensure all containers respect viewport width */
+  .container {
+    @apply px-4 mx-auto;
+    max-width: 100%;
+  }
+  
+  /* Make tables responsive */
+  @media (max-width: 768px) {
+    table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  
+  /* Ensure cards don't overflow */
+  .card, [class*="card"] {
+    @apply w-full;
+    max-width: 100%;
+  }
+  
+  /* Make images responsive by default */
+  img {
+    @apply max-w-full h-auto;
+  }
+  
+  /* Ensure text doesn't overflow */
+  p, h1, h2, h3, h4, h5, h6 {
+    @apply break-words;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
 }
 
 /* Print Styles */

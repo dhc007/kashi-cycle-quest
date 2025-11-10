@@ -11,7 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarIcon, Clock, Bike, Camera, Plus, Minus, User, MapPin, Phone } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, extractPhoneFromEmail } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
 import { FileUpload } from "@/components/FileUpload";
 import { MediaSlider } from "@/components/MediaSlider";
@@ -1153,10 +1153,10 @@ const Book = () => {
                 <div className="space-y-6">
                   {/* Logged in indicator */}
                   {user && (
-                    <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                      <p className="text-sm text-green-800 dark:text-green-200 flex items-center gap-2">
-                        <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
-                        Logged in as {user.email || phoneNumber}
+                    <div className="p-3 md:p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-xs md:text-sm text-green-800 dark:text-green-200 flex items-center gap-2 break-all">
+                        <span className="inline-block w-2 h-2 bg-green-600 rounded-full flex-shrink-0"></span>
+                        <span>Logged in as <strong>{phoneNumber || user.user_metadata?.phone || extractPhoneFromEmail(user.email || '') || user.email}</strong></span>
                       </p>
                     </div>
                   )}

@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Users as UsersIcon, UserX, Mail, Phone, Search } from "lucide-react";
 import { format } from "date-fns";
+import { extractPhoneFromEmail } from "@/lib/utils";
 
 interface UserData {
   id: string;
@@ -214,15 +215,9 @@ const Users = () => {
                     <TableCell>
                       <div className="space-y-1 text-sm">
                         <div className="flex items-center gap-1">
-                          <Mail className="w-3 h-3 text-muted-foreground" />
-                          <span className="text-xs">{user.email}</span>
+                          <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                          <span className="text-xs break-all">{user.profile?.phone_number || extractPhoneFromEmail(user.email) || user.email}</span>
                         </div>
-                        {user.profile?.phone_number && (
-                          <div className="flex items-center gap-1">
-                            <Phone className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-xs">{user.profile.phone_number}</span>
-                          </div>
-                        )}
                       </div>
                     </TableCell>
                     <TableCell>
