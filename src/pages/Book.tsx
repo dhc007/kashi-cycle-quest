@@ -1404,11 +1404,13 @@ const Book = () => {
                          {selectedCycles.map((cycle, index) => (
                           <div key={index} className="space-y-1">
                             {cycle.image_url && (
-                              <img
-                                src={cycle.image_url}
-                                alt={cycle.name}
-                                className="w-full h-24 object-cover rounded-lg mb-2"
-                              />
+                              <div className="w-full h-32 bg-muted rounded-lg mb-2 flex items-center justify-center p-2">
+                                <img
+                                  src={cycle.image_url}
+                                  alt={cycle.name}
+                                  className="max-w-full max-h-full object-contain rounded-lg"
+                                />
+                              </div>
                             )}
                             <p className="text-xs text-primary font-semibold">Person {index + 1}:</p>
                             <p className="font-semibold">{cycle.name}</p>
