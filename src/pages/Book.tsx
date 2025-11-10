@@ -49,6 +49,7 @@ interface Partner {
   landmark: string | null;
   phone_number: string;
   google_maps_link: string | null;
+  partner_type: 'guest_house' | 'cafe/retail';
 }
 
 const Book = () => {
@@ -68,6 +69,21 @@ const Book = () => {
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<PickupLocation | null>(null);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
+
+  // Get partner ID from URL and persist it
+  const partnerParam = searchParams.get("partner");
+  
+  useEffect(() => {
+    if (partnerParam) {
+      localStorage.setItem('activePartner', partnerParam);
+      setPartnerId(partnerParam);
+    } else {
+      const storedPartner = localStorage.getItem('activePartner');
+      if (storedPartner) {
+        setPartnerId(storedPartner);
+      }
+    }
+  }, [partnerParam]);
 
   // Authentication state
   const [user, setUser] = useState<any>(null);
@@ -151,47 +167,63 @@ const Book = () => {
     }
   };
 
-  // Read partner ID from URL and fetch partner data
+  // Fetch partner data if partner ID is present
   useEffect(() => {
-    const partnerParam = searchParams.get('partner');
-    if (partnerParam) {
-      setPartnerId(partnerParam);
-      console.log('Booking via partner:', partnerParam);
-      
-      // Fetch partner data
-      const fetchPartnerData = async () => {
+    const fetchPartnerData = async () => {
+      if (partnerId) {
         const { data, error } = await supabase
           .from('partners')
           .select('*')
-          .eq('id', partnerParam)
+          .eq('id', partnerId)
           .single();
         
         if (data && !error) {
-          setPartnerData(data);
+          setPartnerData(data as Partner);
         }
-      };
-      
-      fetchPartnerData();
-    }
-  }, [searchParams]);
+      }
+    };
+    
+    fetchPartnerData();
+  }, [partnerId]);
 
-  // Auto-select pickup location based on partner
+  // Auto-select pickup location based on partner type
   useEffect(() => {
-    if (partnerData && pickupLocations.length > 0) {
-      // For guest house/stay partners, use partner location
-      // For cafe/retail or direct booking, use Bolt 91 Base
+    if (partnerData && pickupLocations.length > 0 && !selectedPickupLocation) {
+      if (partnerData.partner_type === 'guest_house') {
+        // For guest house, use partner's location as pickup
+        const partnerLocation: PickupLocation = {
+          id: partnerData.id,
+          name: partnerData.name,
+          address: partnerData.address,
+          city: partnerData.city,
+          state: partnerData.state,
+          pincode: partnerData.pincode,
+          landmark: partnerData.landmark,
+          phone_number: partnerData.phone_number,
+          google_maps_link: partnerData.google_maps_link,
+        };
+        setSelectedPickupLocation(partnerLocation);
+      } else {
+        // For cafe/retail, use Bolt 91 Base
+        const bolt91Base = pickupLocations.find(loc => 
+          loc.name.toLowerCase().includes('bolt 91 base') ||
+          loc.name.toLowerCase().includes('bolt91 base')
+        );
+        if (bolt91Base) {
+          setSelectedPickupLocation(bolt91Base);
+        }
+      }
+    } else if (!partnerData && pickupLocations.length > 0 && !selectedPickupLocation) {
+      // Direct booking - use Bolt 91 Base
       const bolt91Base = pickupLocations.find(loc => 
-        loc.name.toLowerCase().includes('bolt 91 base') || 
+        loc.name.toLowerCase().includes('bolt 91 base') ||
         loc.name.toLowerCase().includes('bolt91 base')
       );
-      
       if (bolt91Base) {
         setSelectedPickupLocation(bolt91Base);
-      } else if (pickupLocations.length > 0) {
-        setSelectedPickupLocation(pickupLocations[0]);
       }
     }
-  }, [partnerData, pickupLocations]);
+  }, [partnerData, pickupLocations, selectedPickupLocation]);
 
   // Load cycles, accessories, and partners data
   useEffect(() => {
@@ -584,6 +616,15 @@ const Book = () => {
               <Card className="shadow-warm">
                 <CardHeader>
                   <CardTitle className="text-2xl">Book Your Electric Bicycle</CardTitle>
+                  {partnerData && (
+                    <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-1">Booking through partner:</p>
+                      <p className="text-lg font-semibold text-primary">{partnerData.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {partnerData.address}, {partnerData.city}
+                      </p>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {step === 1 && (

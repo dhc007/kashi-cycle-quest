@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
@@ -32,6 +33,7 @@ interface Partner {
   google_maps_link: string | null;
   latitude: number | null;
   longitude: number | null;
+  partner_type: 'guest_house' | 'cafe/retail';
   is_active: boolean;
 }
 
@@ -61,7 +63,7 @@ const PartnersContent = () => {
         .order('name');
 
       if (error) throw error;
-      setPartners(data || []);
+      setPartners((data || []) as Partner[]);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -110,6 +112,7 @@ const PartnersContent = () => {
             state: formData.state,
             pincode: formData.pincode,
             google_maps_link: formData.google_maps_link || null,
+            partner_type: formData.partner_type,
             is_active: formData.is_active,
           })
           .eq('id', editingId);
@@ -128,6 +131,7 @@ const PartnersContent = () => {
             state: formData.state!,
             pincode: formData.pincode!,
             google_maps_link: formData.google_maps_link || null,
+            partner_type: formData.partner_type || 'cafe/retail',
             is_active: formData.is_active ?? true,
           }]);
 
@@ -212,13 +216,28 @@ const PartnersContent = () => {
 
   const openEditDialog = (partner: Partner) => {
     setEditingId(partner.id);
-    setFormData(partner);
+    setFormData({
+      name: partner.name,
+      email: partner.email,
+      phone_number: partner.phone_number,
+      address: partner.address,
+      landmark: partner.landmark,
+      city: partner.city,
+      state: partner.state,
+      pincode: partner.pincode,
+      google_maps_link: partner.google_maps_link,
+      partner_type: partner.partner_type,
+      is_active: partner.is_active,
+    });
     setDialogOpen(true);
   };
 
   const openAddDialog = () => {
     setEditingId(null);
-    setFormData({ is_active: true });
+    setFormData({ 
+      partner_type: 'cafe/retail',
+      is_active: true 
+    });
     setDialogOpen(true);
   };
 
@@ -368,6 +387,22 @@ const PartnersContent = () => {
                     onChange={(e) => setFormData({ ...formData, google_maps_link: e.target.value })}
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="partner_type">Partner Type *</Label>
+                  <select
+                    id="partner_type"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={formData.partner_type || 'cafe/retail'}
+                    onChange={(e) => setFormData({ ...formData, partner_type: e.target.value as 'guest_house' | 'cafe/retail' })}
+                    required
+                  >
+                    <option value="cafe/retail">Cafe/Retail</option>
+                    <option value="guest_house">Guest House/Stay</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Guest House: Pickup at partner location. Cafe/Retail: Pickup at Bolt 91 Base.
+                  </p>
+                </div>
                 <div className="flex items-center gap-2">
                   <Switch
                     id="is_active"
@@ -397,6 +432,7 @@ const PartnersContent = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Location</TableHead>
                 <TableHead>Contact</TableHead>
                 <TableHead>Bookings</TableHead>
@@ -408,6 +444,11 @@ const PartnersContent = () => {
               {partners.map((partner) => (
                 <TableRow key={partner.id}>
                   <TableCell className="font-medium">{partner.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={partner.partner_type === 'guest_house' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}>
+                      {partner.partner_type === 'guest_house' ? 'Guest House' : 'Cafe/Retail'}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <div className="text-sm">
                       {partner.city}, {partner.state}

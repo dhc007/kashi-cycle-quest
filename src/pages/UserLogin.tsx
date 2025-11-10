@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,15 @@ export default function UserLogin() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Preserve partner parameter from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const partnerId = params.get('partner');
+    if (partnerId) {
+      localStorage.setItem('pendingPartner', partnerId);
+    }
+  }, []);
 
   const sendOTP = async () => {
     if (phoneNumber.length !== 10) {
@@ -126,10 +135,19 @@ export default function UserLogin() {
         .eq('user_id', signInData.user.id)
         .limit(1);
 
+      // Check if there's a pending partner
+      const pendingPartner = localStorage.getItem('pendingPartner');
+      const partnerParam = pendingPartner ? `?partner=${pendingPartner}` : '';
+      
+      // Clear pending partner after using it
+      if (pendingPartner) {
+        localStorage.removeItem('pendingPartner');
+      }
+
       if (bookingsData && bookingsData.length > 0) {
-        navigate("/bookings");
+        navigate(`/bookings${partnerParam}`);
       } else {
-        navigate("/book");
+        navigate(`/book${partnerParam}`);
       }
     } catch (error: any) {
       toast({
