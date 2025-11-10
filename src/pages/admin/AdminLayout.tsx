@@ -45,7 +45,7 @@ const AdminLayout = () => {
     { icon: Calendar, label: "Bookings", path: "/admin/bookings" },
     { 
       icon: XCircle, 
-      label: "Cancellations", 
+      label: "User Cancellations", 
       path: "/admin/cancellations",
       badge: pendingCancellations 
     },
