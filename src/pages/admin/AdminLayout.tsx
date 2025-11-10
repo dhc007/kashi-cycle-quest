@@ -1,5 +1,7 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -15,14 +17,38 @@ import {
   Tag
 } from "lucide-react";
 import bolt91Logo from "@/assets/bolt91-logo.png";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLayout = () => {
   const location = useLocation();
+  const [pendingCancellations, setPendingCancellations] = useState(0);
+  
+  useEffect(() => {
+    loadPendingCancellations();
+    
+    // Poll every 30 seconds for updates
+    const interval = setInterval(loadPendingCancellations, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadPendingCancellations = async () => {
+    const { count } = await supabase
+      .from('bookings')
+      .select('*', { count: 'exact', head: true })
+      .eq('cancellation_status', 'requested');
+    
+    setPendingCancellations(count || 0);
+  };
   
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
     { icon: Calendar, label: "Bookings", path: "/admin/bookings" },
-    { icon: XCircle, label: "Cancellations", path: "/admin/cancellations" },
+    { 
+      icon: XCircle, 
+      label: "Cancellations", 
+      path: "/admin/cancellations",
+      badge: pendingCancellations 
+    },
     { icon: Bike, label: "Cycles", path: "/admin/cycles" },
     { icon: Package, label: "Accessories", path: "/admin/accessories" },
     { icon: Users, label: "Customers", path: "/admin/users" },
@@ -53,9 +79,16 @@ const AdminLayout = () => {
                 variant={isActive ? "default" : "ghost"}
                 className={`w-full justify-start ${isActive ? 'bg-primary text-primary-foreground' : ''}`}
               >
-                <Link to={item.path}>
-                  <item.icon className="w-4 h-4 mr-2" />
-                  {item.label}
+                <Link to={item.path} className="flex items-center justify-between w-full">
+                  <span className="flex items-center">
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.label}
+                  </span>
+                  {item.badge && item.badge > 0 && (
+                    <Badge variant="destructive" className="ml-auto">
+                      {item.badge}
+                    </Badge>
+                  )}
                 </Link>
               </Button>
             );

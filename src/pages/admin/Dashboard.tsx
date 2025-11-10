@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, DollarSign, Bike, Users, TrendingUp, Package } from "lucide-react";
 import {
@@ -57,6 +58,7 @@ interface Booking {
 }
 
 const DashboardContent = () => {
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalBookings: 0,
     totalRevenue: 0,
@@ -391,19 +393,35 @@ const DashboardContent = () => {
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 mb-8">
-        {metricCards.map((metric) => (
-          <Card key={metric.title} className="hover:shadow-warm transition-all">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {metric.title}
-              </CardTitle>
-              <metric.icon className={`w-5 h-5 ${metric.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{metric.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+        {metricCards.map((metric) => {
+          // Determine navigation path
+          const getNavigationPath = (title: string) => {
+            if (title === "Total Bookings") return "/admin/bookings";
+            if (title === "Total Partners") return "/admin/partners";
+            if (title === "Available Cycles" || title === "Cycles in Use") return "/admin/cycles";
+            return null;
+          };
+
+          const navPath = getNavigationPath(metric.title);
+
+          return (
+            <Card 
+              key={metric.title} 
+              className={`hover:shadow-warm transition-all ${navPath ? 'cursor-pointer' : ''}`}
+              onClick={() => navPath && navigate(navPath)}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {metric.title}
+                </CardTitle>
+                <metric.icon className={`w-5 h-5 ${metric.color}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{metric.value}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Charts */}

@@ -13,6 +13,12 @@ const AdminSettings = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // useTheme needs to be mounted before we can use it
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Dashboard customization
   const [showBookingTrends, setShowBookingTrends] = useState(true);
@@ -147,24 +153,28 @@ const AdminSettings = () => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant={theme === "light" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setTheme("light")}
-                  className="gap-2"
-                >
-                  <Sun className="w-4 h-4" />
-                  Light
-                </Button>
-                <Button
-                  variant={theme === "dark" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setTheme("dark")}
-                  className="gap-2"
-                >
-                  <Moon className="w-4 h-4" />
-                  Dark
-                </Button>
+                {mounted && (
+                  <>
+                    <Button
+                      variant={theme === "light" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTheme("light")}
+                      className="gap-2"
+                    >
+                      <Sun className="w-4 h-4" />
+                      Light
+                    </Button>
+                    <Button
+                      variant={theme === "dark" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setTheme("dark")}
+                      className="gap-2"
+                    >
+                      <Moon className="w-4 h-4" />
+                      Dark
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>

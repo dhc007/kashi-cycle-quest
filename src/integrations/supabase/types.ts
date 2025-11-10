@@ -196,6 +196,7 @@ export type Database = {
           razorpay_signature: string | null
           refund_amount: number | null
           return_date: string
+          return_photos: string[] | null
           return_time: string | null
           security_deposit: number
           total_amount: number
@@ -246,6 +247,7 @@ export type Database = {
           razorpay_signature?: string | null
           refund_amount?: number | null
           return_date: string
+          return_photos?: string[] | null
           return_time?: string | null
           security_deposit: number
           total_amount: number
@@ -296,6 +298,7 @@ export type Database = {
           razorpay_signature?: string | null
           refund_amount?: number | null
           return_date?: string
+          return_photos?: string[] | null
           return_time?: string | null
           security_deposit?: number
           total_amount?: number
@@ -488,8 +491,10 @@ export type Database = {
           available_quantity: number
           created_at: string
           description: string | null
+          free_accessories: string[] | null
           id: string
           image_url: string | null
+          internal_details: Json | null
           is_active: boolean
           model: string
           name: string
@@ -510,8 +515,10 @@ export type Database = {
           available_quantity?: number
           created_at?: string
           description?: string | null
+          free_accessories?: string[] | null
           id?: string
           image_url?: string | null
+          internal_details?: Json | null
           is_active?: boolean
           model: string
           name: string
@@ -532,8 +539,10 @@ export type Database = {
           available_quantity?: number
           created_at?: string
           description?: string | null
+          free_accessories?: string[] | null
           id?: string
           image_url?: string | null
+          internal_details?: Json | null
           is_active?: boolean
           model?: string
           name?: string
@@ -675,6 +684,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           name: string
+          partner_code: string | null
           partner_type: string
           phone_number: string
           pincode: string
@@ -693,6 +703,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name: string
+          partner_code?: string | null
           partner_type?: string
           phone_number: string
           pincode: string
@@ -711,6 +722,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name?: string
+          partner_code?: string | null
           partner_type?: string
           phone_number?: string
           pincode?: string
@@ -807,7 +819,9 @@ export type Database = {
           full_name: string | null
           id: string
           id_proof_url: string | null
+          id_proof_url_updated: string | null
           last_name: string
+          live_photo_url: string | null
           phone_number: string
           photo_url: string | null
           updated_at: string
@@ -822,7 +836,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           id_proof_url?: string | null
+          id_proof_url_updated?: string | null
           last_name: string
+          live_photo_url?: string | null
           phone_number: string
           photo_url?: string | null
           updated_at?: string
@@ -837,7 +853,9 @@ export type Database = {
           full_name?: string | null
           id?: string
           id_proof_url?: string | null
+          id_proof_url_updated?: string | null
           last_name?: string
+          live_photo_url?: string | null
           phone_number?: string
           photo_url?: string | null
           updated_at?: string
@@ -886,6 +904,10 @@ export type Database = {
           p_return_date: string
         }
         Returns: number
+      }
+      generate_partner_code: {
+        Args: { p_partner_type: string }
+        Returns: string
       }
       has_role: {
         Args: {

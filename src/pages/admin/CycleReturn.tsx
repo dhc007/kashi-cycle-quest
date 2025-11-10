@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard } from "@/components/admin/RoleGuard";
-import { Package, CheckCircle2, AlertCircle } from "lucide-react";
+import { Package, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { format } from "date-fns";
 
 interface ActiveBooking {
@@ -45,8 +45,25 @@ const CycleReturnContent = () => {
   const [cycleCondition, setCycleCondition] = useState<string>("");
   const [damageCost, setDamageCost] = useState<string>("0");
   const [damageDescription, setDamageDescription] = useState<string>("");
+  const [returnPhotos, setReturnPhotos] = useState<File[]>([]);
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
+
+  const handlePhotoSelect = (files: File[]) => {
+    if (files.length + returnPhotos.length > 6) {
+      toast({
+        title: "Too many files",
+        description: "Maximum 6 photos allowed",
+        variant: "destructive",
+      });
+      return;
+    }
+    setReturnPhotos([...returnPhotos, ...files].slice(0, 6));
+  };
+
+  const removePhoto = (index: number) => {
+    setReturnPhotos(returnPhotos.filter((_, i) => i !== index));
+  };
 
   useEffect(() => {
     loadActiveBookings();
@@ -103,6 +120,7 @@ const CycleReturnContent = () => {
     setCycleCondition(booking.cycle_condition || "good");
     setDamageCost("0");
     setDamageDescription("");
+    setReturnPhotos([]);
     setDialogOpen(true);
   };
 
@@ -125,6 +143,30 @@ const CycleReturnContent = () => {
       const damage = parseFloat(damageCost);
       const depositRefund = selectedBooking.security_deposit - lateFee - damage;
 
+      // Upload photos if any
+      let photoUrls: string[] = [];
+      if (returnPhotos.length > 0) {
+        toast({
+          title: "Uploading photos...",
+          description: "Please wait",
+        });
+
+        for (const photo of returnPhotos) {
+          const fileName = `${selectedBooking.id}_${Date.now()}_${photo.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('booking-documents')
+            .upload(fileName, photo);
+
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('booking-documents')
+            .getPublicUrl(fileName);
+
+          photoUrls.push(publicUrl);
+        }
+      }
+
       // Mark cycle as returned and inspected
       const { error: updateError } = await supabase
         .from('bookings')
@@ -133,6 +175,7 @@ const CycleReturnContent = () => {
           cycle_inspected_at: new Date().toISOString(),
           cycle_condition: cycleCondition,
           late_fee: lateFee,
+          return_photos: photoUrls,
           booking_status: lateFee > 0 || damage > 0 ? 'active' : 'completed',
         })
         .eq('id', selectedBooking.id);
@@ -401,6 +444,42 @@ const CycleReturnContent = () => {
                       placeholder="Describe the damage or wear..."
                       rows={3}
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Upload Photos (Max 6)</Label>
+                    <Input
+                      type="file"
+                      accept="image/*,video/*"
+                      multiple
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        handlePhotoSelect(files);
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {returnPhotos.length}/6 files selected
+                    </p>
+                    {returnPhotos.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {returnPhotos.map((file, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`Photo ${index + 1}`}
+                              className="w-20 h-20 object-cover rounded border"
+                            />
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="absolute -top-2 -right-2 h-6 w-6"
+                              onClick={() => removePhoto(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </>
               )}

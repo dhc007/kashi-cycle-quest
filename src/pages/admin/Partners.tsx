@@ -34,6 +34,7 @@ interface Partner {
   latitude: number | null;
   longitude: number | null;
   partner_type: 'guest_house' | 'cafe/retail';
+  partner_code: string;
   is_active: boolean;
 }
 
@@ -119,6 +120,12 @@ const PartnersContent = () => {
 
         if (error) throw error;
       } else {
+        // Generate partner code
+        const { data: newCode, error: codeError } = await supabase
+          .rpc('generate_partner_code', { p_partner_type: formData.partner_type || 'cafe/retail' });
+
+        if (codeError) throw codeError;
+
         const { error } = await supabase
           .from('partners')
           .insert([{
@@ -132,6 +139,7 @@ const PartnersContent = () => {
             pincode: formData.pincode!,
             google_maps_link: formData.google_maps_link || null,
             partner_type: formData.partner_type || 'cafe/retail',
+            partner_code: newCode,
             is_active: formData.is_active ?? true,
           }]);
 
@@ -431,6 +439,7 @@ const PartnersContent = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Code</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Location</TableHead>
@@ -443,6 +452,11 @@ const PartnersContent = () => {
             <TableBody>
               {partners.map((partner) => (
                 <TableRow key={partner.id}>
+                  <TableCell>
+                    <Badge variant="secondary" className="font-mono">
+                      {partner.partner_code}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="font-medium">{partner.name}</TableCell>
                   <TableCell>
                     <Badge variant="outline" className={partner.partner_type === 'guest_house' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}>

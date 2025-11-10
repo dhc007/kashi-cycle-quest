@@ -200,7 +200,7 @@ function CancellationsContent() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Cancellation Requests</h1>
+        <h1 className="text-3xl font-bold">User Cancellation Requests</h1>
         <Badge variant="secondary" className="text-lg px-4 py-2">
           {requests.length} Pending
         </Badge>

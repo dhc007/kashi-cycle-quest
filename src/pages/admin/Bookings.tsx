@@ -45,6 +45,8 @@ interface Booking {
     email: string | null;
     emergency_contact_name: string | null;
     emergency_contact_phone: string | null;
+    live_photo_url: string | null;
+    id_proof_url: string | null;
   };
   cycles?: {
     name: string;
@@ -109,7 +111,7 @@ const BookingsContent = () => {
         (data || []).map(async (booking) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('first_name, last_name, phone_number, email, emergency_contact_name, emergency_contact_phone')
+            .select('first_name, last_name, phone_number, email, emergency_contact_name, emergency_contact_phone, live_photo_url, id_proof_url')
             .eq('user_id', booking.user_id)
             .single();
 
@@ -120,7 +122,16 @@ const BookingsContent = () => {
           
           return {
             ...booking,
-            profiles: profile || { first_name: 'N/A', last_name: '', phone_number: 'N/A', email: null, emergency_contact_name: null, emergency_contact_phone: null },
+            profiles: profile || { 
+              first_name: 'N/A', 
+              last_name: '', 
+              phone_number: 'N/A', 
+              email: null, 
+              emergency_contact_name: null, 
+              emergency_contact_phone: null,
+              live_photo_url: null,
+              id_proof_url: null
+            },
             booking_accessories: accessories || []
           };
         })
@@ -569,7 +580,32 @@ const BookingsContent = () => {
                     View Full Profile →
                   </Button>
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <p className="text-sm text-muted-foreground mb-2">Customer Photo & ID Proof</p>
+                    <div className="flex gap-4">
+                      {selectedBooking.profiles?.live_photo_url && (
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-1">Live Photo</p>
+                          <img 
+                            src={selectedBooking.profiles.live_photo_url} 
+                            alt="Customer Photo" 
+                            className="w-full h-32 object-cover rounded-lg border"
+                          />
+                        </div>
+                      )}
+                      {selectedBooking.profiles?.id_proof_url && (
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-1">Aadhar Card</p>
+                          <img 
+                            src={selectedBooking.profiles.id_proof_url} 
+                            alt="ID Proof" 
+                            className="w-full h-32 object-cover rounded-lg border"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Name</p>
                     <p className="font-medium">
