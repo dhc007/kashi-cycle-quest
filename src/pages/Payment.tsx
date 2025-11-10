@@ -358,10 +358,10 @@ const Payment = () => {
                           htmlFor="insurance"
                           className="text-sm font-medium leading-none cursor-pointer"
                         >
-                          Add Damage Insurance (₹{insuranceCost})
+                          Add Rider Insurance (₹{insuranceCost})
                         </label>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Covers accidental damage during rental period
+                          Covers rider protection during rental period
                         </p>
                       </div>
                     </div>
