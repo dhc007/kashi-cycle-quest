@@ -27,6 +27,15 @@ interface DashboardMetrics {
   activeBookings: number;
 }
 
+interface CycleUsage {
+  id: string;
+  name: string;
+  model: string;
+  total: number;
+  inUse: number;
+  available: number;
+}
+
 interface Booking {
   id: string;
   booking_id: string;
@@ -55,6 +64,7 @@ const DashboardContent = () => {
     activeBookings: 0,
   });
   const [activeBookings, setActiveBookings] = useState<Booking[]>([]);
+  const [cycleUsageData, setCycleUsageData] = useState<CycleUsage[]>([]);
   const [bookingTrends, setBookingTrends] = useState<any[]>([]);
   const [revenueTrends, setRevenueTrends] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -129,6 +139,25 @@ const DashboardContent = () => {
       );
 
       setActiveBookings(bookingsWithProfiles);
+
+      // Calculate per-cycle usage
+      const cycleUsage = await Promise.all((cycles || []).map(async (cycle) => {
+        const { count } = await supabase
+          .from('bookings')
+          .select('*', { count: 'exact', head: true })
+          .eq('cycle_id', cycle.id)
+          .in('booking_status', ['confirmed', 'active']);
+        
+        return {
+          id: cycle.id,
+          name: cycle.name,
+          model: cycle.model,
+          total: cycle.total_quantity,
+          inUse: count || 0,
+          available: cycle.total_quantity - (count || 0)
+        };
+      }));
+      setCycleUsageData(cycleUsage);
 
       // Calculate booking trends (last 7 days)
       const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -309,6 +338,55 @@ const DashboardContent = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Cycle Usage Table */}
+      <Card className="shadow-warm mb-8">
+        <CardHeader>
+          <CardTitle>Cycle Inventory Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Cycle</TableHead>
+                <TableHead>Model</TableHead>
+                <TableHead>Total Units</TableHead>
+                <TableHead>In Use</TableHead>
+                <TableHead>Available</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {cycleUsageData.length > 0 ? (
+                cycleUsageData.map((cycle) => (
+                  <TableRow key={cycle.id}>
+                    <TableCell className="font-semibold">{cycle.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{cycle.model}</TableCell>
+                    <TableCell>{cycle.total}</TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block w-2 h-2 bg-orange-600 rounded-full"></span>
+                        {cycle.inUse}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center gap-1">
+                        <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
+                        {cycle.available}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    No cycles found
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       {/* Active Bookings Table */}
       <Card className="shadow-warm">

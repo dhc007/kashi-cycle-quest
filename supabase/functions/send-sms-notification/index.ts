@@ -92,7 +92,7 @@ Location: ${locationName}
 I need assistance with my booking.`;
 
     const encodedMessage = encodeURIComponent(whatsappMessage);
-    const customerSupportPhone = Deno.env.get('CUSTOMER_SUPPORT_PHONE') || '919284613155';
+    const customerSupportPhone = Deno.env.get('CUSTOMER_SUPPORT_PHONE') || '919845205530';
     const fullWhatsappLink = `https://wa.me/${customerSupportPhone}?text=${encodedMessage}`;
 
     // Shorten URL using spoo.me

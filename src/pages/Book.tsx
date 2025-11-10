@@ -46,7 +46,8 @@ const Book = () => {
   const [selectedTime, setSelectedTime] = useState<string>();
   const [selectedDuration, setSelectedDuration] = useState<string>();
   const [accessories, setAccessories] = useState<Accessory[]>([]);
-  const [cycleData, setCycleData] = useState<any>(null);
+  const [cyclesData, setCyclesData] = useState<any[]>([]);
+  const [selectedCycle, setSelectedCycle] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
@@ -147,15 +148,19 @@ const Book = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load cycle data
-        const { data: cyclesData, error: cyclesError } = await supabase
+        // Load all active cycles
+        const { data: cyclesDataResponse, error: cyclesError } = await supabase
           .from('cycles')
           .select('*')
-          .eq('is_active', true)
-          .single();
+          .eq('is_active', true);
 
         if (cyclesError) throw cyclesError;
-        setCycleData(cyclesData);
+        setCyclesData(cyclesDataResponse || []);
+        
+        // Auto-select first cycle if only one exists
+        if (cyclesDataResponse && cyclesDataResponse.length === 1) {
+          setSelectedCycle(cyclesDataResponse[0]);
+        }
 
         // Load accessories
         const { data: accessoriesData, error: accessoriesError } = await supabase
@@ -252,20 +257,20 @@ const Book = () => {
 
   // Get base price for selected duration
   const getBasePrice = () => {
-    if (!cycleData) return 0;
-    if (selectedDuration === "One Day") return Number(cycleData.price_per_day);
-    if (selectedDuration === "One Week") return Number(cycleData.price_per_week);
-    if (selectedDuration === "One Month") return Number(cycleData.price_per_month || cycleData.price_per_day * 30);
+    if (!selectedCycle) return 0;
+    if (selectedDuration === "One Day") return Number(selectedCycle.price_per_day);
+    if (selectedDuration === "One Week") return Number(selectedCycle.price_per_week);
+    if (selectedDuration === "One Month") return Number(selectedCycle.price_per_month || selectedCycle.price_per_day * 30);
     return 0;
   };
 
   // Get security deposit based on duration
   const getSecurityDeposit = () => {
-    if (!cycleData) return 0;
-    if (selectedDuration === "One Day") return Number(cycleData.security_deposit_day || 2000);
-    if (selectedDuration === "One Week") return Number(cycleData.security_deposit_week || 3000);
-    if (selectedDuration === "One Month") return Number(cycleData.security_deposit_month || 5000);
-    return Number(cycleData.security_deposit || 2000);
+    if (!selectedCycle) return 0;
+    if (selectedDuration === "One Day") return Number(selectedCycle.security_deposit_day || 2000);
+    if (selectedDuration === "One Week") return Number(selectedCycle.security_deposit_week || 3000);
+    if (selectedDuration === "One Month") return Number(selectedCycle.security_deposit_month || 5000);
+    return Number(selectedCycle.security_deposit || 2000);
   };
 
   // Calculate accessories total
@@ -301,11 +306,59 @@ const Book = () => {
       return;
     }
 
-    if (!cycleData) {
+    if (!selectedCycle) {
       toast({
         title: "Error",
-        description: "Missing cycle data",
+        description: "Please select a cycle",
         variant: "destructive",
+      });
+      return;
+    }
+
+    // Check availability before proceeding
+    try {
+      const { data: cycleAvailable, error: cycleError } = await supabase.rpc('check_cycle_availability', {
+        p_cycle_id: selectedCycle.id,
+        p_pickup_date: format(selectedDate!, 'yyyy-MM-dd'),
+        p_return_date: returnDate ? format(returnDate, 'yyyy-MM-dd') : format(selectedDate!, 'yyyy-MM-dd')
+      });
+
+      if (cycleError) throw cycleError;
+
+      if (!cycleAvailable || cycleAvailable < 1) {
+        toast({
+          title: "Cycle Unavailable",
+          description: `${selectedCycle.name} is not available for the selected dates. All ${selectedCycle.total_quantity} units are booked.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check each accessory
+      for (const acc of accessories.filter(a => a.days > 0)) {
+        const { data: accAvailable, error: accError } = await supabase.rpc('check_accessory_availability', {
+          p_accessory_id: acc.id,
+          p_pickup_date: format(selectedDate!, 'yyyy-MM-dd'),
+          p_return_date: returnDate ? format(returnDate, 'yyyy-MM-dd') : format(selectedDate!, 'yyyy-MM-dd')
+        });
+
+        if (accError) throw accError;
+
+        if (!accAvailable || accAvailable < 1) {
+          toast({
+            title: "Accessory Unavailable",
+            description: `${acc.name} is not available for the selected dates. All units are booked.`,
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      toast({
+        title: "Error",
+        description: "Failed to check availability. Please try again.",
+        variant: "destructive"
       });
       return;
     }
@@ -378,9 +431,9 @@ const Book = () => {
         lastName,
         emergencyName,
         emergencyPhone,
-        cycleId: cycleData.id,
-        cycleName: cycleData.name,
-        cycleModel: cycleData.model,
+        cycleId: selectedCycle.id,
+        cycleName: selectedCycle.name,
+        cycleModel: selectedCycle.model,
         basePrice: getBasePrice(),
         accessoriesTotal,
         securityDeposit: getSecurityDeposit(),
@@ -424,11 +477,12 @@ const Book = () => {
           <div className="flex items-center justify-center gap-4">
             {[
               { num: 1, label: "Select Date & Time" },
-              { num: 2, label: "Choose Duration" },
-              { num: 3, label: "Add Accessories" },
-              { num: 4, label: "Pickup Location" },
-              { num: 5, label: "Checkout" },
-              { num: 6, label: "Payment" }
+              { num: 2, label: cyclesData.length > 1 ? "Select Cycle" : "Choose Duration" },
+              { num: 3, label: cyclesData.length > 1 ? "Choose Duration" : "Add Accessories" },
+              { num: 4, label: cyclesData.length > 1 ? "Add Accessories" : "Pickup Location" },
+              { num: 5, label: cyclesData.length > 1 ? "Pickup Location" : "Checkout" },
+              { num: 6, label: cyclesData.length > 1 ? "Checkout" : "Payment" },
+              ...(cyclesData.length > 1 ? [{ num: 7, label: "Payment" }] : [])
             ].map((s) => (
               <div key={s.num} className="flex items-center gap-2">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
@@ -530,12 +584,80 @@ const Book = () => {
                     disabled={!canContinue}
                     className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                   >
-                    Continue to Duration Selection
+                    {cyclesData.length > 1 ? 'Continue to Cycle Selection' : 'Continue to Duration Selection'}
                   </Button>
                 </div>
               )}
 
-              {step === 2 && (
+              {step === 2 && cyclesData.length > 1 && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Bike className="w-5 h-5 text-primary" />
+                      Select Your Cycle
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      Choose from our available electric bicycles
+                    </p>
+                    
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {cyclesData.map((cycle) => (
+                        <Card
+                          key={cycle.id}
+                          onClick={() => setSelectedCycle(cycle)}
+                          className={cn(
+                            "cursor-pointer hover:shadow-warm transition-all",
+                            selectedCycle?.id === cycle.id
+                              ? "border-primary border-2 shadow-warm bg-primary/5"
+                              : "hover:border-primary"
+                          )}
+                        >
+                          <CardContent className="p-4">
+                            {cycle.image_url && (
+                              <img
+                                src={cycle.image_url}
+                                alt={cycle.name}
+                                className="w-full h-40 object-cover rounded-lg mb-3"
+                              />
+                            )}
+                            <h4 className="font-semibold text-lg mb-1">{cycle.name}</h4>
+                            <p className="text-sm text-muted-foreground mb-3">{cycle.model}</p>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Day:</span>
+                                <span className="font-semibold">₹{cycle.price_per_day}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Week:</span>
+                                <span className="font-semibold">₹{cycle.price_per_week}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Available:</span>
+                                <span className="font-semibold text-green-600">{cycle.available_quantity}/{cycle.total_quantity}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                      Back
+                    </Button>
+                    <Button 
+                      onClick={() => setStep(3)} 
+                      disabled={!selectedCycle}
+                      className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                    >
+                      Continue to Duration
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {step === (cyclesData.length > 1 ? 3 : 2) && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -544,23 +666,23 @@ const Book = () => {
                     </h3>
                     
                     <div className="grid md:grid-cols-3 gap-4">
-                      {cycleData && [
+                      {selectedCycle && [
                         { 
                           duration: "One Day", 
-                          price: `₹${cycleData.price_per_day}`, 
-                          deposit: `₹${cycleData.security_deposit_day || 2000}`, 
+                          price: `₹${selectedCycle.price_per_day}`, 
+                          deposit: `₹${selectedCycle.security_deposit_day || 2000}`, 
                           hours: "24 hours" 
                         },
                         { 
                           duration: "One Week", 
-                          price: `₹${cycleData.price_per_week}`, 
-                          deposit: `₹${cycleData.security_deposit_week || 3000}`, 
+                          price: `₹${selectedCycle.price_per_week}`, 
+                          deposit: `₹${selectedCycle.security_deposit_week || 3000}`, 
                           hours: "7 days" 
                         },
                         { 
                           duration: "One Month", 
-                          price: `₹${cycleData.price_per_month || Number(cycleData.price_per_day) * 30}`, 
-                          deposit: `₹${cycleData.security_deposit_month || 5000}`, 
+                          price: `₹${selectedCycle.price_per_month || Number(selectedCycle.price_per_day) * 30}`, 
+                          deposit: `₹${selectedCycle.security_deposit_month || 5000}`, 
                           hours: "30 days" 
                         }
                       ].map((option) => (
@@ -587,11 +709,11 @@ const Book = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(cyclesData.length > 1 ? 2 : 1)} className="flex-1">
                       Back
                     </Button>
                     <Button 
-                      onClick={() => setStep(3)} 
+                      onClick={() => setStep(cyclesData.length > 1 ? 4 : 3)} 
                       disabled={!selectedDuration}
                       className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                     >
@@ -601,7 +723,7 @@ const Book = () => {
                 </div>
               )}
 
-              {step === 3 && (
+              {step === (cyclesData.length > 1 ? 4 : 3) && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -688,17 +810,17 @@ const Book = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(cyclesData.length > 1 ? 3 : 2)} className="flex-1">
                       Back
                     </Button>
-                    <Button onClick={() => setStep(4)} className="flex-1 bg-gradient-primary hover:opacity-90">
+                    <Button onClick={() => setStep(cyclesData.length > 1 ? 5 : 4)} className="flex-1 bg-gradient-primary hover:opacity-90">
                       Continue to Pickup Location
                     </Button>
                   </div>
                 </div>
               )}
 
-              {step === 4 && (
+              {step === (cyclesData.length > 1 ? 5 : 4) && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -767,11 +889,11 @@ const Book = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(cyclesData.length > 1 ? 4 : 3)} className="flex-1">
                       Back
                     </Button>
                     <Button 
-                      onClick={() => setStep(5)} 
+                      onClick={() => setStep(cyclesData.length > 1 ? 6 : 5)} 
                       disabled={!selectedPickupLocation}
                       className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                     >
@@ -781,7 +903,7 @@ const Book = () => {
                 </div>
               )}
 
-              {step === 5 && (
+              {step === (cyclesData.length > 1 ? 6 : 5) && (
                 <div className="space-y-6">
                   {/* Logged in indicator */}
                   {user && (
@@ -931,7 +1053,7 @@ const Book = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(4)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(cyclesData.length > 1 ? 5 : 4)} className="flex-1">
                       Back
                     </Button>
                     <Button 
@@ -965,15 +1087,22 @@ const Book = () => {
                 </div>
 
                 {/* Cycle Information */}
-                {cycleData && (
+                {selectedCycle && (
                   <div className="space-y-2 pb-3 border-b animate-fade-in">
                     <p className="font-medium flex items-center gap-2">
                       <Bike className="w-4 h-4 text-primary" />
                       Cycle
                     </p>
                     <div className="ml-6 space-y-1">
-                      <p className="font-semibold">{cycleData.name}</p>
-                      <p className="text-xs text-muted-foreground">{cycleData.model}</p>
+                      {selectedCycle.image_url && (
+                        <img
+                          src={selectedCycle.image_url}
+                          alt={selectedCycle.name}
+                          className="w-full h-24 object-cover rounded-lg mb-2"
+                        />
+                      )}
+                      <p className="font-semibold">{selectedCycle.name}</p>
+                      <p className="text-xs text-muted-foreground">{selectedCycle.model}</p>
                     </div>
                   </div>
                 )}
