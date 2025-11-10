@@ -215,7 +215,8 @@ const Payment = () => {
           pickup_location_id: pickupLocationId,
           pickup_date: format(new Date(selectedDate), 'yyyy-MM-dd'),
           pickup_time: selectedTime,
-          return_date: returnDate,
+          return_date: format(new Date(returnDate), 'yyyy-MM-dd'),
+          return_time: returnTime || selectedTime,
           duration_type: selectedDuration,
           cycle_rental_cost: basePrice,
           accessories_cost: accessoriesTotal,
@@ -420,56 +421,66 @@ const Payment = () => {
                   <div className="space-y-1">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
-                        {cycleName} × {selectedDuration === "One Day" ? "1 day" : selectedDuration === "One Week" ? "7 days" : "30 days"}
+                        Cycle Rental ({selectedDuration})
                       </span>
-                      <span className="font-semibold">₹{basePrice}</span>
+                      <span className="font-semibold">₹{basePrice.toFixed(2)}</span>
                     </div>
                   </div>
                   
                   {/* Accessories Breakdown */}
-                  {accessories.length > 0 && (
+                  {accessories && accessories.length > 0 && (
                     <div className="space-y-1 pt-2 border-t">
                       <p className="text-xs font-medium text-muted-foreground mb-1">Accessories:</p>
                       {accessories.map((acc: any) => (
                         <div key={acc.id} className="flex justify-between text-xs">
                           <span className="text-muted-foreground">
-                            {acc.name} × {acc.days} {acc.days > 1 ? 'days' : 'day'}
+                            {acc.name} × {acc.days} {acc.days > 1 ? 'days' : 'day'} @ ₹{acc.pricePerDay}/day
                           </span>
-                          <span>₹{acc.pricePerDay * acc.days}</span>
+                          <span>₹{(acc.pricePerDay * acc.days).toFixed(2)}</span>
                         </div>
                       ))}
+                      <div className="flex justify-between text-xs font-medium pt-1">
+                        <span>Accessories Total</span>
+                        <span>₹{accessoriesTotal.toFixed(2)}</span>
+                      </div>
                     </div>
                   )}
                   
-                  {/* Security Deposit */}
-                  <div className="flex justify-between items-center pt-2 border-t bg-green-50 dark:bg-green-950 -mx-4 px-4 py-2 rounded">
-                    <span className="flex items-center gap-1">
-                      <span className="text-green-600 dark:text-green-400">🔒</span>
-                      <span className="font-medium">Security Deposit</span>
-                      <span className="text-xs text-muted-foreground">(Fully Refundable)</span>
-                    </span>
-                    <span className="font-semibold text-green-600 dark:text-green-400">₹{securityDeposit}</span>
+                  {/* Subtotal */}
+                  <div className="flex justify-between text-xs pt-2 border-t">
+                    <span className="font-medium">Subtotal</span>
+                    <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                   </div>
 
                   <div className="flex justify-between text-xs">
                     <span>GST (18%)</span>
-                    <span>₹{gst}</span>
+                    <span>₹{gst.toFixed(2)}</span>
                   </div>
 
                   {discount > 0 && (
                     <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
                       <span>Discount ({appliedCoupon?.code})</span>
-                      <span>-₹{discount}</span>
+                      <span>-₹{discount.toFixed(2)}</span>
                     </div>
                   )}
+                  
+                  {/* Security Deposit */}
+                  <div className="flex justify-between items-center pt-2 border-t bg-green-50 dark:bg-green-950 -mx-4 md:-mx-6 px-4 md:px-6 py-2 rounded">
+                    <span className="flex items-center gap-1 text-xs">
+                      <span className="text-green-600 dark:text-green-400">🔒</span>
+                      <span className="font-medium">Security Deposit</span>
+                      <span className="text-[10px] text-muted-foreground">(Refundable)</span>
+                    </span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">₹{securityDeposit.toFixed(2)}</span>
+                  </div>
 
-                  <div className="border-t pt-3 flex justify-between">
-                    <span className="font-bold text-lg">Total Amount</span>
-                    <span className="font-bold text-primary text-xl">₹{totalAmount}</span>
+                  <div className="border-t pt-3 flex justify-between items-baseline">
+                    <span className="font-bold text-base md:text-lg">Total Amount</span>
+                    <span className="font-bold text-primary text-lg md:text-xl">₹{totalAmount.toFixed(2)}</span>
                   </div>
                   
-                  <div className="text-sm font-semibold text-center">
-                    (Refundable Security Deposit: ₹{securityDeposit})
+                  <div className="text-[10px] md:text-xs text-center text-muted-foreground bg-muted/50 -mx-4 md:-mx-6 px-4 md:px-6 py-2 rounded">
+                    Security deposit of ₹{securityDeposit} will be refunded after cycle return
                   </div>
                 </div>
 
