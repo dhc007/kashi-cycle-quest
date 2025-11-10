@@ -258,18 +258,6 @@ const Book = () => {
 
   // Handle payment navigation
   const handleProceedToPayment = async () => {
-    console.log('Proceed to payment clicked');
-    console.log('Validation check:', {
-      canProceed: canProceedToPayment(),
-      phoneNumber,
-      phoneVerified,
-      firstName,
-      lastName,
-      livePhoto: !!livePhoto,
-      idProof: !!idProof,
-      user: !!user
-    });
-
     if (!canProceedToPayment()) {
       toast({
         title: "Incomplete Information",
@@ -288,39 +276,53 @@ const Book = () => {
       return;
     }
 
-    // Store files in sessionStorage as base64
+    // Upload files to Supabase storage
     try {
-      const filePromises = [];
+      toast({
+        title: "Uploading files...",
+        description: "Please wait while we process your documents",
+      });
 
+      let livePhotoUrl = '';
+      let idProofUrl = '';
+
+      // Upload live photo
       if (livePhoto) {
-        const promise = new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            sessionStorage.setItem('livePhoto', reader.result as string);
-            sessionStorage.setItem('livePhotoName', livePhoto.name);
-            resolve(null);
-          };
-          reader.onerror = () => reject(new Error('Failed to read live photo'));
-          reader.readAsDataURL(livePhoto);
-        });
-        filePromises.push(promise);
+        const fileName = `${Date.now()}_${livePhoto.name}`;
+        const { data, error } = await supabase.storage
+          .from('booking-documents')
+          .upload(fileName, livePhoto, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) throw new Error('Failed to upload live photo');
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('booking-documents')
+          .getPublicUrl(fileName);
+        
+        livePhotoUrl = publicUrl;
       }
 
+      // Upload ID proof
       if (idProof) {
-        const promise = new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => {
-            sessionStorage.setItem('idProof', reader.result as string);
-            sessionStorage.setItem('idProofName', idProof.name);
-            resolve(null);
-          };
-          reader.onerror = () => reject(new Error('Failed to read ID proof'));
-          reader.readAsDataURL(idProof);
-        });
-        filePromises.push(promise);
-      }
+        const fileName = `${Date.now()}_${idProof.name}`;
+        const { data, error } = await supabase.storage
+          .from('booking-documents')
+          .upload(fileName, idProof, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-      await Promise.all(filePromises);
+        if (error) throw new Error('Failed to upload ID proof');
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('booking-documents')
+          .getPublicUrl(fileName);
+        
+        idProofUrl = publicUrl;
+      }
 
       const bookingData = {
         selectedDate,
@@ -347,17 +349,17 @@ const Book = () => {
         basePrice: getBasePrice(),
         accessoriesTotal,
         securityDeposit: getSecurityDeposit(),
+        livePhotoUrl,
+        idProofUrl,
       };
       
-      console.log('Storing booking data:', bookingData);
       sessionStorage.setItem('bookingData', JSON.stringify(bookingData));
-      console.log('Navigating to payment page');
       navigate("/payment");
     } catch (error) {
-      console.error('Error storing files:', error);
+      console.error('Error uploading files:', error);
       toast({
         title: "Error",
-        description: "Failed to process files. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to process files. Please try again.",
         variant: "destructive",
       });
     }
