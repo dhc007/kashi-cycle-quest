@@ -1141,20 +1141,6 @@ const Book = () => {
 
               {step === 6 && (
                 <div className="space-y-6">
-                  {/* Partner Information */}
-                  {partnerData && (
-                    <Card className="border-primary/50 bg-primary/5">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <MapPin className="w-4 h-4 text-primary" />
-                          <span className="text-sm font-semibold">Booking through:</span>
-                        </div>
-                        <p className="text-lg font-bold text-primary">{partnerData.name}</p>
-                        <p className="text-xs text-muted-foreground">{partnerData.address}, {partnerData.city}</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
                   {/* Logged in indicator */}
                   {user && (
                     <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
@@ -1203,31 +1189,6 @@ const Book = () => {
                             </div>
                           </div>
 
-                          {/* Phone Input - Read only for authenticated users */}
-                          {user ? (
-                            <div className="space-y-2">
-                              <Label htmlFor="phoneVerified">Phone Number</Label>
-                              <Input
-                                id="phoneVerified"
-                                type="tel"
-                                value={phoneNumber}
-                                readOnly
-                                className="bg-muted"
-                              />
-                              <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-2">
-                                <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
-                                Verified account
-                              </p>
-                            </div>
-                          ) : (
-                            <PhoneInput
-                              value={phoneNumber}
-                              onChange={setPhoneNumber}
-                              onVerified={setPhoneVerified}
-                              verified={phoneVerified}
-                            />
-                          )}
-                          
                           <div className="space-y-2">
                             <Label htmlFor="email">Email Address (Optional)</Label>
                             <Input
@@ -1429,6 +1390,29 @@ const Book = () => {
                           })()}
                         </p>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Pickup Location */}
+                {selectedPickupLocation && (
+                  <div className="space-y-2 pb-3 border-b animate-fade-in">
+                    <p className="font-medium flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-primary" />
+                      Pickup Location
+                    </p>
+                    <div className="ml-6 text-xs">
+                      <p className="font-semibold">{selectedPickupLocation.name}</p>
+                      <p className="text-muted-foreground">{selectedPickupLocation.address}</p>
+                      <p className="text-muted-foreground">
+                        {selectedPickupLocation.city}, {selectedPickupLocation.state} - {selectedPickupLocation.pincode}
+                      </p>
+                      {selectedPickupLocation.phone_number && (
+                        <p className="text-primary mt-1">
+                          <Phone className="w-3 h-3 inline mr-1" />
+                          {selectedPickupLocation.phone_number}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
