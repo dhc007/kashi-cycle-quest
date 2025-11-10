@@ -99,7 +99,7 @@ View details in admin panel.`;
     const ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
     const AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
     const FROM_NUMBER = Deno.env.get('TWILIO_PHONE_NUMBER') || '+16812573439';
-    const ADMIN_PHONE = Deno.env.get('ADMIN_PHONE_NUMBER') || '+919284613155';
+    const ADMIN_PHONE = Deno.env.get('ADMIN_PHONE_NUMBER') || '+919845205530';
 
     console.log('Sending admin SMS to:', ADMIN_PHONE);
 
