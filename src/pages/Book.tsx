@@ -69,7 +69,9 @@ const Book = () => {
   const [partnerData, setPartnerData] = useState<Partner | null>(null);
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<PickupLocation | null>(null);
+  const [pickupLocationConfirmed, setPickupLocationConfirmed] = useState(false);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Get partner ID from URL and persist it
   const partnerParam = searchParams.get("partner");
@@ -409,9 +411,11 @@ const Book = () => {
 
   // Validate checkout form
   const canProceedToPayment = () => {
-    // For logged-in users: just need basic info (phone already verified)
+    // For logged-in users: Check phone from profile or entered phone
     // For non-logged-in users: require phone verification
-    const isPhoneValid = user ? phoneNumber.length === 10 : phoneVerified;
+    const isPhoneValid = user 
+      ? (profileData?.phone_number?.length === 10 || phoneNumber.length === 10) 
+      : phoneVerified;
     return isPhoneValid && firstName && lastName && livePhoto && idProof;
   };
 
@@ -658,7 +662,7 @@ const Book = () => {
                       {/* Date Picker */}
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Pickup Date</label>
-                        <Popover>
+                         <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                           <PopoverTrigger asChild>
                             <Button
                               variant="outline"
@@ -675,7 +679,10 @@ const Book = () => {
                             <Calendar
                               mode="single"
                               selected={selectedDate}
-                              onSelect={setSelectedDate}
+                              onSelect={(date) => {
+                                setSelectedDate(date);
+                                setDatePickerOpen(false);
+                              }}
                               disabled={(date) =>
                                 date < new Date(new Date().setHours(0, 0, 0, 0)) || date > maxDate
                               }
@@ -1129,7 +1136,10 @@ const Book = () => {
                       Back
                     </Button>
                     <Button 
-                      onClick={() => setStep(6)} 
+                      onClick={() => {
+                        setPickupLocationConfirmed(true);
+                        setStep(6);
+                      }} 
                       disabled={!selectedPickupLocation}
                       className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                     >
@@ -1395,7 +1405,7 @@ const Book = () => {
                 )}
 
                 {/* Pickup Location */}
-                {selectedPickupLocation && (
+                {selectedPickupLocation && pickupLocationConfirmed && (
                   <div className="space-y-2 pb-3 border-b animate-fade-in">
                     <p className="font-medium flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-primary" />

@@ -47,9 +47,6 @@ export const Navbar = () => {
           
           {!user ? (
             <>
-              <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
-                <Link to="/manage-booking">Manage</Link>
-              </Button>
               <Button size="sm" asChild>
                 <Link to="/user-login">Login</Link>
               </Button>
