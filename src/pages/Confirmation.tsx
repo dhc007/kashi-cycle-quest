@@ -23,6 +23,7 @@ const Confirmation = () => {
     totalAmount,
     paymentId,
     accessories = [],
+    pickupLocation,
   } = bookingData;
 
   useEffect(() => {
@@ -104,15 +105,27 @@ const Confirmation = () => {
                     <MapPin className="w-5 h-5 text-primary mt-0.5" />
                     <div>
                       <p className="font-medium">Pickup Location</p>
-                      <p className="text-sm text-muted-foreground">Live Free Hostel Varanasi</p>
-                      <a
-                        href="https://www.google.com/maps/place/Live+Free+Hostel+Varanasi/@25.2847829,83.0044305,17z"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline"
-                      >
-                        View on Google Maps
-                      </a>
+                      {pickupLocation ? (
+                        <>
+                          <p className="text-sm text-muted-foreground font-medium">{pickupLocation.name}</p>
+                          <p className="text-sm text-muted-foreground">{pickupLocation.address}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {pickupLocation.city}, {pickupLocation.state} - {pickupLocation.pincode}
+                          </p>
+                          {pickupLocation.google_maps_link && (
+                            <a
+                              href={pickupLocation.google_maps_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline"
+                            >
+                              View on Google Maps
+                            </a>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Live Free Hostel Varanasi</p>
+                      )}
                     </div>
                   </div>
                 </div>
