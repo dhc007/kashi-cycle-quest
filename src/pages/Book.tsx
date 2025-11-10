@@ -548,6 +548,9 @@ const Book = () => {
         partnerId,
         pickupLocationId: selectedPickupLocation?.id,
         numberOfPeople,
+        cycleId: selectedCycles[0]?.id,
+        cycleName: selectedCycles[0]?.name,
+        cycleModel: selectedCycles[0]?.model,
         selectedCycles: selectedCycles.map(cycle => ({
           id: cycle.id,
           name: cycle.name,
