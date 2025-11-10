@@ -87,6 +87,7 @@ const Payment = () => {
     emergencyPhone,
     cycleId,
     partnerId,
+    pickupLocationId,
     basePrice = 0,
     accessoriesTotal = 0,
     securityDeposit = 0,
@@ -108,6 +109,7 @@ const Payment = () => {
         body: {
           cycle_id: cycleId,
           partner_id: partnerId,
+          pickup_location_id: pickupLocationId,
           pickup_date: format(new Date(selectedDate), 'yyyy-MM-dd'),
           pickup_time: selectedTime,
           return_date: returnDate,

@@ -14,6 +14,7 @@ import Bookings from "./pages/admin/Bookings";
 import Cycles from "./pages/admin/Cycles";
 import Accessories from "./pages/admin/Accessories";
 import Partners from "./pages/admin/Partners";
+import PickupLocations from "./pages/admin/PickupLocations";
 import AdminSettings from "./pages/admin/AdminSettings";
 import Users from "./pages/admin/Users";
 import Cancellations from "./pages/admin/Cancellations";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="cycles" element={<Cycles />} />
             <Route path="accessories" element={<Accessories />} />
             <Route path="partners" element={<Partners />} />
+            <Route path="pickup-locations" element={<PickupLocations />} />
             <Route path="settings" element={<AdminSettings />} />
             <Route path="users" element={<Users />} />
             <Route path="cycle-return" element={<CycleReturn />} />

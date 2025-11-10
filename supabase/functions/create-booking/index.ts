@@ -158,6 +158,7 @@ serve(async (req) => {
         user_id: userId,
         cycle_id: bookingData.cycle_id,
         partner_id: bookingData.partner_id || null,
+        pickup_location_id: bookingData.pickup_location_id || null,
         pickup_date: bookingData.pickup_date,
         pickup_time: bookingData.pickup_time,
         return_date: bookingData.return_date,

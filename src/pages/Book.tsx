@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Clock, Bike, Camera, Plus, Minus, User } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, Bike, Camera, Plus, Minus, User, MapPin, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
 import { FileUpload } from "@/components/FileUpload";
@@ -25,6 +25,18 @@ interface Accessory {
   available: number;
 }
 
+interface PickupLocation {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  landmark: string | null;
+  phone_number: string;
+  google_maps_link: string | null;
+}
+
 const Book = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -37,6 +49,8 @@ const Book = () => {
   const [cycleData, setCycleData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [partnerId, setPartnerId] = useState<string | null>(null);
+  const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
+  const [selectedPickupLocation, setSelectedPickupLocation] = useState<PickupLocation | null>(null);
 
   // Authentication state
   const [user, setUser] = useState<any>(null);
@@ -161,6 +175,15 @@ const Book = () => {
             available: acc.available_quantity || 0,
           }))
         );
+
+        // Load pickup locations
+        const { data: locationsData, error: locationsError } = await supabase
+          .from('pickup_locations')
+          .select('*')
+          .eq('is_active', true);
+
+        if (locationsError) throw locationsError;
+        setPickupLocations(locationsData || []);
 
       } catch (error: any) {
         console.error('Error loading data:', error);
@@ -342,6 +365,7 @@ const Book = () => {
         returnDate: returnDate ? format(returnDate, 'yyyy-MM-dd') : null,
         returnTime: selectedTime,
         partnerId,
+        pickupLocationId: selectedPickupLocation?.id,
         accessories: accessories.filter(acc => acc.days > 0).map(acc => ({
           id: acc.id,
           name: acc.name,
@@ -402,8 +426,9 @@ const Book = () => {
               { num: 1, label: "Select Date & Time" },
               { num: 2, label: "Choose Duration" },
               { num: 3, label: "Add Accessories" },
-              { num: 4, label: "Checkout" },
-              { num: 5, label: "Payment" }
+              { num: 4, label: "Pickup Location" },
+              { num: 5, label: "Checkout" },
+              { num: 6, label: "Payment" }
             ].map((s) => (
               <div key={s.num} className="flex items-center gap-2">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
@@ -667,13 +692,96 @@ const Book = () => {
                       Back
                     </Button>
                     <Button onClick={() => setStep(4)} className="flex-1 bg-gradient-primary hover:opacity-90">
-                      Continue to Checkout
+                      Continue to Pickup Location
                     </Button>
                   </div>
                 </div>
               )}
 
               {step === 4 && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      Select Pickup Location
+                    </h3>
+                    <p className="text-muted-foreground mb-4">
+                      Choose where you'd like to pick up your cycle
+                    </p>
+
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {pickupLocations.map((location) => (
+                        <Card
+                          key={location.id}
+                          onClick={() => setSelectedPickupLocation(location)}
+                          className={cn(
+                            "cursor-pointer hover:shadow-warm transition-all",
+                            selectedPickupLocation?.id === location.id
+                              ? "border-primary border-2 shadow-warm bg-primary/5"
+                              : "hover:border-primary"
+                          )}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start gap-3">
+                              <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
+                              <div className="flex-1">
+                                <h4 className="font-semibold mb-2">{location.name}</h4>
+                                <p className="text-sm text-muted-foreground mb-1">
+                                  {location.address}
+                                </p>
+                                {location.landmark && (
+                                  <p className="text-sm text-muted-foreground mb-1">
+                                    Near {location.landmark}
+                                  </p>
+                                )}
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {location.city}, {location.state} - {location.pincode}
+                                </p>
+                                <div className="flex items-center gap-4 mt-2">
+                                  <a
+                                    href={`tel:${location.phone_number}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                                  >
+                                    <Phone className="w-3 h-3" />
+                                    {location.phone_number}
+                                  </a>
+                                  {location.google_maps_link && (
+                                    <a
+                                      href={location.google_maps_link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="text-xs text-primary hover:underline"
+                                    >
+                                      View on Map
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4">
+                    <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
+                      Back
+                    </Button>
+                    <Button 
+                      onClick={() => setStep(5)} 
+                      disabled={!selectedPickupLocation}
+                      className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                    >
+                      Continue to Checkout
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {step === 5 && (
                 <div className="space-y-6">
                   {/* Logged in indicator */}
                   {user && (
@@ -823,7 +931,7 @@ const Book = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(4)} className="flex-1">
                       Back
                     </Button>
                     <Button 

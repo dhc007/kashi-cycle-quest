@@ -186,6 +186,7 @@ export type Database = {
           payment_method: string | null
           payment_status: string
           pickup_date: string
+          pickup_location_id: string | null
           pickup_time: string
           razorpay_order_id: string | null
           razorpay_payment_id: string | null
@@ -232,6 +233,7 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string
           pickup_date: string
+          pickup_location_id?: string | null
           pickup_time: string
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
@@ -278,6 +280,7 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string
           pickup_date?: string
+          pickup_location_id?: string | null
           pickup_time?: string
           razorpay_order_id?: string | null
           razorpay_payment_id?: string | null
@@ -303,6 +306,13 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_pickup_location_id_fkey"
+            columns: ["pickup_location_id"]
+            isOneToOne: false
+            referencedRelation: "pickup_locations"
             referencedColumns: ["id"]
           },
           {
@@ -621,6 +631,57 @@ export type Database = {
           otp_code?: string
           phone_number?: string
           verified?: boolean | null
+        }
+        Relationships: []
+      }
+      pickup_locations: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          google_maps_link: string | null
+          id: string
+          is_active: boolean
+          landmark: string | null
+          latitude: number | null
+          longitude: number | null
+          name: string
+          phone_number: string
+          pincode: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          city: string
+          created_at?: string
+          google_maps_link?: string | null
+          id?: string
+          is_active?: boolean
+          landmark?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          phone_number: string
+          pincode: string
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          google_maps_link?: string | null
+          id?: string
+          is_active?: boolean
+          landmark?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          phone_number?: string
+          pincode?: string
+          state?: string
+          updated_at?: string
         }
         Relationships: []
       }

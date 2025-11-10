@@ -26,6 +26,7 @@ const AdminLayout = () => {
     { icon: Package, label: "Accessories", path: "/admin/accessories" },
     { icon: Users, label: "Customers", path: "/admin/users" },
     { icon: MapPin, label: "Partners", path: "/admin/partners" },
+    { icon: MapPin, label: "Pickup Locations", path: "/admin/pickup-locations" },
     { icon: PackageCheck, label: "Cycle Returns", path: "/admin/cycle-return" },
     { icon: Wrench, label: "Maintenance", path: "/admin/maintenance" },
     { icon: Settings, label: "Settings", path: "/admin/settings" },
