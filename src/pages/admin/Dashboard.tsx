@@ -101,9 +101,22 @@ const DashboardContent = () => {
       const refundsProcessed = cancelledBookings.reduce((sum, b) => sum + Number(b.refund_amount || 0), 0);
       const netRevenue = totalRevenue - refundsProcessed;
       const totalPartners = partners?.length || 0;
-      const availableCycles = cycles?.reduce((sum, c) => sum + c.available_quantity, 0) || 0;
-      const cyclesInUse = cycles?.reduce((sum, c) => sum + (c.total_quantity - c.available_quantity), 0) || 0;
-      const activeBookingsCount = bookings?.filter(b => b.booking_status === 'active' || b.booking_status === 'confirmed').length || 0;
+      
+      // Calculate active bookings (only current/future bookings)
+      const today = new Date().toISOString().split('T')[0];
+      const currentActiveBookings = bookings?.filter(b => 
+        (b.booking_status === 'active' || b.booking_status === 'confirmed') && 
+        b.return_date >= today
+      ) || [];
+      const activeBookingsCount = currentActiveBookings.length;
+      
+      // Calculate cycles in use based on actual active bookings
+      const cyclesInUseCount = currentActiveBookings.length;
+      
+      // Calculate total available cycles
+      const totalCyclesCount = cycles?.reduce((sum, c) => sum + c.total_quantity, 0) || 0;
+      const availableCyclesCount = totalCyclesCount - cyclesInUseCount;
+      
       const cancelledBookingsCount = cancelledBookings.length;
 
       setMetrics({
@@ -113,8 +126,8 @@ const DashboardContent = () => {
         refundsProcessed,
         cancelledBookings: cancelledBookingsCount,
         totalPartners,
-        availableCycles,
-        cyclesInUse,
+        availableCycles: availableCyclesCount,
+        cyclesInUse: cyclesInUseCount,
         activeBookings: activeBookingsCount,
       });
 
@@ -140,13 +153,14 @@ const DashboardContent = () => {
 
       setActiveBookings(bookingsWithProfiles);
 
-      // Calculate per-cycle usage
+      // Calculate per-cycle usage (only count current/future bookings)
       const cycleUsage = await Promise.all((cycles || []).map(async (cycle) => {
         const { count } = await supabase
           .from('bookings')
           .select('*', { count: 'exact', head: true })
           .eq('cycle_id', cycle.id)
-          .in('booking_status', ['confirmed', 'active']);
+          .in('booking_status', ['confirmed', 'active'])
+          .gte('return_date', today);
         
         return {
           id: cycle.id,
