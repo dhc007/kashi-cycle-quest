@@ -31,6 +31,8 @@ interface Cycle {
   model: string;
   description: string | null;
   image_url: string | null;
+  video_url: string | null;
+  media_urls: string[] | null;
   price_per_day: number;
   price_per_week: number;
   price_per_month: number | null;
@@ -54,6 +56,9 @@ const Cycles = () => {
   const [editingCycle, setEditingCycle] = useState<Cycle | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [warrantyFile, setWarrantyFile] = useState<File | null>(null);
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [accessorySearch, setAccessorySearch] = useState("");
   const [accessoryPopoverOpen, setAccessoryPopoverOpen] = useState(false);
@@ -62,6 +67,8 @@ const Cycles = () => {
     model: "",
     description: "",
     image_url: "",
+    video_url: "",
+    media_urls: [],
     price_per_day: 0,
     price_per_week: 0,
     price_per_month: 0,
@@ -73,7 +80,15 @@ const Cycles = () => {
     is_active: true,
     free_accessories: [],
     specifications: {},
-    internal_details: { vendor: "", warranty: "", invoice: "" },
+    internal_details: { 
+      vendor: "", 
+      warranty: "", 
+      invoice: "", 
+      warranty_file_url: "",
+      invoice_file_url: "",
+      date_received: "",
+      purchase_amount: 0
+    },
   });
   const [specKey, setSpecKey] = useState("");
   const [specValue, setSpecValue] = useState("");
@@ -116,19 +131,19 @@ const Cycles = () => {
     }
   };
 
-  const uploadImage = async (file: File): Promise<string> => {
+  const uploadFile = async (file: File, bucket: string = 'cycles'): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('cycles')
+      .from(bucket)
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
     const { data: { publicUrl } } = supabase.storage
-      .from('cycles')
+      .from(bucket)
       .getPublicUrl(filePath);
 
     return publicUrl;
@@ -140,9 +155,30 @@ const Cycles = () => {
     
     try {
       let imageUrl = formData.image_url;
+      let mediaUrls = formData.media_urls || [];
+      let warrantyFileUrl = formData.internal_details?.warranty_file_url || "";
+      let invoiceFileUrl = formData.internal_details?.invoice_file_url || "";
 
       if (imageFile) {
-        imageUrl = await uploadImage(imageFile);
+        imageUrl = await uploadFile(imageFile);
+      }
+
+      // Upload media files
+      if (mediaFiles.length > 0) {
+        const uploadedMediaUrls = await Promise.all(
+          mediaFiles.map(file => uploadFile(file))
+        );
+        mediaUrls = uploadedMediaUrls;
+      }
+
+      // Upload warranty file
+      if (warrantyFile) {
+        warrantyFileUrl = await uploadFile(warrantyFile, 'documents');
+      }
+
+      // Upload invoice file
+      if (invoiceFile) {
+        invoiceFileUrl = await uploadFile(invoiceFile, 'documents');
       }
       
       if (editingCycle) {
@@ -151,9 +187,14 @@ const Cycles = () => {
           .update({ 
             ...formData, 
             image_url: imageUrl,
+            media_urls: mediaUrls,
             free_accessories: formData.free_accessories || [],
             specifications: formData.specifications || {},
-            internal_details: formData.internal_details || { vendor: "", warranty: "", invoice: "" }
+            internal_details: {
+              ...(formData.internal_details || {}),
+              warranty_file_url: warrantyFileUrl,
+              invoice_file_url: invoiceFileUrl,
+            }
           })
           .eq('id', editingCycle.id);
 
@@ -171,6 +212,8 @@ const Cycles = () => {
             model: formData.model!,
             description: formData.description || null,
             image_url: imageUrl || null,
+            video_url: formData.video_url || null,
+            media_urls: mediaUrls,
             price_per_hour: 0,
             price_per_day: formData.price_per_day!,
             price_per_week: formData.price_per_week!,
@@ -216,6 +259,8 @@ const Cycles = () => {
       model: "",
       description: "",
       image_url: "",
+      video_url: "",
+      media_urls: [],
       price_per_day: 0,
       price_per_week: 0,
       price_per_month: 0,
@@ -227,8 +272,20 @@ const Cycles = () => {
       is_active: true,
       free_accessories: [],
       specifications: {},
-      internal_details: { vendor: "", warranty: "", invoice: "" },
+      internal_details: { 
+        vendor: "", 
+        warranty: "", 
+        invoice: "", 
+        warranty_file_url: "",
+        invoice_file_url: "",
+        date_received: "",
+        purchase_amount: 0
+      },
     });
+    setImageFile(null);
+    setMediaFiles([]);
+    setWarrantyFile(null);
+    setInvoiceFile(null);
   };
 
   const handleEdit = (cycle: Cycle) => {
@@ -414,6 +471,16 @@ const Cycles = () => {
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="video_url">Video URL</Label>
+                <Input
+                  id="video_url"
+                  value={formData.video_url || ""}
+                  onChange={(e) => setFormData({...formData, video_url: e.target.value})}
+                  placeholder="https://... (optional video URL)"
+                />
+              </div>
+
               <FileUpload
                 label="Upload Cycle Image"
                 accept="image/*"
@@ -421,6 +488,27 @@ const Cycles = () => {
                 maxSize={5}
                 description="Upload a cycle image (max 5MB)"
               />
+
+              <div className="space-y-2">
+                <Label>Media Gallery (Images & Videos - Max 6 files)</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[...Array(6)].map((_, index) => (
+                    <FileUpload
+                      key={index}
+                      label={`Media ${index + 1}`}
+                      accept="image/*,video/*"
+                      onFileSelect={(file) => {
+                        const newFiles = [...mediaFiles];
+                        newFiles[index] = file;
+                        setMediaFiles(newFiles.filter(Boolean));
+                      }}
+                      maxSize={20}
+                      description="Image or Video"
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">Upload up to 6 images or videos to showcase the cycle</p>
+              </div>
 
               {/* Free Accessories */}
               <div className="space-y-2">
@@ -502,9 +590,10 @@ const Cycles = () => {
               </div>
 
               {/* Internal Details */}
-              <div className="space-y-2 border p-4 rounded-lg">
+              <div className="space-y-4 border p-4 rounded-lg bg-accent/20">
                 <Label className="text-base font-semibold">Internal Details (Admin Only)</Label>
-                <div className="grid md:grid-cols-3 gap-4">
+                
+                <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="vendor">Vendor</Label>
                     <Input
@@ -520,8 +609,42 @@ const Cycles = () => {
                       placeholder="Vendor name"
                     />
                   </div>
+                  
                   <div className="space-y-2">
-                    <Label htmlFor="warranty">Warranty</Label>
+                    <Label htmlFor="date_received">Date Received</Label>
+                    <Input
+                      id="date_received"
+                      type="date"
+                      value={formData.internal_details?.date_received || ""}
+                      onChange={(e) => setFormData({
+                        ...formData, 
+                        internal_details: { 
+                          ...(formData.internal_details || {}), 
+                          date_received: e.target.value 
+                        }
+                      })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="purchase_amount">Purchase Amount (₹)</Label>
+                    <Input
+                      id="purchase_amount"
+                      type="number"
+                      value={formData.internal_details?.purchase_amount || ""}
+                      onChange={(e) => setFormData({
+                        ...formData, 
+                        internal_details: { 
+                          ...(formData.internal_details || {}), 
+                          purchase_amount: Number(e.target.value) 
+                        }
+                      })}
+                      placeholder="0"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="warranty">Warranty Period</Label>
                     <Input
                       id="warranty"
                       value={formData.internal_details?.warranty || ""}
@@ -532,24 +655,43 @@ const Cycles = () => {
                           warranty: e.target.value 
                         }
                       })}
-                      placeholder="Warranty period"
+                      placeholder="e.g., 1 year"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="invoice">Invoice</Label>
-                    <Input
-                      id="invoice"
-                      value={formData.internal_details?.invoice || ""}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        internal_details: { 
-                          ...(formData.internal_details || {}), 
-                          invoice: e.target.value 
-                        }
-                      })}
-                      placeholder="Invoice number"
-                    />
-                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <FileUpload
+                    label="Warranty Document (PDF)"
+                    accept="application/pdf,image/*"
+                    onFileSelect={(file) => setWarrantyFile(file)}
+                    maxSize={10}
+                    description="Upload warranty document"
+                  />
+                  
+                  <FileUpload
+                    label="Invoice Document (PDF)"
+                    accept="application/pdf,image/*"
+                    onFileSelect={(file) => setInvoiceFile(file)}
+                    maxSize={10}
+                    description="Upload purchase invoice"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="invoice">Invoice Number</Label>
+                  <Input
+                    id="invoice"
+                    value={formData.internal_details?.invoice || ""}
+                    onChange={(e) => setFormData({
+                      ...formData, 
+                      internal_details: { 
+                        ...(formData.internal_details || {}), 
+                        invoice: e.target.value 
+                      }
+                    })}
+                    placeholder="Invoice number"
+                  />
                 </div>
               </div>
 
@@ -614,32 +756,6 @@ const Cycles = () => {
                     value={formData.security_deposit_month}
                     onChange={(e) => setFormData({...formData, security_deposit_month: Number(e.target.value)})}
                     required
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="total_quantity">Total Quantity *</Label>
-                  <Input
-                    id="total_quantity"
-                    type="number"
-                    value={formData.total_quantity}
-                    onChange={(e) => setFormData({...formData, total_quantity: Number(e.target.value)})}
-                    required
-                    min="1"
-                  />
-                  <p className="text-xs text-muted-foreground">Note: Each cycle is unique. Quantity represents individual units.</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="available_quantity">Available Quantity *</Label>
-                  <Input
-                    id="available_quantity"
-                    type="number"
-                    value={formData.available_quantity}
-                    onChange={(e) => setFormData({...formData, available_quantity: Number(e.target.value)})}
-                    required
-                    min="0"
                   />
                 </div>
               </div>

@@ -28,6 +28,7 @@ interface Accessory {
   total_quantity: number;
   available_quantity: number;
   is_active: boolean;
+  internal_details: any;
 }
 
 const AccessoriesContent = () => {
@@ -36,6 +37,8 @@ const AccessoriesContent = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [warrantyFile, setWarrantyFile] = useState<File | null>(null);
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState<Partial<Accessory>>({});
   const { toast } = useToast();
@@ -65,19 +68,19 @@ const AccessoriesContent = () => {
     }
   };
 
-  const uploadImage = async (file: File): Promise<string> => {
+  const uploadFile = async (file: File, bucket: string = 'accessories'): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('accessories')
+      .from(bucket)
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
     const { data: { publicUrl } } = supabase.storage
-      .from('accessories')
+      .from(bucket)
       .getPublicUrl(filePath);
 
     return publicUrl;
@@ -87,10 +90,22 @@ const AccessoriesContent = () => {
     setUploadingImage(true);
     try {
       let imageUrl = formData.image_url;
+      let warrantyFileUrl = formData.internal_details?.warranty_file_url || "";
+      let invoiceFileUrl = formData.internal_details?.invoice_file_url || "";
 
       // Upload new image if selected
       if (imageFile) {
-        imageUrl = await uploadImage(imageFile);
+        imageUrl = await uploadFile(imageFile);
+      }
+
+      // Upload warranty file
+      if (warrantyFile) {
+        warrantyFileUrl = await uploadFile(warrantyFile, 'documents');
+      }
+
+      // Upload invoice file
+      if (invoiceFile) {
+        invoiceFileUrl = await uploadFile(invoiceFile, 'documents');
       }
 
       if (editingId) {
@@ -104,12 +119,17 @@ const AccessoriesContent = () => {
             total_quantity: formData.total_quantity,
             available_quantity: formData.available_quantity,
             is_active: formData.is_active,
+            internal_details: {
+              ...(formData.internal_details || {}),
+              warranty_file_url: warrantyFileUrl,
+              invoice_file_url: invoiceFileUrl,
+            }
           })
           .eq('id', editingId);
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error} = await supabase
           .from('accessories')
           .insert([{
             name: formData.name!,
@@ -119,6 +139,11 @@ const AccessoriesContent = () => {
             total_quantity: formData.total_quantity!,
             available_quantity: formData.available_quantity!,
             is_active: formData.is_active ?? true,
+            internal_details: {
+              ...(formData.internal_details || {}),
+              warranty_file_url: warrantyFileUrl,
+              invoice_file_url: invoiceFileUrl,
+            }
           }]);
 
         if (error) throw error;
@@ -133,6 +158,8 @@ const AccessoriesContent = () => {
       setDialogOpen(false);
       setEditingId(null);
       setImageFile(null);
+      setWarrantyFile(null);
+      setInvoiceFile(null);
       setFormData({});
     } catch (error: any) {
       toast({
@@ -273,6 +300,97 @@ const AccessoriesContent = () => {
                     />
                   </div>
                 </div>
+
+                {/* Internal Details */}
+                <div className="space-y-4 border p-4 rounded-lg bg-accent/20">
+                  <Label className="text-base font-semibold">Internal Details (Admin Only)</Label>
+                  
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="vendor_name">Vendor Name</Label>
+                      <Input
+                        id="vendor_name"
+                        value={formData.internal_details?.vendor_name || ''}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          internal_details: { 
+                            ...(formData.internal_details || {}), 
+                            vendor_name: e.target.value 
+                          } 
+                        })}
+                        placeholder="Vendor name"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="model_number">Model Number</Label>
+                      <Input
+                        id="model_number"
+                        value={formData.internal_details?.model_number || ''}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          internal_details: { 
+                            ...(formData.internal_details || {}), 
+                            model_number: e.target.value 
+                          } 
+                        })}
+                        placeholder="Model number"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="date_of_purchase">Date of Purchase</Label>
+                      <Input
+                        id="date_of_purchase"
+                        type="date"
+                        value={formData.internal_details?.date_of_purchase || ''}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          internal_details: { 
+                            ...(formData.internal_details || {}), 
+                            date_of_purchase: e.target.value 
+                          } 
+                        })}
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="purchase_amount">Purchase Amount (₹)</Label>
+                      <Input
+                        id="purchase_amount"
+                        type="number"
+                        value={formData.internal_details?.purchase_amount || ''}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          internal_details: { 
+                            ...(formData.internal_details || {}), 
+                            purchase_amount: Number(e.target.value) 
+                          } 
+                        })}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FileUpload
+                      label="Warranty Document (PDF)"
+                      accept="application/pdf,image/*"
+                      onFileSelect={(file) => setWarrantyFile(file)}
+                      maxSize={10}
+                      description="Upload warranty document"
+                    />
+                    
+                    <FileUpload
+                      label="Invoice Document (PDF)"
+                      accept="application/pdf,image/*"
+                      onFileSelect={(file) => setInvoiceFile(file)}
+                      maxSize={10}
+                      description="Upload purchase invoice"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2">
                   <Switch
                     id="is_active"

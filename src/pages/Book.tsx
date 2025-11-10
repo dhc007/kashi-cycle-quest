@@ -14,6 +14,7 @@ import { Calendar as CalendarIcon, Clock, Bike, Camera, Plus, Minus, User, MapPi
 import { cn } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
 import { FileUpload } from "@/components/FileUpload";
+import { MediaSlider } from "@/components/MediaSlider";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -778,13 +779,21 @@ const Book = () => {
                                 )}
                               >
                                 <CardContent className="p-4">
-                                  {cycle.image_url && (
+                                  {/* Show MediaSlider if media_urls exist, otherwise show single image */}
+                                  {cycle.media_urls && cycle.media_urls.length > 0 ? (
+                                    <MediaSlider 
+                                      mediaUrls={cycle.media_urls} 
+                                      alt={cycle.name}
+                                      className="mb-3"
+                                    />
+                                  ) : cycle.image_url ? (
                                     <img
                                       src={cycle.image_url}
                                       alt={cycle.name}
                                       className="w-full h-40 object-cover rounded-lg mb-3 pointer-events-none"
                                     />
-                                  )}
+                                  ) : null}
+                                  
                                   <h4 className="font-semibold text-lg mb-1">{cycle.name}</h4>
                                   <p className="text-sm text-muted-foreground mb-3">{cycle.model}</p>
                                   
