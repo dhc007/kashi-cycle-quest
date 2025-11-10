@@ -119,3 +119,55 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Print Styles */
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .container {
+    max-width: 100% !important;
+  }
+  
+  /* Hide navigation and non-essential elements */
+  nav, .navbar, header {
+    display: none !important;
+  }
+  
+  /* Optimize card styling for print */
+  .card, [class*="card"] {
+    border: 1px solid #ccc !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+  }
+  
+  /* QR Code container */
+  .qr-code-container {
+    background: white !important;
+    padding: 1rem !important;
+  }
+  
+  /* Ensure all text is readable */
+  * {
+    color: black !important;
+  }
+  
+  /* Keep primary colors visible for branding */
+  .text-primary {
+    color: #ff8c42 !important;
+  }
+  
+  .bg-green-50, .bg-green-950 {
+    background: #f0f9f0 !important;
+  }
+  
+  .text-green-600, .text-green-400 {
+    color: #16a34a !important;
+  }
+}

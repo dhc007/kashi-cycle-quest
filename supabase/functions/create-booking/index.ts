@@ -125,7 +125,7 @@ serve(async (req) => {
       throw new Error('User ID not available');
     }
 
-    // Create or update profile
+    // Create or update profile - ALWAYS update to ensure latest phone number is saved
     const { data: existingProfile } = await supabaseClient
       .from('profiles')
       .select('*')
@@ -133,6 +133,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!existingProfile) {
+      // Create new profile
       const { error: profileError } = await supabaseClient
         .from('profiles')
         .insert({
@@ -148,6 +149,23 @@ serve(async (req) => {
         });
 
       if (profileError) throw profileError;
+    } else {
+      // Update existing profile with latest information (especially phone number)
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({
+          first_name: bookingData.profile.first_name,
+          last_name: bookingData.profile.last_name,
+          phone_number: bookingData.profile.phone_number,
+          email: bookingData.profile.email,
+          emergency_contact_name: bookingData.profile.emergency_contact_name,
+          emergency_contact_phone: bookingData.profile.emergency_contact_phone,
+          id_proof_url: bookingData.profile.id_proof_url || existingProfile.id_proof_url,
+          photo_url: bookingData.profile.photo_url || existingProfile.photo_url,
+        })
+        .eq('user_id', userId);
+
+      if (updateError) throw updateError;
     }
 
     // Create booking

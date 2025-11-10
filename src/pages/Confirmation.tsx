@@ -3,9 +3,10 @@ import { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Calendar, Clock, MapPin, Phone } from "lucide-react";
+import { CheckCircle, Calendar, Clock, MapPin, Phone, Download } from "lucide-react";
 import { format } from "date-fns";
 import QRCode from "react-qr-code";
+import { toast } from "sonner";
 
 const Confirmation = () => {
   const location = useLocation();
@@ -35,6 +36,13 @@ const Confirmation = () => {
   );
 
   const whatsappNumber = "919845205530";
+
+  const handleDownloadConfirmation = () => {
+    toast.success("Preparing download...");
+    setTimeout(() => {
+      window.print();
+    }, 500);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -205,7 +213,11 @@ const Confirmation = () => {
             </CardContent>
           </Card>
 
-          <div className="text-center mt-6">
+          <div className="flex justify-center gap-4 mt-6 print:hidden">
+            <Button variant="outline" onClick={handleDownloadConfirmation}>
+              <Download className="w-4 h-4 mr-2" />
+              Download Confirmation
+            </Button>
             <Button variant="outline" onClick={() => navigate("/")}>
               Return to Home
             </Button>
