@@ -1333,20 +1333,45 @@ const Book = () => {
                       Cycles ({selectedCycles.length} {selectedCycles.length === 1 ? 'person' : 'people'})
                     </p>
                     <div className="ml-6 space-y-3">
-                      {selectedCycles.map((cycle, index) => (
-                        <div key={index} className="space-y-1">
-                          {cycle.image_url && (
-                            <img
-                              src={cycle.image_url}
-                              alt={cycle.name}
-                              className="w-full h-24 object-cover rounded-lg mb-2"
-                            />
-                          )}
-                          <p className="text-xs text-primary font-semibold">Person {index + 1}:</p>
-                          <p className="font-semibold">{cycle.name}</p>
-                          <p className="text-xs text-muted-foreground">{cycle.model}</p>
-                        </div>
-                      ))}
+                         {selectedCycles.map((cycle, index) => (
+                          <div key={index} className="space-y-1">
+                            {cycle.image_url && (
+                              <img
+                                src={cycle.image_url}
+                                alt={cycle.name}
+                                className="w-full h-24 object-cover rounded-lg mb-2"
+                              />
+                            )}
+                            <p className="text-xs text-primary font-semibold">Person {index + 1}:</p>
+                            <p className="font-semibold">{cycle.name}</p>
+                            <p className="text-xs text-muted-foreground">{cycle.model}</p>
+                            
+                            {/* Inclusions */}
+                            {cycle.free_accessories && cycle.free_accessories.length > 0 && (
+                              <div className="mt-2 p-2 bg-accent/50 rounded-md">
+                                <p className="text-xs font-semibold text-muted-foreground mb-1">Inclusions:</p>
+                                <ul className="text-xs text-muted-foreground space-y-0.5">
+                                  {cycle.free_accessories.map((accId: string) => {
+                                    const acc = accessories.find(a => a.id === accId);
+                                    return acc ? <li key={accId}>• {acc.name}</li> : null;
+                                  })}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Specifications */}
+                            {cycle.specifications && Object.keys(cycle.specifications).length > 0 && (
+                              <div className="mt-2 p-2 bg-accent/50 rounded-md">
+                                <p className="text-xs font-semibold text-muted-foreground mb-1">Specifications:</p>
+                                <ul className="text-xs text-muted-foreground space-y-0.5">
+                                  {Object.entries(cycle.specifications).map(([key, value]) => (
+                                    <li key={key}>• {key}: {value as string}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   </div>
                 )}

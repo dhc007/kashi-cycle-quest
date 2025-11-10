@@ -233,9 +233,12 @@ const Users = () => {
                               </button>
                             ))}
                             {user.bookings.length > 3 && (
-                              <p className="text-xs text-muted-foreground">
+                              <button
+                                onClick={() => navigate(`/admin/bookings?search=${user.profile?.phone_number || user.email}`)}
+                                className="text-xs text-primary hover:underline"
+                              >
                                 +{user.bookings.length - 3} more
-                              </p>
+                              </button>
                             )}
                           </div>
                         )}

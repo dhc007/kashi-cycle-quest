@@ -21,6 +21,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          internal_details: Json | null
           is_active: boolean
           name: string
           price_per_day: number
@@ -33,6 +34,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          internal_details?: Json | null
           is_active?: boolean
           name: string
           price_per_day: number
@@ -45,6 +47,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          internal_details?: Json | null
           is_active?: boolean
           name?: string
           price_per_day?: number
@@ -496,6 +499,7 @@ export type Database = {
           image_url: string | null
           internal_details: Json | null
           is_active: boolean
+          media_urls: string[] | null
           model: string
           name: string
           price_per_day: number
@@ -510,6 +514,7 @@ export type Database = {
           specifications: Json | null
           total_quantity: number
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           available_quantity?: number
@@ -520,6 +525,7 @@ export type Database = {
           image_url?: string | null
           internal_details?: Json | null
           is_active?: boolean
+          media_urls?: string[] | null
           model: string
           name: string
           price_per_day: number
@@ -534,6 +540,7 @@ export type Database = {
           specifications?: Json | null
           total_quantity?: number
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           available_quantity?: number
@@ -544,6 +551,7 @@ export type Database = {
           image_url?: string | null
           internal_details?: Json | null
           is_active?: boolean
+          media_urls?: string[] | null
           model?: string
           name?: string
           price_per_day?: number
@@ -558,6 +566,7 @@ export type Database = {
           specifications?: Json | null
           total_quantity?: number
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: []
       }

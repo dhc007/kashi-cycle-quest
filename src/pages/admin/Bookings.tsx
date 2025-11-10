@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -451,9 +451,17 @@ const BookingsContent = () => {
       </Card>
 
       <Card className="shadow-warm">
-        <Tabs defaultValue="upcoming" className="w-full">
+        <Tabs defaultValue="all" className="w-full">
           <div className="border-b px-4 md:px-6">
             <TabsList className="w-full justify-start h-auto flex-wrap bg-transparent p-0">
+              <TabsTrigger 
+                value="all" 
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
+              >
+                <span className="hidden sm:inline">All</span>
+                <span className="sm:hidden">All</span>
+                <span className="ml-1 text-xs">({filteredBookings.length})</span>
+              </TabsTrigger>
               <TabsTrigger 
                 value="upcoming" 
                 className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
@@ -492,6 +500,21 @@ const BookingsContent = () => {
               </TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="all" className="p-4 md:p-6">
+            <div className="md:hidden space-y-3">
+              {filteredBookings.map(renderBookingCard)}
+              {filteredBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No bookings found</p>
+              )}
+            </div>
+            <div className="hidden md:block">
+              {renderBookingTable(filteredBookings)}
+              {filteredBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No bookings found</p>
+              )}
+            </div>
+          </TabsContent>
 
           <TabsContent value="upcoming" className="p-4 md:p-6">
             <div className="md:hidden space-y-3">
@@ -598,21 +621,49 @@ const BookingsContent = () => {
                       {selectedBooking.profiles?.live_photo_url && (
                         <div className="flex-1">
                           <p className="text-xs text-muted-foreground mb-1">Live Photo</p>
-                          <img 
-                            src={selectedBooking.profiles.live_photo_url} 
-                            alt="Customer Photo" 
-                            className="w-full h-32 object-cover rounded-lg border"
-                          />
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <img 
+                                src={selectedBooking.profiles.live_photo_url} 
+                                alt="Customer Photo" 
+                                className="w-full h-32 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                              />
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl">
+                              <DialogHeader>
+                                <DialogTitle>Customer Live Photo</DialogTitle>
+                              </DialogHeader>
+                              <img 
+                                src={selectedBooking.profiles.live_photo_url} 
+                                alt="Customer Photo Full" 
+                                className="w-full h-auto rounded-lg"
+                              />
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       )}
                       {selectedBooking.profiles?.id_proof_url && (
                         <div className="flex-1">
                           <p className="text-xs text-muted-foreground mb-1">Aadhar Card</p>
-                          <img 
-                            src={selectedBooking.profiles.id_proof_url} 
-                            alt="ID Proof" 
-                            className="w-full h-32 object-cover rounded-lg border"
-                          />
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <img 
+                                src={selectedBooking.profiles.id_proof_url} 
+                                alt="ID Proof" 
+                                className="w-full h-32 object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                              />
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl">
+                              <DialogHeader>
+                                <DialogTitle>Customer ID Proof (Aadhar Card)</DialogTitle>
+                              </DialogHeader>
+                              <img 
+                                src={selectedBooking.profiles.id_proof_url} 
+                                alt="ID Proof Full" 
+                                className="w-full h-auto rounded-lg"
+                              />
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       )}
                     </div>
