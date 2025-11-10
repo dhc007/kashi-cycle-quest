@@ -22,6 +22,7 @@ interface Accessory {
   name: string;
   pricePerDay: number;
   imageUrl: string | null;
+  quantity: number; // Number of people using this accessory (0 to numberOfPeople)
   days: number;
   available: number;
 }
@@ -60,7 +61,7 @@ const Book = () => {
   const [selectedDuration, setSelectedDuration] = useState<string>();
   const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [cyclesData, setCyclesData] = useState<any[]>([]);
-  const [selectedCycle, setSelectedCycle] = useState<any>(null);
+  const [selectedCycles, setSelectedCycles] = useState<any[]>([]); // Array of cycles, one per person
   const [loading, setLoading] = useState(true);
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [partnerData, setPartnerData] = useState<Partner | null>(null);
@@ -204,11 +205,6 @@ const Book = () => {
 
         if (cyclesError) throw cyclesError;
         setCyclesData(cyclesDataResponse || []);
-        
-        // Auto-select first cycle if only one exists
-        if (cyclesDataResponse && cyclesDataResponse.length === 1) {
-          setSelectedCycle(cyclesDataResponse[0]);
-        }
 
         // Load accessories
         const { data: accessoriesData, error: accessoriesError } = await supabase
@@ -224,6 +220,7 @@ const Book = () => {
             name: acc.name,
             pricePerDay: Number(acc.price_per_day),
             imageUrl: acc.image_url,
+            quantity: 0, // Number of people using this accessory
             days: 0,
             available: acc.available_quantity || 0,
           }))
@@ -313,32 +310,49 @@ const Book = () => {
 
   const returnDate = getReturnDate();
 
-  // Get base price for selected duration
+  // Get base price for selected cycles (sum of all selected cycles)
   const getBasePrice = () => {
-    if (!selectedCycle) return 0;
-    if (selectedDuration === "One Day") return Number(selectedCycle.price_per_day);
-    if (selectedDuration === "One Week") return Number(selectedCycle.price_per_week);
-    if (selectedDuration === "One Month") return Number(selectedCycle.price_per_month || selectedCycle.price_per_day * 30);
-    return 0;
+    if (selectedCycles.length === 0) return 0;
+    return selectedCycles.reduce((sum, cycle) => {
+      if (selectedDuration === "One Day") return sum + Number(cycle.price_per_day);
+      if (selectedDuration === "One Week") return sum + Number(cycle.price_per_week);
+      if (selectedDuration === "One Month") return sum + Number(cycle.price_per_month || cycle.price_per_day * 30);
+      return sum;
+    }, 0);
   };
 
-  // Get security deposit based on duration
+  // Get security deposit based on duration and number of people
   const getSecurityDeposit = () => {
-    if (!selectedCycle) return 0;
-    if (selectedDuration === "One Day") return Number(selectedCycle.security_deposit_day || 2000);
-    if (selectedDuration === "One Week") return Number(selectedCycle.security_deposit_week || 3000);
-    if (selectedDuration === "One Month") return Number(selectedCycle.security_deposit_month || 5000);
-    return Number(selectedCycle.security_deposit || 2000);
+    if (selectedCycles.length === 0) return 0;
+    const perPersonDeposit = (() => {
+      const firstCycle = selectedCycles[0];
+      if (selectedDuration === "One Day") return Number(firstCycle.security_deposit_day || 2000);
+      if (selectedDuration === "One Week") return Number(firstCycle.security_deposit_week || 3000);
+      if (selectedDuration === "One Month") return Number(firstCycle.security_deposit_month || 5000);
+      return Number(firstCycle.security_deposit || 2000);
+    })();
+    return perPersonDeposit * numberOfPeople; // Multiply by number of people
   };
 
-  // Calculate accessories total
-  const accessoriesTotal = accessories.reduce((sum, acc) => sum + (acc.pricePerDay * acc.days), 0);
+  // Calculate accessories total (quantity * days * price per day)
+  const accessoriesTotal = accessories.reduce((sum, acc) => sum + (acc.quantity * acc.pricePerDay * acc.days), 0);
+
+  // Handle accessory quantity change
+  const updateAccessoryQuantity = (id: string, change: number) => {
+    setAccessories(prev => prev.map(acc => {
+      if (acc.id === id) {
+        const newQuantity = Math.max(0, Math.min(numberOfPeople, acc.quantity + change));
+        return { ...acc, quantity: newQuantity, days: newQuantity > 0 ? (acc.days || 1) : 0 };
+      }
+      return acc;
+    }));
+  };
 
   // Handle accessory day change
   const updateAccessoryDays = (id: string, change: number) => {
     setAccessories(prev => prev.map(acc => {
-      if (acc.id === id) {
-        const newDays = Math.max(0, Math.min(maxAccessoryDays, acc.days + change));
+      if (acc.id === id && acc.quantity > 0) {
+        const newDays = Math.max(1, Math.min(maxAccessoryDays, acc.days + change));
         return { ...acc, days: newDays };
       }
       return acc;
@@ -364,10 +378,10 @@ const Book = () => {
       return;
     }
 
-    if (!selectedCycle) {
+    if (selectedCycles.length !== numberOfPeople) {
       toast({
         title: "Error",
-        description: "Please select a cycle",
+        description: `Please select a cycle for all ${numberOfPeople} ${numberOfPeople === 1 ? 'person' : 'people'}`,
         variant: "destructive",
       });
       return;
@@ -375,25 +389,29 @@ const Book = () => {
 
     // Check availability before proceeding
     try {
-      const { data: cycleAvailable, error: cycleError } = await supabase.rpc('check_cycle_availability', {
-        p_cycle_id: selectedCycle.id,
-        p_pickup_date: format(selectedDate!, 'yyyy-MM-dd'),
-        p_return_date: returnDate ? format(returnDate, 'yyyy-MM-dd') : format(selectedDate!, 'yyyy-MM-dd')
-      });
-
-      if (cycleError) throw cycleError;
-
-      if (!cycleAvailable || cycleAvailable < 1) {
-        toast({
-          title: "Cycle Unavailable",
-          description: `${selectedCycle.name} is not available for the selected dates. All ${selectedCycle.total_quantity} units are booked.`,
-          variant: "destructive"
+      // Check availability for each selected cycle
+      for (let i = 0; i < selectedCycles.length; i++) {
+        const cycle = selectedCycles[i];
+        const { data: cycleAvailable, error: cycleError } = await supabase.rpc('check_cycle_availability', {
+          p_cycle_id: cycle.id,
+          p_pickup_date: format(selectedDate!, 'yyyy-MM-dd'),
+          p_return_date: returnDate ? format(returnDate, 'yyyy-MM-dd') : format(selectedDate!, 'yyyy-MM-dd')
         });
-        return;
+
+        if (cycleError) throw cycleError;
+
+        if (!cycleAvailable || cycleAvailable < 1) {
+          toast({
+            title: "Cycle Unavailable",
+            description: `${cycle.name} is not available for the selected dates for Person ${i + 1}.`,
+            variant: "destructive"
+          });
+          return;
+        }
       }
 
       // Check each accessory
-      for (const acc of accessories.filter(a => a.days > 0)) {
+      for (const acc of accessories.filter(a => a.quantity > 0 && a.days > 0)) {
         const { data: accAvailable, error: accError } = await supabase.rpc('check_accessory_availability', {
           p_accessory_id: acc.id,
           p_pickup_date: format(selectedDate!, 'yyyy-MM-dd'),
@@ -402,10 +420,10 @@ const Book = () => {
 
         if (accError) throw accError;
 
-        if (!accAvailable || accAvailable < 1) {
+        if (!accAvailable || accAvailable < acc.quantity) {
           toast({
             title: "Accessory Unavailable",
-            description: `${acc.name} is not available for the selected dates. All units are booked.`,
+            description: `Only ${accAvailable} units of ${acc.name} available, but you need ${acc.quantity}.`,
             variant: "destructive"
           });
           return;
@@ -478,9 +496,15 @@ const Book = () => {
         partnerId,
         pickupLocationId: selectedPickupLocation?.id,
         numberOfPeople,
-        accessories: accessories.filter(acc => acc.days > 0).map(acc => ({
+        selectedCycles: selectedCycles.map(cycle => ({
+          id: cycle.id,
+          name: cycle.name,
+          model: cycle.model
+        })),
+        accessories: accessories.filter(acc => acc.quantity > 0 && acc.days > 0).map(acc => ({
           id: acc.id,
           name: acc.name,
+          quantity: acc.quantity,
           days: acc.days,
           pricePerDay: acc.pricePerDay
         })),
@@ -490,10 +514,7 @@ const Book = () => {
         lastName,
         emergencyName,
         emergencyPhone,
-        cycleId: selectedCycle.id,
-        cycleName: selectedCycle.name,
-        cycleModel: selectedCycle.model,
-        basePrice: getBasePrice() * numberOfPeople,
+        basePrice: getBasePrice(),
         accessoriesTotal,
         securityDeposit: getSecurityDeposit(),
         livePhotoUrl,
@@ -536,12 +557,11 @@ const Book = () => {
           <div className="flex items-center justify-center gap-4">
             {[
               { num: 1, label: "Select Date & Time" },
-              { num: 2, label: cyclesData.length > 1 ? "Select Cycle" : "Choose Duration" },
-              { num: 3, label: cyclesData.length > 1 ? "Choose Duration" : "Add Accessories" },
-              { num: 4, label: cyclesData.length > 1 ? "Add Accessories" : "Pickup Location" },
-              { num: 5, label: cyclesData.length > 1 ? "Pickup Location" : "Checkout" },
-              { num: 6, label: cyclesData.length > 1 ? "Checkout" : "Payment" },
-              ...(cyclesData.length > 1 ? [{ num: 7, label: "Payment" }] : [])
+              { num: 2, label: "Select Cycles" },
+              { num: 3, label: "Choose Duration" },
+              { num: 4, label: "Add Accessories" },
+              { num: 5, label: "Pickup Location" },
+              { num: 6, label: "Checkout" }
             ].map((s) => (
               <div key={s.num} className="flex items-center gap-2">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
@@ -664,43 +684,55 @@ const Book = () => {
                 </div>
               )}
 
-              {step === 2 && cyclesData.length > 1 && (
+              {step === 2 && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <Bike className="w-5 h-5 text-primary" />
-                      Select Your Cycle
+                      Select Cycles for Each Person
                     </h3>
                     <p className="text-muted-foreground mb-4">
-                      Choose from our available electric bicycles
+                      Choose a cycle for each of the {numberOfPeople} {numberOfPeople === 1 ? 'person' : 'people'}
                     </p>
                     
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {cyclesData.map((cycle) => (
-                        <Card
-                          key={cycle.id}
-                          onClick={() => setSelectedCycle(cycle)}
-                          className={cn(
-                            "cursor-pointer hover:shadow-warm transition-all",
-                            selectedCycle?.id === cycle.id
-                              ? "border-primary border-2 shadow-warm bg-primary/5"
-                              : "hover:border-primary"
-                          )}
-                        >
-                          <CardContent className="p-4">
-                            {cycle.image_url && (
-                              <img
-                                src={cycle.image_url}
-                                alt={cycle.name}
-                                className="w-full h-40 object-cover rounded-lg mb-3"
-                              />
-                            )}
-                            <h4 className="font-semibold text-lg mb-1">{cycle.name}</h4>
-                            <p className="text-sm text-muted-foreground">{cycle.model}</p>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
+                    {Array.from({ length: numberOfPeople }).map((_, personIndex) => (
+                      <div key={personIndex} className="mb-6">
+                        <h4 className="text-sm font-semibold mb-3 text-primary">Person {personIndex + 1}</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          {cyclesData.map((cycle) => {
+                            const isSelected = selectedCycles[personIndex]?.id === cycle.id;
+                            return (
+                              <Card
+                                key={cycle.id}
+                                onClick={() => {
+                                  const newSelectedCycles = [...selectedCycles];
+                                  newSelectedCycles[personIndex] = cycle;
+                                  setSelectedCycles(newSelectedCycles);
+                                }}
+                                className={cn(
+                                  "cursor-pointer hover:shadow-warm transition-all",
+                                  isSelected
+                                    ? "border-primary border-2 shadow-warm bg-primary/5"
+                                    : "hover:border-primary"
+                                )}
+                              >
+                                <CardContent className="p-4">
+                                  {cycle.image_url && (
+                                    <img
+                                      src={cycle.image_url}
+                                      alt={cycle.name}
+                                      className="w-full h-40 object-cover rounded-lg mb-3"
+                                    />
+                                  )}
+                                  <h4 className="font-semibold text-lg mb-1">{cycle.name}</h4>
+                                  <p className="text-sm text-muted-foreground">{cycle.model}</p>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
                   <div className="flex gap-4">
@@ -709,7 +741,7 @@ const Book = () => {
                     </Button>
                     <Button 
                       onClick={() => setStep(3)} 
-                      disabled={!selectedCycle}
+                      disabled={selectedCycles.length !== numberOfPeople}
                       className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                     >
                       Continue to Duration
@@ -718,7 +750,7 @@ const Book = () => {
                 </div>
               )}
 
-              {step === (cyclesData.length > 1 ? 3 : 2) && (
+              {step === 3 && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -727,23 +759,23 @@ const Book = () => {
                     </h3>
                     
                     <div className="grid md:grid-cols-3 gap-4">
-                      {selectedCycle && [
+                      {selectedCycles.length > 0 && selectedCycles[0] && [
                         { 
                           duration: "One Day", 
-                          price: `₹${selectedCycle.price_per_day}`, 
-                          deposit: `₹${selectedCycle.security_deposit_day || 2000}`, 
+                          price: `₹${selectedCycles[0].price_per_day}`, 
+                          deposit: `₹${selectedCycles[0].security_deposit_day || 2000}`, 
                           hours: "24 hours" 
                         },
                         { 
                           duration: "One Week", 
-                          price: `₹${selectedCycle.price_per_week}`, 
-                          deposit: `₹${selectedCycle.security_deposit_week || 3000}`, 
+                          price: `₹${selectedCycles[0].price_per_week}`, 
+                          deposit: `₹${selectedCycles[0].security_deposit_week || 3000}`, 
                           hours: "7 days" 
                         },
                         { 
                           duration: "One Month", 
-                          price: `₹${selectedCycle.price_per_month || Number(selectedCycle.price_per_day) * 30}`, 
-                          deposit: `₹${selectedCycle.security_deposit_month || 5000}`, 
+                          price: `₹${selectedCycles[0].price_per_month || Number(selectedCycles[0].price_per_day) * 30}`, 
+                          deposit: `₹${selectedCycles[0].security_deposit_month || 5000}`, 
                           hours: "30 days" 
                         }
                       ].map((option) => (
@@ -762,7 +794,7 @@ const Book = () => {
                             <h4 className="font-semibold mb-2">{option.duration}</h4>
                             <p className="text-2xl font-bold text-primary mb-1">{option.price}</p>
                             <p className="text-sm text-muted-foreground mb-2">{option.hours}</p>
-                            <p className="text-xs text-muted-foreground">Deposit: {option.deposit}</p>
+                            <p className="text-xs text-muted-foreground">Per person deposit: {option.deposit}</p>
                           </CardContent>
                         </Card>
                       ))}
@@ -770,11 +802,11 @@ const Book = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(cyclesData.length > 1 ? 2 : 1)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
                       Back
                     </Button>
                     <Button 
-                      onClick={() => setStep(cyclesData.length > 1 ? 4 : 3)} 
+                      onClick={() => setStep(4)} 
                       disabled={!selectedDuration}
                       className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                     >
@@ -784,7 +816,7 @@ const Book = () => {
                 </div>
               )}
 
-              {step === (cyclesData.length > 1 ? 4 : 3) && (
+              {step === 4 && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -792,7 +824,7 @@ const Book = () => {
                       Add Accessories (Optional)
                     </h3>
                     <p className="text-muted-foreground mb-4">
-                      Enhance your experience with our premium accessories
+                      Select quantity (max {numberOfPeople}) and days for each accessory
                     </p>
 
                     <div className="space-y-4">
@@ -801,11 +833,11 @@ const Book = () => {
                           key={accessory.id}
                           className={cn(
                             "transition-all hover:shadow-warm",
-                            accessory.days > 0 && "border-primary bg-primary/5"
+                            accessory.quantity > 0 && "border-primary bg-primary/5"
                           )}
                         >
                           <CardContent className="p-4">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-start gap-4">
                               <div className="flex-shrink-0">
                                 {accessory.imageUrl ? (
                                   <img 
@@ -823,45 +855,85 @@ const Book = () => {
                               <div className="flex-1">
                                 <h4 className="font-semibold">{accessory.name}</h4>
                                 <p className="text-sm text-muted-foreground">
-                                  ₹{accessory.pricePerDay}/day • Max {maxAccessoryDays} day{maxAccessoryDays > 1 ? 's' : ''}
+                                  ₹{accessory.pricePerDay}/day per person
                                 </p>
+                                
+                                {/* Quantity selector */}
+                                <div className="mt-3 flex items-center gap-3">
+                                  <span className="text-xs text-muted-foreground">Quantity:</span>
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => updateAccessoryQuantity(accessory.id, -1)}
+                                    disabled={accessory.quantity === 0}
+                                    className="h-7 w-7"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </Button>
+                                  
+                                  <span className="font-semibold text-sm w-8 text-center">{accessory.quantity}</span>
+                                  
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => updateAccessoryQuantity(accessory.id, 1)}
+                                    disabled={accessory.quantity >= numberOfPeople}
+                                    className="h-7 w-7"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </Button>
+                                  
+                                  <span className="text-xs text-muted-foreground">
+                                    (max {numberOfPeople})
+                                  </span>
+                                </div>
+                                
+                                {/* Days selector */}
+                                {accessory.quantity > 0 && (
+                                  <div className="mt-2 flex items-center gap-3">
+                                    <span className="text-xs text-muted-foreground">Days:</span>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => updateAccessoryDays(accessory.id, -1)}
+                                      disabled={accessory.days <= 1}
+                                      className="h-7 w-7"
+                                    >
+                                      <Minus className="w-3 h-3" />
+                                    </Button>
+                                    
+                                    <span className="font-semibold text-sm w-8 text-center">{accessory.days}</span>
+                                    
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => updateAccessoryDays(accessory.id, 1)}
+                                      disabled={accessory.days >= maxAccessoryDays}
+                                      className="h-7 w-7"
+                                    >
+                                      <Plus className="w-3 h-3" />
+                                    </Button>
+                                    
+                                    <span className="text-xs text-muted-foreground">
+                                      (max {maxAccessoryDays})
+                                    </span>
+                                  </div>
+                                )}
                               </div>
 
-                              <div className="flex items-center gap-3">
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => updateAccessoryDays(accessory.id, -1)}
-                                  disabled={accessory.days === 0}
-                                  className="h-8 w-8"
-                                >
-                                  <Minus className="w-4 h-4" />
-                                </Button>
-                                
-                                <div className="w-12 text-center">
-                                  <span className="font-semibold text-lg">{accessory.days}</span>
-                                  <p className="text-xs text-muted-foreground">day{accessory.days !== 1 ? 's' : ''}</p>
-                                </div>
-                                
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => updateAccessoryDays(accessory.id, 1)}
-                                  disabled={accessory.days >= maxAccessoryDays}
-                                  className="h-8 w-8"
-                                >
-                                  <Plus className="w-4 h-4" />
-                                </Button>
-
-                                <div className="w-24 text-right">
-                                  {accessory.days > 0 ? (
+                              <div className="text-right min-w-[80px]">
+                                {accessory.quantity > 0 ? (
+                                  <div>
                                     <span className="font-bold text-primary">
-                                      ₹{accessory.pricePerDay * accessory.days}
+                                      ₹{accessory.pricePerDay * accessory.quantity * accessory.days}
                                     </span>
-                                  ) : (
-                                    <span className="text-muted-foreground text-sm">Not added</span>
-                                  )}
-                                </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      {accessory.quantity} × {accessory.days}d
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground text-sm">Not added</span>
+                                )}
                               </div>
                             </div>
                           </CardContent>
@@ -871,17 +943,17 @@ const Book = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(cyclesData.length > 1 ? 3 : 2)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
                       Back
                     </Button>
-                    <Button onClick={() => setStep(cyclesData.length > 1 ? 5 : 4)} className="flex-1 bg-gradient-primary hover:opacity-90">
+                    <Button onClick={() => setStep(5)} className="flex-1 bg-gradient-primary hover:opacity-90">
                       Continue to Pickup Location
                     </Button>
                   </div>
                 </div>
               )}
 
-              {step === (cyclesData.length > 1 ? 5 : 4) && (
+              {step === 5 && (
                 <div className="space-y-6">
                   <div>
                     <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -941,11 +1013,11 @@ const Book = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(cyclesData.length > 1 ? 4 : 3)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(4)} className="flex-1">
                       Back
                     </Button>
                     <Button 
-                      onClick={() => setStep(cyclesData.length > 1 ? 6 : 5)} 
+                      onClick={() => setStep(6)} 
                       disabled={!selectedPickupLocation}
                       className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                     >
@@ -955,7 +1027,7 @@ const Book = () => {
                 </div>
               )}
 
-              {step === (cyclesData.length > 1 ? 6 : 5) && (
+              {step === 6 && (
                 <div className="space-y-6">
                   {/* Partner Information */}
                   {partnerData && (
@@ -1117,7 +1189,7 @@ const Book = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(cyclesData.length > 1 ? 5 : 4)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(5)} className="flex-1">
                       Back
                     </Button>
                     <Button 
@@ -1150,23 +1222,28 @@ const Book = () => {
                   <span className="font-mono font-semibold">BLT-{Date.now().toString().slice(-6)}</span>
                 </div>
 
-                {/* Cycle Information */}
-                {selectedCycle && (
+                {/* Cycles Information */}
+                {selectedCycles.length > 0 && (
                   <div className="space-y-2 pb-3 border-b animate-fade-in">
                     <p className="font-medium flex items-center gap-2">
                       <Bike className="w-4 h-4 text-primary" />
-                      Cycle
+                      Cycles ({selectedCycles.length} {selectedCycles.length === 1 ? 'person' : 'people'})
                     </p>
-                    <div className="ml-6 space-y-1">
-                      {selectedCycle.image_url && (
-                        <img
-                          src={selectedCycle.image_url}
-                          alt={selectedCycle.name}
-                          className="w-full h-24 object-cover rounded-lg mb-2"
-                        />
-                      )}
-                      <p className="font-semibold">{selectedCycle.name}</p>
-                      <p className="text-xs text-muted-foreground">{selectedCycle.model}</p>
+                    <div className="ml-6 space-y-3">
+                      {selectedCycles.map((cycle, index) => (
+                        <div key={index} className="space-y-1">
+                          {cycle.image_url && (
+                            <img
+                              src={cycle.image_url}
+                              alt={cycle.name}
+                              className="w-full h-24 object-cover rounded-lg mb-2"
+                            />
+                          )}
+                          <p className="text-xs text-primary font-semibold">Person {index + 1}:</p>
+                          <p className="font-semibold">{cycle.name}</p>
+                          <p className="text-xs text-muted-foreground">{cycle.model}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -1220,18 +1297,18 @@ const Book = () => {
                 )}
 
                 {/* Accessories */}
-                {accessories.some(acc => acc.days > 0) && (
+                {accessories.some(acc => acc.quantity > 0 && acc.days > 0) && (
                   <div className="space-y-2 pb-3 border-b animate-fade-in">
                     <p className="font-medium flex items-center gap-2">
                       <Camera className="w-4 h-4 text-primary" />
                       Accessories
                     </p>
-                    {accessories.filter(acc => acc.days > 0).map(acc => (
+                    {accessories.filter(acc => acc.quantity > 0 && acc.days > 0).map(acc => (
                       <div key={acc.id} className="flex justify-between text-xs ml-6">
                         <span className="text-muted-foreground">
-                          {acc.name} ({acc.days}d)
+                          {acc.name} (×{acc.quantity}, {acc.days}d)
                         </span>
-                        <span>₹{acc.pricePerDay * acc.days}</span>
+                        <span>₹{acc.pricePerDay * acc.quantity * acc.days}</span>
                       </div>
                     ))}
                   </div>
@@ -1241,8 +1318,8 @@ const Book = () => {
                 {selectedDuration && (
                   <div className="space-y-2 animate-fade-in">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Cycle Rental × {numberOfPeople}</span>
-                      <span className="font-semibold">₹{getBasePrice() * numberOfPeople}</span>
+                      <span className="text-muted-foreground">Cycle Rental ({numberOfPeople} {numberOfPeople === 1 ? 'cycle' : 'cycles'})</span>
+                      <span className="font-semibold">₹{getBasePrice()}</span>
                     </div>
                     
                     {accessoriesTotal > 0 && (
@@ -1254,18 +1331,18 @@ const Book = () => {
 
                     <div className="flex justify-between pt-2 border-t">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-semibold">₹{getBasePrice() * numberOfPeople + accessoriesTotal}</span>
+                      <span className="font-semibold">₹{getBasePrice() + accessoriesTotal}</span>
                     </div>
 
                     <div className="flex justify-between text-primary font-bold">
-                      <span>Security Deposit</span>
+                      <span>Security Deposit (×{numberOfPeople})</span>
                       <span>₹{getSecurityDeposit()}</span>
                     </div>
 
                     <div className="pt-3 border-t">
                       <div className="flex justify-between text-lg font-bold">
                         <span>Total Amount</span>
-                        <span className="text-primary">₹{getBasePrice() * numberOfPeople + accessoriesTotal + getSecurityDeposit()}</span>
+                        <span className="text-primary">₹{getBasePrice() + accessoriesTotal + getSecurityDeposit()}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         *Security deposit is fully refundable
