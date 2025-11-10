@@ -622,19 +622,8 @@ const Book = () => {
                             )}
                             <h4 className="font-semibold text-lg mb-1">{cycle.name}</h4>
                             <p className="text-sm text-muted-foreground mb-3">{cycle.model}</p>
-                            <div className="space-y-1 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Day:</span>
-                                <span className="font-semibold">₹{cycle.price_per_day}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Week:</span>
-                                <span className="font-semibold">₹{cycle.price_per_week}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Available:</span>
-                                <span className="font-semibold text-green-600">{cycle.available_quantity}/{cycle.total_quantity}</span>
-                              </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="font-semibold text-green-600">{cycle.available_quantity} Available</span>
                             </div>
                           </CardContent>
                         </Card>
