@@ -416,7 +416,37 @@ const Book = () => {
     const isPhoneValid = user 
       ? (profileData?.phone_number?.length === 10 || phoneNumber.length === 10) 
       : phoneVerified;
-    return isPhoneValid && firstName && lastName && livePhoto && idProof;
+    
+    const isValid = isPhoneValid && firstName && lastName && livePhoto && idProof;
+    
+    // Debug log for mobile troubleshooting
+    if (!isValid) {
+      console.log('Payment validation failed:', {
+        isPhoneValid,
+        firstName: !!firstName,
+        lastName: !!lastName,
+        livePhoto: !!livePhoto,
+        idProof: !!idProof
+      });
+    }
+    
+    return isValid;
+  };
+
+  // Get missing requirements for helpful error message
+  const getMissingRequirements = () => {
+    const missing = [];
+    const isPhoneValid = user 
+      ? (profileData?.phone_number?.length === 10 || phoneNumber.length === 10) 
+      : phoneVerified;
+    
+    if (!isPhoneValid) missing.push('valid phone number');
+    if (!firstName) missing.push('first name');
+    if (!lastName) missing.push('last name');
+    if (!livePhoto) missing.push('live photo');
+    if (!idProof) missing.push('ID proof');
+    
+    return missing;
   };
 
   // Handle payment navigation
@@ -537,6 +567,23 @@ const Book = () => {
           .getPublicUrl(fileName);
         
         idProofUrl = publicUrl;
+      }
+
+      // Update user profile with live photo and ID proof
+      if (user && (livePhotoUrl || idProofUrl)) {
+        const updateData: any = {};
+        if (livePhotoUrl) updateData.live_photo_url = livePhotoUrl;
+        if (idProofUrl) updateData.id_proof_url = idProofUrl;
+
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('user_id', user.id);
+
+        if (profileError) {
+          console.error('Error updating profile with documents:', profileError);
+          // Don't throw - this is not critical for booking flow
+        }
       }
 
       const bookingData = {
@@ -967,92 +1014,114 @@ const Book = () => {
                             accessory.quantity > 0 && "border-primary bg-primary/5"
                           )}
                         >
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-4">
-                              <div className="flex-shrink-0">
+                          <CardContent className="p-3 sm:p-4">
+                            <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
+                              <div className="flex-shrink-0 w-full sm:w-auto">
                                 {accessory.imageUrl ? (
                                   <img 
                                     src={accessory.imageUrl} 
                                     alt={accessory.name}
-                                    className="w-16 h-16 object-cover rounded-lg"
+                                    className="w-full sm:w-16 h-32 sm:h-16 object-cover rounded-lg"
                                   />
                                 ) : (
-                                  <div className="w-16 h-16 rounded-lg bg-primary/10 flex items-center justify-center">
+                                  <div className="w-full sm:w-16 h-32 sm:h-16 rounded-lg bg-primary/10 flex items-center justify-center">
                                     <Camera className="w-8 h-8 text-primary" />
                                   </div>
                                 )}
                               </div>
                               
-                              <div className="flex-1">
-                                <h4 className="font-semibold">{accessory.name}</h4>
-                                <p className="text-sm text-muted-foreground">
-                                  ₹{accessory.pricePerDay}/day per person
-                                </p>
-                                
-                                {/* Quantity selector */}
-                                <div className="mt-3 flex items-center gap-3">
-                                  <span className="text-xs text-muted-foreground">Quantity:</span>
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => updateAccessoryQuantity(accessory.id, -1)}
-                                    disabled={accessory.quantity === 0}
-                                    className="h-7 w-7"
-                                  >
-                                    <Minus className="w-3 h-3" />
-                                  </Button>
-                                  
-                                  <span className="font-semibold text-sm w-8 text-center">{accessory.quantity}</span>
-                                  
-                                  <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => updateAccessoryQuantity(accessory.id, 1)}
-                                    disabled={accessory.quantity >= numberOfPeople}
-                                    className="h-7 w-7"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                  </Button>
-                                  
-                                  <span className="text-xs text-muted-foreground">
-                                    (max {numberOfPeople})
-                                  </span>
+                              <div className="flex-1 w-full">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <h4 className="font-semibold">{accessory.name}</h4>
+                                    <p className="text-sm text-muted-foreground">
+                                      ₹{accessory.pricePerDay}/day per person
+                                    </p>
+                                  </div>
+                                  <div className="text-right sm:hidden">
+                                    {accessory.quantity > 0 ? (
+                                      <div>
+                                        <span className="font-bold text-primary">
+                                          ₹{accessory.pricePerDay * accessory.quantity * accessory.days}
+                                        </span>
+                                        <p className="text-xs text-muted-foreground">
+                                          {accessory.quantity} × {accessory.days}d
+                                        </p>
+                                      </div>
+                                    ) : (
+                                      <span className="text-muted-foreground text-sm">Not added</span>
+                                    )}
+                                  </div>
                                 </div>
                                 
-                                {/* Days selector */}
-                                {accessory.quantity > 0 && (
-                                  <div className="mt-2 flex items-center gap-3">
-                                    <span className="text-xs text-muted-foreground">Days:</span>
+                                {/* Quantity selector */}
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                  <span className="text-xs text-muted-foreground min-w-[60px]">Quantity:</span>
+                                  <div className="flex items-center gap-2">
                                     <Button
                                       variant="outline"
                                       size="icon"
-                                      onClick={() => updateAccessoryDays(accessory.id, -1)}
-                                      disabled={accessory.days <= 1}
+                                      onClick={() => updateAccessoryQuantity(accessory.id, -1)}
+                                      disabled={accessory.quantity === 0}
                                       className="h-7 w-7"
                                     >
                                       <Minus className="w-3 h-3" />
                                     </Button>
                                     
-                                    <span className="font-semibold text-sm w-8 text-center">{accessory.days}</span>
+                                    <span className="font-semibold text-sm w-8 text-center">{accessory.quantity}</span>
                                     
                                     <Button
                                       variant="outline"
                                       size="icon"
-                                      onClick={() => updateAccessoryDays(accessory.id, 1)}
-                                      disabled={accessory.days >= maxAccessoryDays}
+                                      onClick={() => updateAccessoryQuantity(accessory.id, 1)}
+                                      disabled={accessory.quantity >= numberOfPeople}
                                       className="h-7 w-7"
                                     >
                                       <Plus className="w-3 h-3" />
                                     </Button>
                                     
-                                    <span className="text-xs text-muted-foreground">
-                                      (max {maxAccessoryDays})
+                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                      (max {numberOfPeople})
                                     </span>
+                                  </div>
+                                </div>
+                                
+                                {/* Days selector */}
+                                {accessory.quantity > 0 && (
+                                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    <span className="text-xs text-muted-foreground min-w-[60px]">Days:</span>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => updateAccessoryDays(accessory.id, -1)}
+                                        disabled={accessory.days <= 1}
+                                        className="h-7 w-7"
+                                      >
+                                        <Minus className="w-3 h-3" />
+                                      </Button>
+                                      
+                                      <span className="font-semibold text-sm w-8 text-center">{accessory.days}</span>
+                                      
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => updateAccessoryDays(accessory.id, 1)}
+                                        disabled={accessory.days >= maxAccessoryDays}
+                                        className="h-7 w-7"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                      </Button>
+                                      
+                                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                        (max {maxAccessoryDays})
+                                      </span>
+                                    </div>
                                   </div>
                                 )}
                               </div>
 
-                              <div className="text-right min-w-[80px]">
+                              <div className="hidden sm:block text-right min-w-[80px]">
                                 {accessory.quantity > 0 ? (
                                   <div>
                                     <span className="font-bold text-primary">
@@ -1287,13 +1356,20 @@ const Book = () => {
                     <Button variant="outline" onClick={() => setStep(5)} className="flex-1">
                       Back
                     </Button>
-                    <Button 
-                      onClick={handleProceedToPayment}
-                      disabled={!canProceedToPayment()}
-                      className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
-                    >
-                      Proceed to Payment
-                    </Button>
+                    <div className="flex-1 space-y-2">
+                      <Button 
+                        onClick={handleProceedToPayment}
+                        disabled={!canProceedToPayment()}
+                        className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                      >
+                        Proceed to Payment
+                      </Button>
+                      {!canProceedToPayment() && (
+                        <p className="text-xs text-destructive text-center">
+                          Please complete: {getMissingRequirements().join(', ')}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
