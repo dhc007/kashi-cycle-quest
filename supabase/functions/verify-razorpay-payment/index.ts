@@ -81,20 +81,32 @@ serve(async (req) => {
 
     console.log('Payment verified and booking updated:', booking_id);
 
-    // Send WhatsApp confirmation (non-blocking)
+    // Send SMS notifications (non-blocking)
     try {
-      supabaseClient.functions.invoke('send-whatsapp-confirmation', {
+      // Send customer SMS
+      supabaseClient.functions.invoke('send-sms-notification', {
         body: { booking_id }
       }).then(result => {
         if (result.error) {
-          console.error('WhatsApp notification failed:', result.error);
+          console.error('Customer SMS failed:', result.error);
         } else {
-          console.log('WhatsApp notification sent successfully');
+          console.log('Customer SMS sent successfully');
         }
       });
-    } catch (whatsappError) {
+
+      // Send admin SMS
+      supabaseClient.functions.invoke('send-admin-notification', {
+        body: { booking_id }
+      }).then(result => {
+        if (result.error) {
+          console.error('Admin SMS failed:', result.error);
+        } else {
+          console.log('Admin SMS sent successfully');
+        }
+      });
+    } catch (smsError) {
       // Log but don't fail the payment
-      console.error('Error triggering WhatsApp:', whatsappError);
+      console.error('Error triggering SMS:', smsError);
     }
 
     return new Response(

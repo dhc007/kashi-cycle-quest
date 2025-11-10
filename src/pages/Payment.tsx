@@ -237,28 +237,28 @@ const Payment = () => {
       {/* Payment Processing Overlay */}
       {processingPayment && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="text-center text-white space-y-4">
+          <div className="text-center text-white space-y-4 px-4">
             <div className="animate-spin">
-              <Bike className="w-16 h-16 mx-auto" />
+              <Bike className="w-12 h-12 md:w-16 md:h-16 mx-auto" />
             </div>
-            <p className="text-xl font-semibold">Payment Processing...</p>
-            <p className="text-sm text-muted-foreground">Please wait</p>
+            <p className="text-lg md:text-xl font-semibold">Payment Processing...</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Please wait</p>
           </div>
         </div>
       )}
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Payment</h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Payment</h1>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {/* Booking Summary */}
             <Card>
               <CardHeader>
-                <CardTitle>Booking Summary</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Booking Summary</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2 text-sm">
+              <CardContent className="space-y-3 md:space-y-4">
+                <div className="space-y-2 text-xs md:text-sm">
                   {cycleName && cycleModel && (
                     <div>
                       <p className="font-medium flex items-center gap-2">
@@ -307,10 +307,10 @@ const Payment = () => {
             {/* Payment Breakdown */}
             <Card>
               <CardHeader>
-                <CardTitle>Payment Breakdown</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Payment Breakdown</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3 text-sm">
+              <CardContent className="space-y-3 md:space-y-4">
+                <div className="space-y-2 md:space-y-3 text-xs md:text-sm">
                   {/* Cycle Rental Breakdown */}
                   <div className="space-y-1">
                     <div className="flex justify-between">
