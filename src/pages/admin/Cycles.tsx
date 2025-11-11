@@ -65,7 +65,9 @@ const Cycles = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [accessorySearch, setAccessorySearch] = useState("");
   const [accessoryPopoverOpen, setAccessoryPopoverOpen] = useState(false);
-  const [specSuggestions] = useState([
+  const [specInput, setSpecInput] = useState("");
+  const [showSpecSuggestions, setShowSpecSuggestions] = useState(false);
+  const [allSpecifications] = useState([
     "36v 250 watt ultra standard kit",
     "10.4 ah hard pack Lithium ion Detachable battery",
     "Plastic mudgaurds",
@@ -79,7 +81,20 @@ const Cycles = () => {
     "USB charging port",
     "Digital display",
     "Adjustable seat",
-    "7-speed gear system"
+    "7-speed gear system",
+    "Front suspension",
+    "Rear suspension",
+    "Hydraulic brakes",
+    "Mechanical brakes",
+    "Carbon fiber frame",
+    "Steel frame",
+    "20 inch wheels",
+    "26 inch wheels",
+    "29 inch wheels",
+    "Kickstand",
+    "Bell",
+    "Reflectors",
+    "Water bottle holder"
   ]);
   const [formData, setFormData] = useState<Partial<Cycle>>({
     name: "",
@@ -388,6 +403,34 @@ const Cycles = () => {
     });
   };
 
+  const addSpecification = (spec: string) => {
+    const current = formData.specifications || "";
+    const specs = current.split('\n').filter(s => s.trim());
+    if (!specs.includes(spec.trim())) {
+      specs.push(spec.trim());
+      setFormData({
+        ...formData,
+        specifications: specs.join('\n')
+      });
+    }
+    setSpecInput("");
+    setShowSpecSuggestions(false);
+  };
+
+  const removeSpecification = (spec: string) => {
+    const current = formData.specifications || "";
+    const specs = current.split('\n').filter(s => s.trim() && s.trim() !== spec.trim());
+    setFormData({
+      ...formData,
+      specifications: specs.join('\n')
+    });
+  };
+
+  const filteredSpecs = allSpecifications.filter(spec =>
+    spec.toLowerCase().includes(specInput.toLowerCase()) &&
+    !(formData.specifications || "").split('\n').includes(spec)
+  );
+
   const filteredCycles = cycles.filter(
     (cycle) =>
       cycle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -488,40 +531,64 @@ const Cycles = () => {
 
               <div className="space-y-2">
                 <Label>Media Gallery (Images & Videos - Max 6 files)</Label>
-                <div className="flex gap-2 overflow-x-auto pb-2">
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
                   {mediaFiles.map((file, index) => (
-                    <div key={index} className="relative flex-shrink-0 w-24 h-24 border rounded-lg bg-muted flex items-center justify-center">
-                      <span className="text-xs text-center p-1">{file.name.slice(0, 15)}...</span>
+                    <div 
+                      key={index} 
+                      className="relative flex-shrink-0 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 border-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-all animate-fade-in"
+                    >
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
+                        <div className="text-xs font-medium text-center mb-1 line-clamp-2">{file.name}</div>
+                        <div className="text-[10px] text-muted-foreground">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                      </div>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="destructive"
                         size="icon"
-                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground"
+                        className="absolute -top-2 -right-2 h-7 w-7 rounded-full shadow-lg hover:scale-110 transition-transform"
                         onClick={() => {
                           const newFiles = [...mediaFiles];
                           newFiles.splice(index, 1);
                           setMediaFiles(newFiles);
                         }}
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-4 h-4" />
                       </Button>
                     </div>
                   ))}
                   {mediaFiles.length < 6 && (
-                    <div className="flex-shrink-0 w-24 h-24">
-                      <FileUpload
-                        label="Add Media"
+                    <div className="flex-shrink-0 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-accent hover:border-primary transition-all group">
+                      <label htmlFor="media-upload" className="cursor-pointer w-full h-full flex flex-col items-center justify-center">
+                        <Plus className="w-8 h-8 mb-2 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">Add Media</span>
+                      </label>
+                      <input
+                        id="media-upload"
+                        type="file"
                         accept="image/*,video/*"
-                        onFileSelect={(file) => {
-                          setMediaFiles([...mediaFiles, file]);
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            if (file.size > 20 * 1024 * 1024) {
+                              toast({
+                                title: "File too large",
+                                description: "Maximum file size is 20MB",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+                            setMediaFiles([...mediaFiles, file]);
+                          }
+                          e.target.value = '';
                         }}
-                        maxSize={20}
-                        description=""
                       />
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">Upload up to 6 images or videos to showcase the cycle</p>
+                <p className="text-xs text-muted-foreground">Click + to add images or videos (max 20MB each, up to 6 files)</p>
               </div>
 
               {/* Free Accessories */}
@@ -567,31 +634,41 @@ const Cycles = () => {
 
               {/* Specifications */}
               <div className="space-y-2">
-                <Label htmlFor="specifications">Specifications</Label>
-                <Textarea
-                  id="specifications"
-                  value={formData.specifications || ""}
-                  onChange={(e) => setFormData({ ...formData, specifications: e.target.value })}
-                  placeholder="Enter specifications (one per line or comma-separated)&#10;Example:&#10;36v 250 watt ultra standard kit&#10;10.4 ah hard pack Lithium ion Detachable battery&#10;Plastic mudgaurds&#10;36v 2amp autocutoff charger&#10;85% fitted bicycle skd condition"
-                  rows={6}
-                />
-                <div className="flex flex-wrap gap-1 mt-2">
-                  <p className="text-xs text-muted-foreground w-full mb-1">Quick add suggestions:</p>
-                  {specSuggestions.map((suggestion, index) => (
-                    <Badge
-                      key={index}
-                      variant="outline"
-                      className="cursor-pointer hover:bg-accent"
-                      onClick={() => {
-                        const current = formData.specifications || "";
-                        const newSpec = current ? `${current}\n${suggestion}` : suggestion;
-                        setFormData({ ...formData, specifications: newSpec });
-                      }}
-                    >
-                      {suggestion}
+                <Label>Specifications</Label>
+                <div className="relative">
+                  <Input
+                    placeholder="Start typing to search specifications..."
+                    value={specInput}
+                    onChange={(e) => {
+                      setSpecInput(e.target.value);
+                      setShowSpecSuggestions(e.target.value.length > 0);
+                    }}
+                    onFocus={() => specInput && setShowSpecSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSpecSuggestions(false), 200)}
+                  />
+                  {showSpecSuggestions && filteredSpecs.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-auto">
+                      {filteredSpecs.map((spec, index) => (
+                        <div
+                          key={index}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer text-sm"
+                          onClick={() => addSpecification(spec)}
+                        >
+                          {spec}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {(formData.specifications || "").split('\n').filter(s => s.trim()).map((spec, index) => (
+                    <Badge key={index} variant="secondary" className="gap-1">
+                      {spec}
+                      <X className="w-3 h-3 cursor-pointer" onClick={() => removeSpecification(spec)} />
                     </Badge>
                   ))}
                 </div>
+                <p className="text-xs text-muted-foreground">Type to search and add specifications</p>
               </div>
 
               {/* Internal Details */}
