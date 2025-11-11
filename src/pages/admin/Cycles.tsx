@@ -92,7 +92,6 @@ const Cycles = () => {
     specifications: "",
     serial_number: "",
     model_number: "",
-    internal_tracking_id: "",
     user_manual_url: "",
     internal_details: {
       vendor: "",
@@ -287,7 +286,6 @@ const Cycles = () => {
       specifications: "",
       serial_number: "",
       model_number: "",
-      internal_tracking_id: "",
       user_manual_url: "",
       internal_details: {
         vendor: "",
@@ -667,7 +665,7 @@ const Cycles = () => {
               <div className="space-y-4 border p-4 rounded-lg bg-accent/20">
                 <Label className="text-base font-semibold">Internal Details (Admin Only)</Label>
 
-                <div className="grid md:grid-cols-3 gap-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="serial_number">Serial Number</Label>
                     <Input
@@ -685,16 +683,6 @@ const Cycles = () => {
                       value={formData.model_number || ""}
                       onChange={(e) => setFormData({ ...formData, model_number: e.target.value })}
                       placeholder="Manufacturer model #"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="internal_tracking_id">Internal Tracking ID</Label>
-                    <Input
-                      id="internal_tracking_id"
-                      value={formData.internal_tracking_id || ""}
-                      onChange={(e) => setFormData({ ...formData, internal_tracking_id: e.target.value })}
-                      placeholder="Your tracking ID"
                     />
                   </div>
                 </div>
