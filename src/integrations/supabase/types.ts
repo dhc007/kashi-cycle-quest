@@ -353,6 +353,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "fk_bookings_profiles"
             columns: ["user_id"]
             isOneToOne: false
@@ -856,7 +863,6 @@ export type Database = {
           emergency_contact_phone: string | null
           first_name: string
           full_name: string | null
-          id: string
           id_proof_url: string | null
           id_proof_url_updated: string | null
           last_name: string
@@ -873,7 +879,6 @@ export type Database = {
           emergency_contact_phone?: string | null
           first_name: string
           full_name?: string | null
-          id?: string
           id_proof_url?: string | null
           id_proof_url_updated?: string | null
           last_name: string
@@ -890,7 +895,6 @@ export type Database = {
           emergency_contact_phone?: string | null
           first_name?: string
           full_name?: string | null
-          id?: string
           id_proof_url?: string | null
           id_proof_url_updated?: string | null
           last_name?: string
