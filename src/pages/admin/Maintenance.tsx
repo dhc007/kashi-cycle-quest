@@ -11,7 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard } from "@/components/admin/RoleGuard";
-import { Wrench, Plus, CheckCircle2 } from "lucide-react";
+import { Wrench, Plus, CheckCircle2, Eye, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 
 interface Cycle {
@@ -46,6 +52,8 @@ const MaintenanceContent = () => {
   const [description, setDescription] = useState("");
   const [cost, setCost] = useState("");
   const [processing, setProcessing] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingRecord, setViewingRecord] = useState<MaintenanceRecord | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -306,21 +314,38 @@ const MaintenanceContent = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {record.status === 'pending' && (
+                        <div className="flex items-center gap-2">
                           <Button
-                            size="sm"
-                            onClick={() => handleCompleteMaintenance(record)}
-                            disabled={processing}
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setViewingRecord(record);
+                              setViewDialogOpen(true);
+                            }}
                           >
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
-                            Complete
+                            <Eye className="w-4 h-4" />
                           </Button>
-                        )}
-                        {record.status === 'completed' && record.completed_at && (
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(record.completed_at), 'MMM dd, yyyy')}
-                          </span>
-                        )}
+                          {record.status === 'pending' && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleCompleteMaintenance(record)} disabled={processing}>
+                                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                                  Mark Complete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                          {record.status === 'completed' && record.completed_at && (
+                            <span className="text-xs text-muted-foreground ml-2">
+                              {format(new Date(record.completed_at), 'MMM dd, yyyy')}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -334,18 +359,68 @@ const MaintenanceContent = () => {
               </TableBody>
             </Table>
           </CardContent>
-        </Card>
+          </Card>
+        </div>
+
+        {/* View Details Dialog */}
+        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Maintenance Details</DialogTitle>
+            </DialogHeader>
+            {viewingRecord && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Cycle</Label>
+                    <p className="font-medium">{viewingRecord.cycles?.name}</p>
+                    <p className="text-xs text-muted-foreground">{viewingRecord.cycles?.model}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Type</Label>
+                    <p className="capitalize">{viewingRecord.maintenance_type.replace('_', ' ')}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Cost</Label>
+                    <p className="font-semibold">₹{viewingRecord.cost}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Status</Label>
+                    <Badge className={getStatusBadge(viewingRecord.status)}>
+                      {viewingRecord.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Reported</Label>
+                    <p>{format(new Date(viewingRecord.reported_at), 'MMM dd, yyyy')}</p>
+                  </div>
+                  {viewingRecord.completed_at && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Completed</Label>
+                      <p>{format(new Date(viewingRecord.completed_at), 'MMM dd, yyyy')}</p>
+                    </div>
+                  )}
+                </div>
+                {viewingRecord.description && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Description</Label>
+                    <p className="text-sm mt-1">{viewingRecord.description}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
-    </div>
-  );
-};
-
-const Maintenance = () => {
-  return (
-    <RoleGuard allowedRoles={['admin', 'manager']}>
-      <MaintenanceContent />
-    </RoleGuard>
-  );
-};
-
-export default Maintenance;
+    );
+  };
+  
+  const Maintenance = () => {
+    return (
+      <RoleGuard allowedRoles={['admin', 'manager']}>
+        <MaintenanceContent />
+      </RoleGuard>
+    );
+  };
+  
+  export default Maintenance;

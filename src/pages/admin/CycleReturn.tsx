@@ -10,7 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard } from "@/components/admin/RoleGuard";
-import { Package, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { Package, CheckCircle2, AlertCircle, X, Eye, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 
 interface ActiveBooking {
@@ -47,6 +53,8 @@ const CycleReturnContent = () => {
   const [damageDescription, setDamageDescription] = useState<string>("");
   const [returnPhotos, setReturnPhotos] = useState<File[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingBooking, setViewingBooking] = useState<ActiveBooking | null>(null);
   const { toast } = useToast();
 
   const handlePhotoSelect = (files: File[]) => {
@@ -355,25 +363,37 @@ const CycleReturnContent = () => {
                       </TableCell>
                       <TableCell className="font-semibold">₹{booking.security_deposit}</TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          {!booking.cycle_returned_at && (
-                            <Button
-                              size="sm"
-                              onClick={() => openReturnDialog(booking)}
-                            >
-                              Mark Returned
-                            </Button>
-                          )}
-                          {booking.cycle_returned_at && !booking.deposit_returned_at && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDepositReturn(booking)}
-                              disabled={processing}
-                            >
-                              Return Deposit
-                            </Button>
-                          )}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setViewingBooking(booking);
+                              setViewDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {!booking.cycle_returned_at && (
+                                <DropdownMenuItem onClick={() => openReturnDialog(booking)}>
+                                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                                  Mark Returned
+                                </DropdownMenuItem>
+                              )}
+                              {booking.cycle_returned_at && !booking.deposit_returned_at && (
+                                <DropdownMenuItem onClick={() => handleDepositReturn(booking)} disabled={processing}>
+                                  Return Deposit
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -525,18 +545,59 @@ const CycleReturnContent = () => {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
+          </DialogContent>
+        </Dialog>
 
-const CycleReturn = () => {
-  return (
-    <RoleGuard allowedRoles={['admin', 'manager']}>
-      <CycleReturnContent />
-    </RoleGuard>
-  );
-};
-
-export default CycleReturn;
+        {/* View Details Dialog */}
+        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Booking Details</DialogTitle>
+            </DialogHeader>
+            {viewingBooking && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Booking ID</Label>
+                    <p className="font-mono">{viewingBooking.booking_id}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Customer</Label>
+                    <p className="font-medium">{viewingBooking.profiles?.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{viewingBooking.profiles?.phone_number}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Cycle</Label>
+                    <p>{viewingBooking.cycles?.name}</p>
+                    <p className="text-xs text-muted-foreground">{viewingBooking.cycles?.model}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Return Date</Label>
+                    <p>{format(new Date(viewingBooking.return_date), 'MMM dd, yyyy')}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Security Deposit</Label>
+                    <p className="font-semibold">₹{viewingBooking.security_deposit}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Late Fee</Label>
+                    <p className="font-semibold text-red-600">₹{calculateLateFee(viewingBooking.return_date)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  };
+  
+  const CycleReturn = () => {
+    return (
+      <RoleGuard allowedRoles={['admin', 'manager']}>
+        <CycleReturnContent />
+      </RoleGuard>
+    );
+  };
+  
+  export default CycleReturn;

@@ -11,7 +11,13 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
 import { format, isBefore, isAfter, startOfDay } from "date-fns";
-import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown } from "lucide-react";
+import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown, MoreVertical, Edit } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Booking {
   id: string;
@@ -421,9 +427,26 @@ const BookingsContent = () => {
                 )}
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="sm" onClick={() => viewDetails(booking)}>
-                  <Eye className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="ghost" size="icon" onClick={() => viewDetails(booking)}>
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  {canEdit && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => viewDetails(booking)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit/Manage
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { FileUpload } from "@/components/FileUpload";
-import { Bike, Plus, Pencil, Trash2, MoreVertical, Copy, Search, X } from "lucide-react";
+import { CycleViewDialog } from "@/components/CycleViewDialog";
+import { Bike, Plus, Pencil, Trash2, MoreVertical, Copy, Search, X, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +49,7 @@ interface Cycle {
   internal_tracking_id?: string | null;
   user_manual_url?: string | null;
   display_serial?: string | null;
+  quantity?: number;
 }
 
 const Cycles = () => {
@@ -68,6 +70,8 @@ const Cycles = () => {
   const [accessoryPopoverOpen, setAccessoryPopoverOpen] = useState(false);
   const [specInput, setSpecInput] = useState("");
   const [showSpecSuggestions, setShowSpecSuggestions] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingCycle, setViewingCycle] = useState<Cycle | null>(null);
   const [allSpecifications] = useState([
     "36v 250 watt ultra standard kit",
     "10.4 ah hard pack Lithium ion Detachable battery",
@@ -94,6 +98,7 @@ const Cycles = () => {
     serial_number: "",
     model_number: "",
     user_manual_url: "",
+    quantity: 1,
     internal_details: {
       vendor: "",
       warranty: "",
@@ -286,6 +291,7 @@ const Cycles = () => {
       serial_number: "",
       model_number: "",
       user_manual_url: "",
+      quantity: 1,
       internal_details: {
         vendor: "",
         warranty: "",
@@ -450,7 +456,7 @@ const Cycles = () => {
               <DialogTitle>{editingCycle ? "Edit Cycle" : "Add New Cycle"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name *</Label>
                   <Input
@@ -466,6 +472,17 @@ const Cycles = () => {
                     id="model"
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">Quantity *</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    value={formData.quantity || 1}
+                    onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
                     required
                   />
                 </div>
@@ -900,10 +917,10 @@ const Cycles = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Image</TableHead>
                 <TableHead>Serial</TableHead>
                 <TableHead>Name/Model</TableHead>
-                <TableHead>Pricing</TableHead>
-                <TableHead>Deposits</TableHead>
+                <TableHead>Quantity</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -912,6 +929,19 @@ const Cycles = () => {
               {filteredCycles.map((cycle) => {
                 return (
                   <TableRow key={cycle.id}>
+                    <TableCell>
+                      {cycle.image_url ? (
+                        <img
+                          src={cycle.image_url}
+                          alt={cycle.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 bg-muted rounded flex items-center justify-center">
+                          <Bike className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
                         {cycle.display_serial}
@@ -927,18 +957,7 @@ const Cycles = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">
-                        <p>Day: ₹{cycle.price_per_day}</p>
-                        <p>Week: ₹{cycle.price_per_week}</p>
-                        {cycle.price_per_month && <p>Month: ₹{cycle.price_per_month}</p>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <p>Day: ₹{cycle.security_deposit_day}</p>
-                        <p>Week: ₹{cycle.security_deposit_week}</p>
-                        <p>Month: ₹{cycle.security_deposit_month}</p>
-                      </div>
+                      <span className="font-semibold">{cycle.quantity || 1}</span>
                     </TableCell>
                     <TableCell>
                       <Badge variant={cycle.is_active ? "default" : "secondary"}>
@@ -946,30 +965,42 @@ const Cycles = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(cycle)}>
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDuplicate(cycle)}>
-                            <Copy className="w-4 h-4 mr-2" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => toggleActive(cycle)}>
-                            {cycle.is_active ? "Deactivate" : "Activate"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDelete(cycle.id)} className="text-destructive">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setViewingCycle(cycle);
+                            setViewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEdit(cycle)}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDuplicate(cycle)}>
+                              <Copy className="w-4 h-4 mr-2" />
+                              Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => toggleActive(cycle)}>
+                              {cycle.is_active ? "Deactivate" : "Activate"}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(cycle.id)} className="text-destructive">
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -978,6 +1009,13 @@ const Cycles = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* View Details Dialog */}
+      <CycleViewDialog
+        cycle={viewingCycle}
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+      />
     </div>
   );
 };

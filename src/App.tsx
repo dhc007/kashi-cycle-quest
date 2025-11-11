@@ -16,6 +16,7 @@ import Accessories from "./pages/admin/Accessories";
 import Partners from "./pages/admin/Partners";
 import PickupLocations from "./pages/admin/PickupLocations";
 import AdminSettings from "./pages/admin/AdminSettings";
+import PricingPlan from "./pages/admin/PricingPlan";
 import Users from "./pages/admin/Users";
 import Cancellations from "./pages/admin/Cancellations";
 import CycleReturn from "./pages/admin/CycleReturn";
@@ -62,6 +63,7 @@ const App = () => (
             <Route path="cycle-return" element={<CycleReturn />} />
             <Route path="maintenance" element={<Maintenance />} />
             <Route path="coupons" element={<Coupons />} />
+            <Route path="pricing-plan" element={<PricingPlan />} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
