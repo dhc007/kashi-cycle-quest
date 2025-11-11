@@ -417,18 +417,27 @@ const Book = () => {
       ? (profileData?.phone_number?.length === 10 || phoneNumber.length === 10) 
       : phoneVerified;
     
-    const isValid = isPhoneValid && firstName && lastName && livePhoto && idProof;
+    const hasFirstName = !!firstName && firstName.trim().length > 0;
+    const hasLastName = !!lastName && lastName.trim().length > 0;
+    const hasLivePhoto = !!livePhoto;
+    const hasIdProof = !!idProof;
     
-    // Debug log for mobile troubleshooting
-    if (!isValid) {
-      console.log('Payment validation failed:', {
-        isPhoneValid,
-        firstName: !!firstName,
-        lastName: !!lastName,
-        livePhoto: !!livePhoto,
-        idProof: !!idProof
-      });
-    }
+    const isValid = isPhoneValid && hasFirstName && hasLastName && hasLivePhoto && hasIdProof;
+    
+    // Enhanced debug log for mobile troubleshooting
+    console.log('Payment validation check:', {
+      isPhoneValid,
+      hasFirstName,
+      hasLastName,
+      hasLivePhoto,
+      hasIdProof,
+      isValid,
+      profilePhone: profileData?.phone_number,
+      enteredPhone: phoneNumber,
+      user: !!user,
+      livePhotoFile: livePhoto ? { name: livePhoto.name, size: livePhoto.size } : null,
+      idProofFile: idProof ? { name: idProof.name, size: idProof.size } : null
+    });
     
     return isValid;
   };
@@ -571,9 +580,17 @@ const Book = () => {
 
       // Update user profile with live photo and ID proof
       if (user && (livePhotoUrl || idProofUrl)) {
-        const updateData: any = {};
+        const updateData: any = {
+          updated_at: new Date().toISOString()
+        };
         if (livePhotoUrl) updateData.live_photo_url = livePhotoUrl;
         if (idProofUrl) updateData.id_proof_url = idProofUrl;
+        
+        // Also update names if provided
+        if (firstName) updateData.first_name = firstName;
+        if (lastName) updateData.last_name = lastName;
+
+        console.log('Updating profile with documents:', updateData);
 
         const { error: profileError } = await supabase
           .from('profiles')
@@ -582,7 +599,13 @@ const Book = () => {
 
         if (profileError) {
           console.error('Error updating profile with documents:', profileError);
-          // Don't throw - this is not critical for booking flow
+          toast({
+            title: "Warning",
+            description: "Documents uploaded but profile update failed. Continuing with booking...",
+            variant: "destructive",
+          });
+        } else {
+          console.log('Profile updated successfully with documents');
         }
       }
 

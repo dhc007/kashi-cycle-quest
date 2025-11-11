@@ -28,7 +28,16 @@ export const FileUpload = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     
-    if (!selectedFile) return;
+    if (!selectedFile) {
+      console.log('FileUpload: No file selected');
+      return;
+    }
+
+    console.log('FileUpload: File selected', {
+      name: selectedFile.name,
+      size: selectedFile.size,
+      type: selectedFile.type
+    });
 
     // Check file size
     if (selectedFile.size > maxSize * 1024 * 1024) {
@@ -48,6 +57,7 @@ export const FileUpload = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
+        console.log('FileUpload: Preview created for', selectedFile.name);
       };
       reader.readAsDataURL(selectedFile);
     }
@@ -79,7 +89,7 @@ export const FileUpload = ({
             onChange={handleFileChange}
             className="hidden"
             id={`file-${label.replace(/\s/g, "-")}`}
-            {...(captureMode === 'camera' ? { capture: 'user' } : {})}
+            capture={captureMode === 'camera' ? 'user' : captureMode === 'both' ? 'environment' : undefined}
           />
           <label
             htmlFor={`file-${label.replace(/\s/g, "-")}`}
@@ -87,7 +97,7 @@ export const FileUpload = ({
           >
             <Upload className="w-8 h-8 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              {captureMode === 'camera' ? 'Click to capture photo' : 'Click to upload or drag and drop'}
+              {captureMode === 'camera' ? 'Tap to capture photo' : 'Tap to upload or capture'}
             </span>
             <span className="text-xs text-muted-foreground">
               Max file size: {maxSize}MB
