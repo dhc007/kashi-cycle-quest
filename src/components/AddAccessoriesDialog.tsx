@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Plus, Minus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { differenceInDays } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Accessory {
   id: string;
@@ -26,7 +27,7 @@ interface AddAccessoriesDialogProps {
 
 interface SelectedAccessory {
   id: string;
-  quantity: number;
+  days: number;
 }
 
 export function AddAccessoriesDialog({
@@ -39,17 +40,40 @@ export function AddAccessoriesDialog({
 }: AddAccessoriesDialogProps) {
   const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [selectedAccessories, setSelectedAccessories] = useState<SelectedAccessory[]>([]);
+  const [existingAccessoryIds, setExistingAccessoryIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
 
-  const days = Math.max(1, differenceInDays(new Date(returnDate), new Date(pickupDate)));
+  // Calculate max days: from today to return date
+  const today = new Date();
+  const returnD = new Date(returnDate);
+  const daysFromTodayToReturn = Math.max(1, differenceInDays(returnD, today));
+  const maxDays = daysFromTodayToReturn;
 
   useEffect(() => {
     if (open) {
       loadAccessories();
+      loadExistingAccessories();
+      setSelectedAccessories([]);
     }
   }, [open]);
+
+  const loadExistingAccessories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('booking_accessories')
+        .select('accessory_id')
+        .eq('booking_id', bookingId);
+
+      if (error) throw error;
+      
+      const existingIds = new Set(data?.map(item => item.accessory_id) || []);
+      setExistingAccessoryIds(existingIds);
+    } catch (error: any) {
+      console.error('Error loading existing accessories:', error);
+    }
+  };
 
   const loadAccessories = async () => {
     try {
@@ -74,38 +98,36 @@ export function AddAccessoriesDialog({
     }
   };
 
-  const updateQuantity = (accessoryId: string, delta: number) => {
-    setSelectedAccessories((prev) => {
-      const existing = prev.find((a) => a.id === accessoryId);
-      const accessory = accessories.find((a) => a.id === accessoryId);
-      
-      if (!accessory) return prev;
-
-      if (!existing && delta > 0) {
-        return [...prev, { id: accessoryId, quantity: 1 }];
+  const toggleAccessory = (accessoryId: string) => {
+    setSelectedAccessories(prev => {
+      const existing = prev.find(a => a.id === accessoryId);
+      if (existing) {
+        return prev.filter(a => a.id !== accessoryId);
+      } else {
+        return [...prev, { id: accessoryId, days: maxDays }];
       }
-
-      return prev
-        .map((a) => {
-          if (a.id === accessoryId) {
-            const newQuantity = a.quantity + delta;
-            return { ...a, quantity: Math.max(0, Math.min(newQuantity, accessory.available_quantity)) };
-          }
-          return a;
-        })
-        .filter((a) => a.quantity > 0);
     });
   };
 
-  const getQuantity = (accessoryId: string) => {
-    return selectedAccessories.find((a) => a.id === accessoryId)?.quantity || 0;
+  const updateDays = (accessoryId: string, days: number) => {
+    setSelectedAccessories(prev =>
+      prev.map(a => a.id === accessoryId ? { ...a, days } : a)
+    );
+  };
+
+  const isSelected = (accessoryId: string) => {
+    return selectedAccessories.some(a => a.id === accessoryId);
+  };
+
+  const getSelectedDays = (accessoryId: string) => {
+    return selectedAccessories.find(a => a.id === accessoryId)?.days || maxDays;
   };
 
   const calculateTotal = () => {
     return selectedAccessories.reduce((total, selected) => {
       const accessory = accessories.find((a) => a.id === selected.id);
       if (!accessory) return total;
-      return total + (accessory.price_per_day * selected.quantity * days);
+      return total + (accessory.price_per_day * selected.days);
     }, 0);
   };
 
@@ -175,10 +197,10 @@ export function AddAccessoriesDialog({
               return {
                 booking_id: bookingId,
                 accessory_id: selected.id,
-                quantity: selected.quantity,
-                days: days,
+                quantity: 1,
+                days: selected.days,
                 price_per_day: accessory.price_per_day,
-                total_cost: accessory.price_per_day * selected.quantity * days,
+                total_cost: accessory.price_per_day * selected.days,
               };
             });
 
@@ -256,67 +278,73 @@ export function AddAccessoriesDialog({
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {accessories.map((accessory) => (
-                <div
-                  key={accessory.id}
-                  className="border rounded-lg p-4 space-y-3"
-                >
-                  {accessory.image_url && (
-                    <img
-                      src={accessory.image_url}
-                      alt={accessory.name}
-                      className="w-full h-32 object-contain rounded"
-                    />
-                  )}
-                  <div>
-                    <h3 className="font-semibold">{accessory.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      ₹{accessory.price_per_day}/day
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Available: {accessory.available_quantity}
-                    </p>
-                  </div>
+            {accessories.filter(acc => !existingAccessoryIds.has(acc.id)).length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                All available accessories have been added to this booking.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {accessories.filter(acc => !existingAccessoryIds.has(acc.id)).map((accessory) => {
+                  const selected = isSelected(accessory.id);
+                  const selectedDays = getSelectedDays(accessory.id);
+                  
+                  return (
+                    <div
+                      key={accessory.id}
+                      className="border rounded-lg p-4 space-y-3"
+                    >
+                      {accessory.image_url && (
+                        <img
+                          src={accessory.image_url}
+                          alt={accessory.name}
+                          className="w-full h-32 object-contain rounded"
+                        />
+                      )}
+                      <div>
+                        <h3 className="font-semibold">{accessory.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          ₹{accessory.price_per_day}/day
+                        </p>
+                      </div>
 
-                  <div className="flex items-center justify-between">
-                    <Label>Quantity</Label>
-                    <div className="flex items-center gap-2">
+                      {selected && (
+                        <div className="space-y-2">
+                          <Label>Duration</Label>
+                          <Select
+                            value={selectedDays.toString()}
+                            onValueChange={(value) => updateDays(accessory.id, parseInt(value))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({ length: maxDays }, (_, i) => i + 1).map(day => (
+                                <SelectItem key={day} value={day.toString()}>
+                                  {day} {day === 1 ? 'day' : 'days'}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <div className="text-sm bg-muted p-2 rounded">
+                            <p className="font-medium">
+                              Total: ₹{(accessory.price_per_day * selectedDays).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
                       <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => updateQuantity(accessory.id, -1)}
-                        disabled={getQuantity(accessory.id) === 0}
+                        className="w-full"
+                        variant={selected ? "secondary" : "default"}
+                        onClick={() => toggleAccessory(accessory.id)}
                       >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <span className="w-8 text-center font-medium">
-                        {getQuantity(accessory.id)}
-                      </span>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => updateQuantity(accessory.id, 1)}
-                        disabled={getQuantity(accessory.id) >= accessory.available_quantity}
-                      >
-                        <Plus className="w-4 h-4" />
+                        {selected ? "Remove" : "Add"}
                       </Button>
                     </div>
-                  </div>
-
-                  {getQuantity(accessory.id) > 0 && (
-                    <div className="text-sm bg-muted p-2 rounded">
-                      <p className="font-medium">
-                        Total: ₹{(accessory.price_per_day * getQuantity(accessory.id) * days).toLocaleString()}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {getQuantity(accessory.id)} × {days} days
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
             {selectedAccessories.length > 0 && (
               <div className="border-t pt-4 space-y-2">
