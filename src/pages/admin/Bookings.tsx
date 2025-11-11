@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
 import { format, isBefore, isAfter, startOfDay } from "date-fns";
-import { Eye, Search, Calendar, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -86,6 +86,8 @@ const BookingsContent = () => {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<Booking['profiles'] | null>(null);
+  const [sortField, setSortField] = useState<'created_at' | 'pickup_date'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
   const { canEdit } = useUserRoles();
 
@@ -340,6 +342,7 @@ const BookingsContent = () => {
         <TableHeader>
           <TableRow>
             <TableHead className="min-w-[120px]">Booking ID</TableHead>
+            <TableHead className="min-w-[120px]">Booking Date</TableHead>
             <TableHead className="min-w-[150px]">Customer</TableHead>
             <TableHead className="min-w-[120px]">Cycle</TableHead>
             <TableHead className="min-w-[120px]">Partner</TableHead>
@@ -355,6 +358,10 @@ const BookingsContent = () => {
           {bookings.map((booking) => (
             <TableRow key={booking.id}>
               <TableCell className="font-mono text-sm">{booking.booking_id}</TableCell>
+              <TableCell className="text-sm">
+                {format(new Date(booking.created_at), 'MMM dd, yyyy')}
+                <div className="text-xs text-muted-foreground">{format(new Date(booking.created_at), 'HH:mm')}</div>
+              </TableCell>
               <TableCell>
                 <div>
                   <div className="font-medium">
@@ -446,6 +453,22 @@ const BookingsContent = () => {
                 className="pl-10"
               />
             </div>
+            <Select value={sortField} onValueChange={(value: 'created_at' | 'pickup_date') => setSortField(value)}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">Booking Date</SelectItem>
+                <SelectItem value="pickup_date">Pickup Date</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </Button>
           </div>
         </CardContent>
       </Card>

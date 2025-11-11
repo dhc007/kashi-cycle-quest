@@ -71,6 +71,7 @@ const Book = () => {
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<PickupLocation | null>(null);
   const [pickupLocationConfirmed, setPickupLocationConfirmed] = useState(false);
   const [numberOfPeople, setNumberOfPeople] = useState(1);
+  const [maxCycles, setMaxCycles] = useState(10);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
   // Get partner ID from URL and persist it
@@ -278,6 +279,17 @@ const Book = () => {
         
         if (bolt91Base && !partnerId) {
           setSelectedPickupLocation(bolt91Base);
+        }
+
+        // Load max cycles setting
+        const { data: settingsData } = await supabase
+          .from('system_settings')
+          .select('value')
+          .eq('key', 'max_cycles_per_booking')
+          .single();
+
+        if (settingsData?.value && typeof settingsData.value === 'object' && 'value' in settingsData.value) {
+          setMaxCycles((settingsData.value as { value: number }).value);
         }
 
       } catch (error: any) {
@@ -800,7 +812,7 @@ const Book = () => {
                           type="number"
                           inputMode="numeric"
                           min="1"
-                          max="10"
+                          max={maxCycles}
                           value={numberOfPeople}
                           onChange={(e) => {
                             const rawValue = e.target.value;
@@ -812,13 +824,13 @@ const Book = () => {
                             const value = parseInt(rawValue);
                             if (isNaN(value)) return;
                             
-                            if (value > 10) {
+                            if (value > maxCycles) {
                               toast({
                                 title: "Maximum Limit",
-                                description: "You can book for maximum 10 people at once",
+                                description: `You can book a maximum of ${maxCycles} cycles at once.`,
                                 variant: "destructive",
                               });
-                              setNumberOfPeople(10);
+                              setNumberOfPeople(maxCycles);
                             } else if (value < 1) {
                               setNumberOfPeople(1);
                             } else {

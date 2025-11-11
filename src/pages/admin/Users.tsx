@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Users as UsersIcon, UserX, Mail, Phone, Search } from "lucide-react";
@@ -34,6 +35,7 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -159,7 +161,11 @@ const Users = () => {
     user.profile?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.profile?.phone_number?.includes(searchTerm)
-  );
+  ).sort((a, b) => {
+    const aDate = new Date(a.created_at).getTime();
+    const bDate = new Date(b.created_at).getTime();
+    return sortOrder === 'asc' ? aDate - bDate : bDate - aDate;
+  });
 
   return (
     <div className="p-4 md:p-8">
@@ -172,8 +178,8 @@ const Users = () => {
       </div>
 
       {/* Search Bar */}
-      <div className="mb-4">
-        <div className="relative">
+      <div className="mb-4 flex gap-4">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             placeholder="Search by name, email, or phone..."
@@ -182,6 +188,13 @@ const Users = () => {
             className="pl-10"
           />
         </div>
+        <Button
+          variant="outline"
+          onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+          className="whitespace-nowrap"
+        >
+          Sort by Date {sortOrder === 'desc' ? '↓' : '↑'}
+        </Button>
       </div>
 
       <Card className="shadow-warm">

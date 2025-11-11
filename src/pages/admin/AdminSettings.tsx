@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Palette, LayoutDashboard, Moon, Sun } from "lucide-react";
+import { Palette, LayoutDashboard, Moon, Sun, Settings2 } from "lucide-react";
 import { useTheme } from "next-themes";
 
 const AdminSettings = () => {
@@ -25,6 +26,9 @@ const AdminSettings = () => {
   const [showRevenueTrends, setShowRevenueTrends] = useState(true);
   const [showCycleInventory, setShowCycleInventory] = useState(true);
   const [showActiveBookings, setShowActiveBookings] = useState(true);
+
+  // Booking settings
+  const [maxCyclesPerBooking, setMaxCyclesPerBooking] = useState(10);
 
   useEffect(() => {
     checkAdminAndLoadSettings();
@@ -72,6 +76,17 @@ const AdminSettings = () => {
         setShowActiveBookings(settings.showActiveBookings ?? true);
       }
 
+      // Load booking settings from database
+      const { data: settingsData } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'max_cycles_per_booking')
+        .single();
+
+      if (settingsData?.value && typeof settingsData.value === 'object' && 'value' in settingsData.value) {
+        setMaxCyclesPerBooking((settingsData.value as { value: number }).value);
+      }
+
     } catch (error: any) {
       console.error('Error loading data:', error);
       toast({
@@ -96,6 +111,29 @@ const AdminSettings = () => {
       title: "Success",
       description: "Dashboard settings saved successfully",
     });
+  };
+
+  const handleSaveBookingSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from('system_settings')
+        .update({ value: { value: maxCyclesPerBooking } })
+        .eq('key', 'max_cycles_per_booking');
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Booking settings saved successfully",
+      });
+    } catch (error: any) {
+      console.error('Error saving booking settings:', error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -262,6 +300,43 @@ const AdminSettings = () => {
             <div className="pt-4">
               <Button onClick={handleSaveDashboardSettings} className="w-full">
                 Save Dashboard Settings
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Booking Settings */}
+        <Card className="shadow-warm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings2 className="w-5 h-5 text-primary" />
+              Booking Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div className="p-4 border rounded-lg">
+                <Label htmlFor="max-cycles" className="text-base font-medium">
+                  Maximum Cycles Per Booking
+                </Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Set the maximum number of cycles a customer can book in one transaction
+                </p>
+                <Input
+                  id="max-cycles"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={maxCyclesPerBooking}
+                  onChange={(e) => setMaxCyclesPerBooking(parseInt(e.target.value) || 1)}
+                  className="max-w-xs"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button onClick={handleSaveBookingSettings} className="w-full">
+                Save Booking Settings
               </Button>
             </div>
           </CardContent>
