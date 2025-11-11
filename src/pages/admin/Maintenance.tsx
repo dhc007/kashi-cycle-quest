@@ -18,8 +18,7 @@ interface Cycle {
   id: string;
   name: string;
   model: string;
-  total_quantity: number;
-  available_quantity: number;
+  display_serial: string | null;
 }
 
 interface MaintenanceRecord {
@@ -113,14 +112,7 @@ const MaintenanceContent = () => {
 
       if (error) throw error;
 
-      // Reduce available quantity while in maintenance
-      const cycle = cycles.find(c => c.id === selectedCycleId);
-      if (cycle && cycle.available_quantity > 0) {
-        await supabase
-          .from('cycles')
-          .update({ available_quantity: cycle.available_quantity - 1 })
-          .eq('id', selectedCycleId);
-      }
+      // Cycle is now under maintenance (individual cycle tracking)
 
       toast({
         title: "Success",
@@ -157,14 +149,7 @@ const MaintenanceContent = () => {
 
       if (error) throw error;
 
-      // Restore available quantity
-      const cycle = cycles.find(c => c.id === record.cycle_id);
-      if (cycle) {
-        await supabase
-          .from('cycles')
-          .update({ available_quantity: cycle.available_quantity + 1 })
-          .eq('id', record.cycle_id);
-      }
+      // Cycle is now available again (individual cycle tracking)
 
       toast({
         title: "Success",
@@ -224,7 +209,7 @@ const MaintenanceContent = () => {
                   <SelectContent>
                     {cycles.map((cycle) => (
                       <SelectItem key={cycle.id} value={cycle.id}>
-                        {cycle.name} - {cycle.model} (Available: {cycle.available_quantity})
+                        {cycle.display_serial} - {cycle.name} ({cycle.model})
                       </SelectItem>
                     ))}
                   </SelectContent>

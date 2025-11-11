@@ -234,8 +234,6 @@ const Cycles = () => {
             security_deposit_day: formData.security_deposit_day!,
             security_deposit_week: formData.security_deposit_week!,
             security_deposit_month: formData.security_deposit_month!,
-            total_quantity: 1,
-            available_quantity: 1,
             is_active: formData.is_active!,
             free_accessories: formData.free_accessories || [],
             specifications: formData.specifications || "",

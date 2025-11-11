@@ -513,7 +513,6 @@ export type Database = {
       }
       cycles: {
         Row: {
-          available_quantity: number
           created_at: string
           description: string | null
           display_serial: string | null
@@ -538,13 +537,11 @@ export type Database = {
           security_deposit_week: number
           serial_number: string | null
           specifications: string | null
-          total_quantity: number
           updated_at: string
           user_manual_url: string | null
           video_url: string | null
         }
         Insert: {
-          available_quantity?: number
           created_at?: string
           description?: string | null
           display_serial?: string | null
@@ -569,13 +566,11 @@ export type Database = {
           security_deposit_week?: number
           serial_number?: string | null
           specifications?: string | null
-          total_quantity?: number
           updated_at?: string
           user_manual_url?: string | null
           video_url?: string | null
         }
         Update: {
-          available_quantity?: number
           created_at?: string
           description?: string | null
           display_serial?: string | null
@@ -600,7 +595,6 @@ export type Database = {
           security_deposit_week?: number
           serial_number?: string | null
           specifications?: string | null
-          total_quantity?: number
           updated_at?: string
           user_manual_url?: string | null
           video_url?: string | null
