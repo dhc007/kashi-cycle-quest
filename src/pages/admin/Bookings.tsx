@@ -39,6 +39,8 @@ interface Booking {
   cancellation_fee: number;
   refund_amount: number;
   cancellation_requested_at: string | null;
+  coupon_code: string | null;
+  discount_amount: number;
   profiles?: {
     first_name: string;
     last_name: string;
@@ -790,9 +792,15 @@ const BookingsContent = () => {
                     <span className="text-muted-foreground">GST</span>
                     <span className="font-medium">₹{selectedBooking.gst}</span>
                   </div>
+                  {selectedBooking.coupon_code && selectedBooking.discount_amount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Discount (Coupon: {selectedBooking.coupon_code})</span>
+                      <span className="font-medium">-₹{selectedBooking.discount_amount}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between pt-2 border-t">
                     <span className="font-semibold">Subtotal</span>
-                    <span className="font-semibold">₹{(selectedBooking.cycle_rental_cost + selectedBooking.accessories_cost + selectedBooking.insurance_cost + selectedBooking.gst).toFixed(2)}</span>
+                    <span className="font-semibold">₹{(selectedBooking.cycle_rental_cost + selectedBooking.accessories_cost + selectedBooking.insurance_cost + selectedBooking.gst - (selectedBooking.discount_amount || 0)).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Security Deposit (Refundable)</span>

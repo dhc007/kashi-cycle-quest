@@ -29,6 +29,9 @@ interface Booking {
   cancellation_reason: string | null;
   cancellation_fee: number;
   refund_amount: number;
+  coupon_code: string | null;
+  discount_amount: number;
+  gst: number;
   cycles: {
     name: string;
     model: string;
@@ -319,26 +322,38 @@ const BookingHistory = () => {
                   </div>
 
                   <div className="pt-4 border-t">
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Cycles</p>
-                        <p className="font-medium">1 Cycle</p>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cycle Rental ({booking.duration_type})</span>
+                        <span className="font-medium">₹{booking.cycle_rental_cost.toLocaleString()}</span>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Duration</p>
-                        <p className="font-medium capitalize">{booking.duration_type}</p>
+                      {booking.accessories_cost > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Accessories</span>
+                          <span className="font-medium">₹{booking.accessories_cost.toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">GST</span>
+                        <span className="font-medium">₹{booking.gst.toLocaleString()}</span>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Cycle Cost</p>
-                        <p className="font-medium">₹{booking.cycle_rental_cost.toLocaleString()}</p>
+                      {booking.coupon_code && booking.discount_amount > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>Discount ({booking.coupon_code})</span>
+                          <span className="font-medium">-₹{booking.discount_amount.toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between pt-2 border-t">
+                        <span className="font-semibold">Subtotal</span>
+                        <span className="font-semibold">₹{(booking.cycle_rental_cost + booking.accessories_cost + booking.gst - (booking.discount_amount || 0)).toLocaleString()}</span>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Accessories</p>
-                        <p className="font-medium">₹{booking.accessories_cost.toLocaleString()}</p>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Security Deposit (Refundable)</span>
+                        <span className="font-medium text-green-600">₹{booking.security_deposit.toLocaleString()}</span>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Security Deposit</p>
-                        <p className="font-medium">₹{booking.security_deposit.toLocaleString()}</p>
+                      <div className="flex justify-between pt-2 border-t-2">
+                        <span className="text-lg font-bold">Total Paid</span>
+                        <span className="text-lg font-bold">₹{booking.total_amount.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

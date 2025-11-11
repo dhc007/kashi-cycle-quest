@@ -169,10 +169,18 @@ const Confirmation = () => {
                     <span>₹{bookingData.gst || Math.round((bookingData.basePrice + bookingData.accessoriesTotal) * 0.18)}</span>
                   </div>
 
+                  {/* Discount */}
+                  {bookingData.couponCode && bookingData.discount > 0 && (
+                    <div className="flex justify-between text-sm text-green-600">
+                      <span>Discount ({bookingData.couponCode})</span>
+                      <span>-₹{bookingData.discount}</span>
+                    </div>
+                  )}
+
                   {/* Subtotal */}
                   <div className="flex justify-between font-semibold border-t pt-2">
                     <span>Subtotal</span>
-                    <span>₹{(bookingData.basePrice || 0) + (bookingData.accessoriesTotal || 0) + (bookingData.gst || 0)}</span>
+                    <span>₹{(bookingData.basePrice || 0) + (bookingData.accessoriesTotal || 0) + (bookingData.gst || 0) - (bookingData.discount || 0)}</span>
                   </div>
 
                   {/* Security Deposit - Highlighted */}
