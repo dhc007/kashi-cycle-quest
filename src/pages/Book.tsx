@@ -78,6 +78,9 @@ const Book = () => {
   const partnerParam = searchParams.get("partner");
   
   useEffect(() => {
+    // Clear any stale booking data on mount
+    sessionStorage.removeItem('bookingData');
+    
     if (partnerParam) {
       localStorage.setItem('activePartner', partnerParam);
       setPartnerId(partnerParam);
@@ -192,9 +195,9 @@ const Book = () => {
 
   // Auto-select pickup location based on partner type
   useEffect(() => {
-    if (partnerData && pickupLocations.length > 0 && !selectedPickupLocation) {
+    if (partnerData && pickupLocations.length > 0) {
       if (partnerData.partner_type === 'guest_house') {
-        // For guest house, use partner's location as pickup
+        // For guest house, ALWAYS use partner's location as pickup
         const partnerLocation: PickupLocation = {
           id: partnerData.id,
           name: partnerData.name,
@@ -207,8 +210,9 @@ const Book = () => {
           google_maps_link: partnerData.google_maps_link,
         };
         setSelectedPickupLocation(partnerLocation);
-      } else {
-        // For cafe/retail, use Bolt 91 Base
+        console.log('Guest house pickup location set:', partnerLocation);
+      } else if (!selectedPickupLocation) {
+        // For cafe/retail, use Bolt 91 Base only if not already set
         const bolt91Base = pickupLocations.find(loc => 
           loc.name.toLowerCase().includes('bolt 91 base') ||
           loc.name.toLowerCase().includes('bolt91 base')
@@ -227,7 +231,7 @@ const Book = () => {
         setSelectedPickupLocation(bolt91Base);
       }
     }
-  }, [partnerData, pickupLocations, selectedPickupLocation]);
+  }, [partnerData, pickupLocations]);
 
   // Load cycles, accessories, and partners data
   useEffect(() => {
@@ -431,8 +435,10 @@ const Book = () => {
     
     const hasFirstName = !!firstName && firstName.trim().length > 0;
     const hasLastName = !!lastName && lastName.trim().length > 0;
-    const hasLivePhoto = !!livePhoto;
-    const hasIdProof = !!idProof;
+    
+    // Skip verification if user already has them in profile
+    const hasLivePhoto = !!livePhoto || !!profileData?.live_photo_url;
+    const hasIdProof = !!idProof || !!profileData?.id_proof_url;
     
     const isValid = isPhoneValid && hasFirstName && hasLastName && hasLivePhoto && hasIdProof;
     
@@ -464,8 +470,8 @@ const Book = () => {
     if (!isPhoneValid) missing.push('valid phone number');
     if (!firstName) missing.push('first name');
     if (!lastName) missing.push('last name');
-    if (!livePhoto) missing.push('live photo');
-    if (!idProof) missing.push('ID proof');
+    if (!livePhoto && !profileData?.live_photo_url) missing.push('live photo');
+    if (!idProof && !profileData?.id_proof_url) missing.push('ID proof');
     
     return missing;
   };
@@ -549,10 +555,10 @@ const Book = () => {
         description: "Please wait while we process your documents",
       });
 
-      let livePhotoUrl = '';
-      let idProofUrl = '';
+      let livePhotoUrl = profileData?.live_photo_url || '';
+      let idProofUrl = profileData?.id_proof_url || '';
 
-      // Upload live photo
+      // Upload live photo only if new one is provided
       if (livePhoto) {
         const fileName = `${Date.now()}_${livePhoto.name}`;
         const { data, error } = await supabase.storage
@@ -571,7 +577,7 @@ const Book = () => {
         livePhotoUrl = publicUrl;
       }
 
-      // Upload ID proof
+      // Upload ID proof only if new one is provided
       if (idProof) {
         const fileName = `${Date.now()}_${idProof.name}`;
         const { data, error } = await supabase.storage
@@ -805,44 +811,53 @@ const Book = () => {
                         </Select>
                       </div>
 
-                      {/* Number of People */}
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Number of People</label>
-                        <Input
-                          type="number"
-                          inputMode="numeric"
-                          min="1"
-                          max={maxCycles}
-                          value={numberOfPeople}
-                          onChange={(e) => {
-                            const rawValue = e.target.value;
-                            // Allow empty string for backspace
-                            if (rawValue === '') {
-                              setNumberOfPeople(1);
-                              return;
-                            }
-                            const value = parseInt(rawValue);
-                            if (isNaN(value)) return;
-                            
-                            if (value > maxCycles) {
-                              toast({
-                                title: "Maximum Limit",
-                                description: `You can book a maximum of ${maxCycles} cycles at once.`,
-                                variant: "destructive",
-                              });
-                              setNumberOfPeople(maxCycles);
-                            } else if (value < 1) {
-                              setNumberOfPeople(1);
-                            } else {
-                              setNumberOfPeople(value);
-                            }
-                          }}
-                          placeholder="How many people?"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {numberOfPeople} cycle{numberOfPeople > 1 ? 's' : ''} will be booked
-                        </p>
-                      </div>
+                       {/* Number of People */}
+                       <div className="space-y-2">
+                         <label className="text-sm font-medium">Number of People</label>
+                         <Input
+                           type="text"
+                           inputMode="numeric"
+                           value={numberOfPeople === 0 ? '' : numberOfPeople}
+                           onChange={(e) => {
+                             const rawValue = e.target.value;
+                             // Allow empty string for backspace
+                             if (rawValue === '') {
+                               setNumberOfPeople(0);
+                               return;
+                             }
+                             const value = parseInt(rawValue);
+                             if (isNaN(value)) return;
+                             
+                             if (value > maxCycles) {
+                               toast({
+                                 title: "Maximum Limit",
+                                 description: `You can book a maximum of ${maxCycles} cycles at once.`,
+                                 variant: "destructive",
+                               });
+                               setNumberOfPeople(maxCycles);
+                             } else if (value < 0) {
+                               setNumberOfPeople(0);
+                             } else {
+                               setNumberOfPeople(value);
+                             }
+                           }}
+                           onBlur={() => {
+                             // Reset to 1 if empty when focus is lost
+                             if (numberOfPeople === 0) {
+                               setNumberOfPeople(1);
+                             }
+                           }}
+                           placeholder="How many people?"
+                         />
+                         <div className="space-y-1">
+                           <p className="text-xs text-muted-foreground">
+                             {numberOfPeople > 0 ? `${numberOfPeople} cycle${numberOfPeople > 1 ? 's' : ''} will be booked` : 'Enter number of people'}
+                           </p>
+                           <p className="text-xs text-muted-foreground">
+                             Maximum {maxCycles} cycles per booking
+                           </p>
+                         </div>
+                       </div>
                     </div>
 
                     <div className="mt-4 p-3 bg-muted rounded-lg">
@@ -1266,7 +1281,7 @@ const Book = () => {
                     )}
                     
                     <p className="text-xs text-muted-foreground mt-3">
-                      * Pickup location is set based on your booking method
+                      Pickup location is automatically set based on your booking source
                     </p>
                   </div>
 
@@ -1351,31 +1366,43 @@ const Book = () => {
                         </CardContent>
                       </Card>
 
-                      {/* Identity Verification */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-base">Identity Verification</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <FileUpload
-                            label="Live Photo"
-                            accept="image/jpeg,image/png"
-                            onFileSelect={setLivePhoto}
-                            maxSize={10}
-                            captureMode="camera"
-                            description="Use your camera to capture a live photo of yourself"
-                          />
-                          
-                          <FileUpload
-                            label="ID Proof (Aadhar Card)"
-                            accept="image/jpeg,image/png,application/pdf"
-                            onFileSelect={setIdProof}
-                            maxSize={10}
-                            captureMode="both"
-                            description="Capture with camera or upload your Aadhar Card"
-                          />
-                        </CardContent>
-                      </Card>
+                      {/* Identity Verification - Only show if not already provided */}
+                      {(!profileData?.live_photo_url || !profileData?.id_proof_url) && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-base">Identity Verification</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            {!profileData?.live_photo_url && (
+                              <FileUpload
+                                label="Live Photo"
+                                accept="image/jpeg,image/png"
+                                onFileSelect={setLivePhoto}
+                                maxSize={10}
+                                captureMode="camera"
+                                description="Use your camera to capture a live photo of yourself"
+                              />
+                            )}
+                            
+                            {!profileData?.id_proof_url && (
+                              <FileUpload
+                                label="ID Proof (Aadhar Card)"
+                                accept="image/jpeg,image/png,application/pdf"
+                                onFileSelect={setIdProof}
+                                maxSize={10}
+                                captureMode="both"
+                                description="Capture with camera or upload your Aadhar Card"
+                              />
+                            )}
+                            
+                            {profileData?.live_photo_url && profileData?.id_proof_url && (
+                              <p className="text-sm text-green-600 dark:text-green-400">
+                                ✓ Identity verification already completed
+                              </p>
+                            )}
+                          </CardContent>
+                        </Card>
+                      )}
 
                       {/* Emergency Contact */}
                       <Card>
