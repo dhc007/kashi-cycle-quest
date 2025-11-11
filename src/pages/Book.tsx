@@ -152,12 +152,19 @@ const Book = () => {
     try {
       const { data, error } = await supabase.from("profiles").select("*").eq("user_id", userId).single();
 
+      // Extract phone from authentication data
+      const phoneFromMetadata = user?.user_metadata?.phone;
+      const phoneFromEmail = user?.email ? extractPhoneFromEmail(user.email) : null;
+      const authPhone = phoneFromMetadata || phoneFromEmail || "";
+
       if (data) {
         setProfileData(data);
         // Pre-fill form fields
         setFirstName(data.first_name || "");
         setLastName(data.last_name || "");
-        setPhoneNumber(data.phone_number || "");
+        // Use profile phone first, then auth phone
+        const userPhone = data.phone_number || authPhone;
+        setPhoneNumber(userPhone);
         setEmail(data.email || "");
         setEmergencyName(data.emergency_contact_name || "");
         setEmergencyPhone(data.emergency_contact_phone || "");
@@ -165,10 +172,16 @@ const Book = () => {
         setPhoneVerified(true);
       } else if (error) {
         console.log("Profile not found, user can create one during booking");
+        // Set phone from auth data even if profile doesn't exist
+        setPhoneNumber(authPhone);
         setPhoneVerified(true);
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
+      // Still try to set phone from auth data on error
+      const phoneFromMetadata = user?.user_metadata?.phone;
+      const phoneFromEmail = user?.email ? extractPhoneFromEmail(user.email) : null;
+      setPhoneNumber(phoneFromMetadata || phoneFromEmail || "");
     }
   };
 
@@ -419,11 +432,8 @@ const Book = () => {
 
   // Validate checkout form
   const canProceedToPayment = () => {
-    // For logged-in users: Accept profile phone if it exists (10 digits), otherwise check entered phone
-    // For non-logged-in users: require phone verification
-    const isPhoneValid = user
-      ? profileData?.phone_number?.length === 10 || (phoneNumber && phoneNumber.length === 10)
-      : phoneVerified;
+    // For logged-in users: phone is automatically valid since they logged in with it
+    const isPhoneValid = user ? phoneNumber.length === 10 : phoneVerified;
 
     const hasFirstName = !!firstName && firstName.trim().length > 0;
     const hasLastName = !!lastName && lastName.trim().length > 0;
@@ -434,28 +444,13 @@ const Book = () => {
 
     const isValid = isPhoneValid && hasFirstName && hasLastName && hasLivePhoto && hasIdProof;
 
-    // Enhanced debug log for mobile troubleshooting
-    console.log("Payment validation check:", {
-      isPhoneValid,
-      hasFirstName,
-      hasLastName,
-      hasLivePhoto,
-      hasIdProof,
-      isValid,
-      profilePhone: profileData?.phone_number,
-      enteredPhone: phoneNumber,
-      user: !!user,
-      livePhotoFile: livePhoto ? { name: livePhoto.name, size: livePhoto.size } : null,
-      idProofFile: idProof ? { name: idProof.name, size: idProof.size } : null,
-    });
-
     return isValid;
   };
 
   // Get missing requirements for helpful error message
   const getMissingRequirements = () => {
     const missing = [];
-    const isPhoneValid = user ? profileData?.phone_number?.length === 10 || phoneNumber.length === 10 : phoneVerified;
+    const isPhoneValid = user ? phoneNumber.length === 10 : phoneVerified;
 
     if (!isPhoneValid) missing.push("valid phone number");
     if (!firstName) missing.push("first name");
@@ -1349,6 +1344,23 @@ const Book = () => {
                               <CardTitle className="text-base">Contact Verification</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
+                              {/* Phone number display - read-only since user logged in with it */}
+                              {user && phoneNumber && (
+                                <div className="space-y-2">
+                                  <Label htmlFor="phoneDisplay" className="flex items-center gap-2">
+                                    <Phone className="w-4 h-4" />
+                                    Phone Number
+                                  </Label>
+                                  <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
+                                    <span className="text-sm font-medium">+91 {phoneNumber}</span>
+                                    <Badge variant="secondary" className="ml-auto text-xs">Verified</Badge>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    This is the number you logged in with
+                                  </p>
+                                </div>
+                              )}
+
                               <div className="grid md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                   <Label htmlFor="firstName">First Name</Label>
