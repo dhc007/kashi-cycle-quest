@@ -22,11 +22,15 @@ export type Database = {
           id: string
           image_url: string | null
           internal_details: Json | null
+          internal_tracking_id: string | null
           is_active: boolean
+          model_number: string | null
           name: string
           price_per_day: number
+          serial_number: string | null
           total_quantity: number
           updated_at: string
+          user_manual_url: string | null
         }
         Insert: {
           available_quantity?: number
@@ -35,11 +39,15 @@ export type Database = {
           id?: string
           image_url?: string | null
           internal_details?: Json | null
+          internal_tracking_id?: string | null
           is_active?: boolean
+          model_number?: string | null
           name: string
           price_per_day: number
+          serial_number?: string | null
           total_quantity?: number
           updated_at?: string
+          user_manual_url?: string | null
         }
         Update: {
           available_quantity?: number
@@ -48,11 +56,15 @@ export type Database = {
           id?: string
           image_url?: string | null
           internal_details?: Json | null
+          internal_tracking_id?: string | null
           is_active?: boolean
+          model_number?: string | null
           name?: string
           price_per_day?: number
+          serial_number?: string | null
           total_quantity?: number
           updated_at?: string
+          user_manual_url?: string | null
         }
         Relationships: []
       }
@@ -498,9 +510,11 @@ export type Database = {
           id: string
           image_url: string | null
           internal_details: Json | null
+          internal_tracking_id: string | null
           is_active: boolean
           media_urls: string[] | null
           model: string
+          model_number: string | null
           name: string
           price_per_day: number
           price_per_hour: number
@@ -511,9 +525,11 @@ export type Database = {
           security_deposit_day: number
           security_deposit_month: number
           security_deposit_week: number
+          serial_number: string | null
           specifications: Json | null
           total_quantity: number
           updated_at: string
+          user_manual_url: string | null
           video_url: string | null
         }
         Insert: {
@@ -524,9 +540,11 @@ export type Database = {
           id?: string
           image_url?: string | null
           internal_details?: Json | null
+          internal_tracking_id?: string | null
           is_active?: boolean
           media_urls?: string[] | null
           model: string
+          model_number?: string | null
           name: string
           price_per_day: number
           price_per_hour: number
@@ -537,9 +555,11 @@ export type Database = {
           security_deposit_day?: number
           security_deposit_month?: number
           security_deposit_week?: number
+          serial_number?: string | null
           specifications?: Json | null
           total_quantity?: number
           updated_at?: string
+          user_manual_url?: string | null
           video_url?: string | null
         }
         Update: {
@@ -550,9 +570,11 @@ export type Database = {
           id?: string
           image_url?: string | null
           internal_details?: Json | null
+          internal_tracking_id?: string | null
           is_active?: boolean
           media_urls?: string[] | null
           model?: string
+          model_number?: string | null
           name?: string
           price_per_day?: number
           price_per_hour?: number
@@ -563,9 +585,11 @@ export type Database = {
           security_deposit_day?: number
           security_deposit_month?: number
           security_deposit_week?: number
+          serial_number?: string | null
           specifications?: Json | null
           total_quantity?: number
           updated_at?: string
+          user_manual_url?: string | null
           video_url?: string | null
         }
         Relationships: []

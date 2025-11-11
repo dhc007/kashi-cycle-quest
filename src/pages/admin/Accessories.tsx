@@ -29,6 +29,10 @@ interface Accessory {
   available_quantity: number;
   is_active: boolean;
   internal_details: any;
+  serial_number?: string | null;
+  model_number?: string | null;
+  internal_tracking_id?: string | null;
+  user_manual_url?: string | null;
 }
 
 const AccessoriesContent = () => {
@@ -39,6 +43,7 @@ const AccessoriesContent = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [warrantyFile, setWarrantyFile] = useState<File | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [userManualFile, setUserManualFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState<Partial<Accessory>>({});
   const { toast } = useToast();
@@ -92,6 +97,7 @@ const AccessoriesContent = () => {
       let imageUrl = formData.image_url;
       let warrantyFileUrl = formData.internal_details?.warranty_file_url || "";
       let invoiceFileUrl = formData.internal_details?.invoice_file_url || "";
+      let userManualUrl = formData.user_manual_url || "";
 
       // Upload new image if selected
       if (imageFile) {
@@ -108,6 +114,11 @@ const AccessoriesContent = () => {
         invoiceFileUrl = await uploadFile(invoiceFile, 'documents');
       }
 
+      // Upload user manual file
+      if (userManualFile) {
+        userManualUrl = await uploadFile(userManualFile, 'documents');
+      }
+
       if (editingId) {
         const { error } = await supabase
           .from('accessories')
@@ -119,6 +130,10 @@ const AccessoriesContent = () => {
             total_quantity: formData.total_quantity,
             available_quantity: formData.available_quantity,
             is_active: formData.is_active,
+            serial_number: formData.serial_number || null,
+            model_number: formData.model_number || null,
+            internal_tracking_id: formData.internal_tracking_id || null,
+            user_manual_url: userManualUrl || null,
             internal_details: {
               ...(formData.internal_details || {}),
               warranty_file_url: warrantyFileUrl,
@@ -139,6 +154,10 @@ const AccessoriesContent = () => {
             total_quantity: formData.total_quantity!,
             available_quantity: formData.available_quantity!,
             is_active: formData.is_active ?? true,
+            serial_number: formData.serial_number || null,
+            model_number: formData.model_number || null,
+            internal_tracking_id: formData.internal_tracking_id || null,
+            user_manual_url: userManualUrl || null,
             internal_details: {
               ...(formData.internal_details || {}),
               warranty_file_url: warrantyFileUrl,
@@ -160,6 +179,7 @@ const AccessoriesContent = () => {
       setImageFile(null);
       setWarrantyFile(null);
       setInvoiceFile(null);
+      setUserManualFile(null);
       setFormData({});
     } catch (error: any) {
       toast({
@@ -305,6 +325,38 @@ const AccessoriesContent = () => {
                 <div className="space-y-4 border p-4 rounded-lg bg-accent/20">
                   <Label className="text-base font-semibold">Internal Details (Admin Only)</Label>
                   
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="serial_number">Serial Number</Label>
+                      <Input
+                        id="serial_number"
+                        value={formData.serial_number || ''}
+                        onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
+                        placeholder="Unique serial number"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="model_number">Model Number</Label>
+                      <Input
+                        id="model_number"
+                        value={formData.model_number || ''}
+                        onChange={(e) => setFormData({ ...formData, model_number: e.target.value })}
+                        placeholder="Manufacturer model #"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="internal_tracking_id">Internal Tracking ID</Label>
+                      <Input
+                        id="internal_tracking_id"
+                        value={formData.internal_tracking_id || ''}
+                        onChange={(e) => setFormData({ ...formData, internal_tracking_id: e.target.value })}
+                        placeholder="Your tracking ID"
+                      />
+                    </div>
+                  </div>
+                  
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="vendor_name">Vendor Name</Label>
@@ -323,9 +375,9 @@ const AccessoriesContent = () => {
                     </div>
 
                     <div className="grid gap-2">
-                      <Label htmlFor="model_number">Model Number</Label>
+                      <Label htmlFor="old_model_number">Old Model Number</Label>
                       <Input
-                        id="model_number"
+                        id="old_model_number"
                         value={formData.internal_details?.model_number || ''}
                         onChange={(e) => setFormData({ 
                           ...formData, 
@@ -334,7 +386,7 @@ const AccessoriesContent = () => {
                             model_number: e.target.value 
                           } 
                         })}
-                        placeholder="Model number"
+                        placeholder="Legacy model number"
                       />
                     </div>
 
@@ -372,21 +424,29 @@ const AccessoriesContent = () => {
                     </div>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
+                  <div className="grid md:grid-cols-3 gap-4">
                     <FileUpload
-                      label="Warranty Document (PDF)"
+                      label="Warranty Document"
                       accept="application/pdf,image/*"
                       onFileSelect={(file) => setWarrantyFile(file)}
                       maxSize={10}
-                      description="Upload warranty document"
+                      description="PDF or Image"
                     />
                     
                     <FileUpload
-                      label="Invoice Document (PDF)"
+                      label="Invoice Document"
                       accept="application/pdf,image/*"
                       onFileSelect={(file) => setInvoiceFile(file)}
                       maxSize={10}
-                      description="Upload purchase invoice"
+                      description="PDF or Image"
+                    />
+
+                    <FileUpload
+                      label="User Manual"
+                      accept="application/pdf,image/*"
+                      onFileSelect={(file) => setUserManualFile(file)}
+                      maxSize={10}
+                      description="PDF or Image"
                     />
                   </div>
                 </div>

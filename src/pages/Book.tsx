@@ -817,7 +817,7 @@ const Book = () => {
                          <Input
                            type="text"
                            inputMode="numeric"
-                           value={numberOfPeople === 0 ? '' : numberOfPeople}
+                           value={numberOfPeople || ''}
                            onChange={(e) => {
                              const rawValue = e.target.value;
                              // Allow empty string for backspace
@@ -835,7 +835,7 @@ const Book = () => {
                                  variant: "destructive",
                                });
                                setNumberOfPeople(maxCycles);
-                             } else if (value < 0) {
+                             } else if (value < 1) {
                                setNumberOfPeople(0);
                              } else {
                                setNumberOfPeople(value);
@@ -843,7 +843,7 @@ const Book = () => {
                            }}
                            onBlur={() => {
                              // Reset to 1 if empty when focus is lost
-                             if (numberOfPeople === 0) {
+                             if (numberOfPeople === 0 || !numberOfPeople) {
                                setNumberOfPeople(1);
                              }
                            }}

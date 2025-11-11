@@ -41,8 +41,12 @@ interface Cycle {
   security_deposit_month: number;
   is_active: boolean;
   free_accessories: string[] | null;
-  specifications: any;
+  specifications: string | null;
   internal_details: any;
+  serial_number?: string | null;
+  model_number?: string | null;
+  internal_tracking_id?: string | null;
+  user_manual_url?: string | null;
 }
 
 const Cycles = () => {
@@ -57,9 +61,26 @@ const Cycles = () => {
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [warrantyFile, setWarrantyFile] = useState<File | null>(null);
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [userManualFile, setUserManualFile] = useState<File | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [accessorySearch, setAccessorySearch] = useState("");
   const [accessoryPopoverOpen, setAccessoryPopoverOpen] = useState(false);
+  const [specSuggestions] = useState([
+    "36v 250 watt ultra standard kit",
+    "10.4 ah hard pack Lithium ion Detachable battery",
+    "Plastic mudgaurds",
+    "36v 2amp autocutoff charger",
+    "85% fitted bicycle skd condition",
+    "48V 12Ah battery",
+    "Electric motor 250W",
+    "Aluminum frame",
+    "Disc brakes",
+    "LED headlight",
+    "USB charging port",
+    "Digital display",
+    "Adjustable seat",
+    "7-speed gear system"
+  ]);
   const [formData, setFormData] = useState<Partial<Cycle>>({
     name: "",
     model: "",
@@ -75,7 +96,11 @@ const Cycles = () => {
     security_deposit_month: 5000,
     is_active: true,
     free_accessories: [],
-    specifications: {},
+    specifications: "",
+    serial_number: "",
+    model_number: "",
+    internal_tracking_id: "",
+    user_manual_url: "",
     internal_details: {
       vendor: "",
       warranty: "",
@@ -86,8 +111,6 @@ const Cycles = () => {
       purchase_amount: 0,
     },
   });
-  const [specKey, setSpecKey] = useState("");
-  const [specValue, setSpecValue] = useState("");
 
   useEffect(() => {
     Promise.all([loadCycles(), loadAccessories()]);
@@ -98,7 +121,16 @@ const Cycles = () => {
       const { data, error } = await supabase.from("cycles").select("*").order("created_at", { ascending: false });
 
       if (error) throw error;
-      setCycles(data || []);
+      
+      // Convert specifications from Json to string if needed
+      const processedData = (data || []).map(cycle => ({
+        ...cycle,
+        specifications: typeof cycle.specifications === 'string' 
+          ? cycle.specifications 
+          : (cycle.specifications ? JSON.stringify(cycle.specifications) : "")
+      }));
+      
+      setCycles(processedData as Cycle[]);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -226,6 +258,7 @@ const Cycles = () => {
       setDialogOpen(false);
       setEditingCycle(null);
       setImageFile(null);
+      setUserManualFile(null);
       resetForm();
       loadCycles();
     } catch (error: any) {
@@ -255,7 +288,11 @@ const Cycles = () => {
       security_deposit_month: 5000,
       is_active: true,
       free_accessories: [],
-      specifications: {},
+      specifications: "",
+      serial_number: "",
+      model_number: "",
+      internal_tracking_id: "",
+      user_manual_url: "",
       internal_details: {
         vendor: "",
         warranty: "",
@@ -270,6 +307,7 @@ const Cycles = () => {
     setMediaFiles([]);
     setWarrantyFile(null);
     setInvoiceFile(null);
+    setUserManualFile(null);
   };
 
   const handleEdit = (cycle: Cycle) => {
@@ -348,26 +386,6 @@ const Cycles = () => {
       ...formData,
       free_accessories: current.filter((id) => id !== accessoryId),
     });
-  };
-
-  const addSpecification = () => {
-    if (specKey && specValue) {
-      setFormData({
-        ...formData,
-        specifications: {
-          ...(formData.specifications || {}),
-          [specKey]: specValue,
-        },
-      });
-      setSpecKey("");
-      setSpecValue("");
-    }
-  };
-
-  const removeSpecification = (key: string) => {
-    const specs = { ...(formData.specifications || {}) };
-    delete specs[key];
-    setFormData({ ...formData, specifications: specs });
   };
 
   const filteredCycles = cycles.filter(
@@ -470,21 +488,38 @@ const Cycles = () => {
 
               <div className="space-y-2">
                 <Label>Media Gallery (Images & Videos - Max 6 files)</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[...Array(6)].map((_, index) => (
-                    <FileUpload
-                      key={index}
-                      label={`Media ${index + 1}`}
-                      accept="image/*,video/*"
-                      onFileSelect={(file) => {
-                        const newFiles = [...mediaFiles];
-                        newFiles[index] = file;
-                        setMediaFiles(newFiles.filter(Boolean));
-                      }}
-                      maxSize={20}
-                      description="Image or Video"
-                    />
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {mediaFiles.map((file, index) => (
+                    <div key={index} className="relative flex-shrink-0 w-24 h-24 border rounded-lg bg-muted flex items-center justify-center">
+                      <span className="text-xs text-center p-1">{file.name.slice(0, 15)}...</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground"
+                        onClick={() => {
+                          const newFiles = [...mediaFiles];
+                          newFiles.splice(index, 1);
+                          setMediaFiles(newFiles);
+                        }}
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
                   ))}
+                  {mediaFiles.length < 6 && (
+                    <div className="flex-shrink-0 w-24 h-24">
+                      <FileUpload
+                        label="Add Media"
+                        accept="image/*,video/*"
+                        onFileSelect={(file) => {
+                          setMediaFiles([...mediaFiles, file]);
+                        }}
+                        maxSize={20}
+                        description=""
+                      />
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">Upload up to 6 images or videos to showcase the cycle</p>
               </div>
@@ -532,27 +567,28 @@ const Cycles = () => {
 
               {/* Specifications */}
               <div className="space-y-2">
-                <Label>Specifications</Label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Key (e.g., Battery)"
-                    value={specKey}
-                    onChange={(e) => setSpecKey(e.target.value)}
-                  />
-                  <Input
-                    placeholder="Value (e.g., 48V 12Ah)"
-                    value={specValue}
-                    onChange={(e) => setSpecValue(e.target.value)}
-                  />
-                  <Button type="button" onClick={addSpecification} variant="outline">
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {Object.entries(formData.specifications || {}).map(([key, value]) => (
-                    <Badge key={key} variant="secondary" className="gap-1">
-                      {key}: {value as string}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => removeSpecification(key)} />
+                <Label htmlFor="specifications">Specifications</Label>
+                <Textarea
+                  id="specifications"
+                  value={formData.specifications || ""}
+                  onChange={(e) => setFormData({ ...formData, specifications: e.target.value })}
+                  placeholder="Enter specifications (one per line or comma-separated)&#10;Example:&#10;36v 250 watt ultra standard kit&#10;10.4 ah hard pack Lithium ion Detachable battery&#10;Plastic mudgaurds&#10;36v 2amp autocutoff charger&#10;85% fitted bicycle skd condition"
+                  rows={6}
+                />
+                <div className="flex flex-wrap gap-1 mt-2">
+                  <p className="text-xs text-muted-foreground w-full mb-1">Quick add suggestions:</p>
+                  {specSuggestions.map((suggestion, index) => (
+                    <Badge
+                      key={index}
+                      variant="outline"
+                      className="cursor-pointer hover:bg-accent"
+                      onClick={() => {
+                        const current = formData.specifications || "";
+                        const newSpec = current ? `${current}\n${suggestion}` : suggestion;
+                        setFormData({ ...formData, specifications: newSpec });
+                      }}
+                    >
+                      {suggestion}
                     </Badge>
                   ))}
                 </div>
@@ -561,6 +597,38 @@ const Cycles = () => {
               {/* Internal Details */}
               <div className="space-y-4 border p-4 rounded-lg bg-accent/20">
                 <Label className="text-base font-semibold">Internal Details (Admin Only)</Label>
+
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="serial_number">Serial Number</Label>
+                    <Input
+                      id="serial_number"
+                      value={formData.serial_number || ""}
+                      onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
+                      placeholder="Unique serial number"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="model_number">Model Number</Label>
+                    <Input
+                      id="model_number"
+                      value={formData.model_number || ""}
+                      onChange={(e) => setFormData({ ...formData, model_number: e.target.value })}
+                      placeholder="Manufacturer model #"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="internal_tracking_id">Internal Tracking ID</Label>
+                    <Input
+                      id="internal_tracking_id"
+                      value={formData.internal_tracking_id || ""}
+                      onChange={(e) => setFormData({ ...formData, internal_tracking_id: e.target.value })}
+                      placeholder="Your tracking ID"
+                    />
+                  </div>
+                </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -637,21 +705,29 @@ const Cycles = () => {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-3 gap-4">
                   <FileUpload
-                    label="Warranty Document (PDF)"
+                    label="Warranty Document"
                     accept="application/pdf,image/*"
                     onFileSelect={(file) => setWarrantyFile(file)}
                     maxSize={10}
-                    description="Upload warranty document"
+                    description="PDF or Image"
                   />
 
                   <FileUpload
-                    label="Invoice Document (PDF)"
+                    label="Invoice Document"
                     accept="application/pdf,image/*"
                     onFileSelect={(file) => setInvoiceFile(file)}
                     maxSize={10}
-                    description="Upload purchase invoice"
+                    description="PDF or Image"
+                  />
+
+                  <FileUpload
+                    label="User Manual"
+                    accept="application/pdf,image/*"
+                    onFileSelect={(file) => setUserManualFile(file)}
+                    maxSize={10}
+                    description="PDF or Image"
                   />
                 </div>
 
