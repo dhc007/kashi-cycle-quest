@@ -32,6 +32,7 @@ interface Booking {
   cycles: {
     name: string;
     model: string;
+    image_url: string;
   };
   partners: {
     name: string;
@@ -45,6 +46,15 @@ interface Booking {
     city: string;
     google_maps_link: string | null;
   } | null;
+  booking_accessories?: Array<{
+    quantity: number;
+    days: number;
+    price_per_day: number;
+    total_cost: number;
+    accessories: {
+      name: string;
+    };
+  }>;
 }
 
 const BookingHistory = () => {
@@ -73,7 +83,7 @@ const BookingHistory = () => {
         .from('bookings')
         .select(`
           *,
-          cycles (name, model),
+          cycles (name, model, image_url),
           partners (name, address, city, google_maps_link),
           pickup_locations (name, address, city, google_maps_link)
         `)
@@ -208,23 +218,34 @@ const BookingHistory = () => {
             {bookings.map((booking) => (
               <Card key={booking.id} className="shadow-warm">
                 <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl mb-2">
-                        {booking.cycles?.name} - {booking.cycles?.model}
-                      </CardTitle>
-                      <div className="flex gap-2 flex-wrap">
-                        <Badge className={getStatusColor(booking.booking_status)}>
-                          {booking.booking_status}
-                        </Badge>
-                        <Badge className={getPaymentStatusColor(booking.payment_status)}>
-                          {booking.payment_status}
-                        </Badge>
-                        {booking.cancellation_status !== 'none' && (
-                          <Badge className={getCancellationStatusColor(booking.cancellation_status)}>
-                            Cancellation: {booking.cancellation_status}
+                  <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                    <div className="flex gap-4 flex-1">
+                      {booking.cycles?.image_url && (
+                        <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden">
+                          <img 
+                            src={booking.cycles.image_url} 
+                            alt={booking.cycles.name}
+                            className="w-full h-full object-contain p-2"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <CardTitle className="text-xl mb-2">
+                          {booking.cycles?.name} - {booking.cycles?.model}
+                        </CardTitle>
+                        <div className="flex gap-2 flex-wrap">
+                          <Badge className={getStatusColor(booking.booking_status)}>
+                            {booking.booking_status}
                           </Badge>
-                        )}
+                          <Badge className={getPaymentStatusColor(booking.payment_status)}>
+                            {booking.payment_status}
+                          </Badge>
+                          {booking.cancellation_status !== 'none' && (
+                            <Badge className={getCancellationStatusColor(booking.cancellation_status)}>
+                              Cancellation: {booking.cancellation_status}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -317,6 +338,23 @@ const BookingHistory = () => {
                       </div>
                     </div>
                   </div>
+
+                  {booking.booking_accessories && booking.booking_accessories.length > 0 && (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm font-medium mb-3">Accessories</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {booking.booking_accessories.map((acc, idx) => (
+                          <div key={idx} className="bg-muted/50 p-3 rounded-md">
+                            <p className="font-medium text-sm">{acc.accessories.name}</p>
+                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                              <span>Qty: {acc.quantity} × {acc.days} days</span>
+                              <span className="font-medium">₹{acc.total_cost.toLocaleString()}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {booking.has_insurance && (
                     <div className="bg-green-50 dark:bg-green-950 p-3 rounded-md">

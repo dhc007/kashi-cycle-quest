@@ -803,7 +803,15 @@ const Book = () => {
                           max="10"
                           value={numberOfPeople}
                           onChange={(e) => {
-                            const value = parseInt(e.target.value) || 1;
+                            const rawValue = e.target.value;
+                            // Allow empty string for backspace
+                            if (rawValue === '') {
+                              setNumberOfPeople(1);
+                              return;
+                            }
+                            const value = parseInt(rawValue);
+                            if (isNaN(value)) return;
+                            
                             if (value > 10) {
                               toast({
                                 title: "Maximum Limit",
@@ -811,8 +819,10 @@ const Book = () => {
                                 variant: "destructive",
                               });
                               setNumberOfPeople(10);
+                            } else if (value < 1) {
+                              setNumberOfPeople(1);
                             } else {
-                              setNumberOfPeople(Math.max(1, Math.min(10, value)));
+                              setNumberOfPeople(value);
                             }
                           }}
                           placeholder="How many people?"
