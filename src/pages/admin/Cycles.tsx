@@ -73,28 +73,6 @@ const Cycles = () => {
     "Plastic mudgaurds",
     "36v 2amp autocutoff charger",
     "85% fitted bicycle skd condition",
-    "48V 12Ah battery",
-    "Electric motor 250W",
-    "Aluminum frame",
-    "Disc brakes",
-    "LED headlight",
-    "USB charging port",
-    "Digital display",
-    "Adjustable seat",
-    "7-speed gear system",
-    "Front suspension",
-    "Rear suspension",
-    "Hydraulic brakes",
-    "Mechanical brakes",
-    "Carbon fiber frame",
-    "Steel frame",
-    "20 inch wheels",
-    "26 inch wheels",
-    "29 inch wheels",
-    "Kickstand",
-    "Bell",
-    "Reflectors",
-    "Water bottle holder"
   ]);
   const [formData, setFormData] = useState<Partial<Cycle>>({
     name: "",
@@ -136,15 +114,18 @@ const Cycles = () => {
       const { data, error } = await supabase.from("cycles").select("*").order("created_at", { ascending: false });
 
       if (error) throw error;
-      
+
       // Convert specifications from Json to string if needed
-      const processedData = (data || []).map(cycle => ({
+      const processedData = (data || []).map((cycle) => ({
         ...cycle,
-        specifications: typeof cycle.specifications === 'string' 
-          ? cycle.specifications 
-          : (cycle.specifications ? JSON.stringify(cycle.specifications) : "")
+        specifications:
+          typeof cycle.specifications === "string"
+            ? cycle.specifications
+            : cycle.specifications
+              ? JSON.stringify(cycle.specifications)
+              : "",
       }));
-      
+
       setCycles(processedData as Cycle[]);
     } catch (error: any) {
       toast({
@@ -405,12 +386,12 @@ const Cycles = () => {
 
   const addSpecification = (spec: string) => {
     const current = formData.specifications || "";
-    const specs = current.split('\n').filter(s => s.trim());
+    const specs = current.split("\n").filter((s) => s.trim());
     if (!specs.includes(spec.trim())) {
       specs.push(spec.trim());
       setFormData({
         ...formData,
-        specifications: specs.join('\n')
+        specifications: specs.join("\n"),
       });
     }
     setSpecInput("");
@@ -419,16 +400,17 @@ const Cycles = () => {
 
   const removeSpecification = (spec: string) => {
     const current = formData.specifications || "";
-    const specs = current.split('\n').filter(s => s.trim() && s.trim() !== spec.trim());
+    const specs = current.split("\n").filter((s) => s.trim() && s.trim() !== spec.trim());
     setFormData({
       ...formData,
-      specifications: specs.join('\n')
+      specifications: specs.join("\n"),
     });
   };
 
-  const filteredSpecs = allSpecifications.filter(spec =>
-    spec.toLowerCase().includes(specInput.toLowerCase()) &&
-    !(formData.specifications || "").split('\n').includes(spec)
+  const filteredSpecs = allSpecifications.filter(
+    (spec) =>
+      spec.toLowerCase().includes(specInput.toLowerCase()) &&
+      !(formData.specifications || "").split("\n").includes(spec),
   );
 
   const filteredCycles = cycles.filter(
@@ -533,8 +515,8 @@ const Cycles = () => {
                 <Label>Media Gallery (Images & Videos - Max 6 files)</Label>
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
                   {mediaFiles.map((file, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className="relative flex-shrink-0 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 border-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-all animate-fade-in"
                     >
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
@@ -560,9 +542,14 @@ const Cycles = () => {
                   ))}
                   {mediaFiles.length < 6 && (
                     <div className="flex-shrink-0 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-accent hover:border-primary transition-all group">
-                      <label htmlFor="media-upload" className="cursor-pointer w-full h-full flex flex-col items-center justify-center">
+                      <label
+                        htmlFor="media-upload"
+                        className="cursor-pointer w-full h-full flex flex-col items-center justify-center"
+                      >
                         <Plus className="w-8 h-8 mb-2 text-muted-foreground group-hover:text-primary transition-colors" />
-                        <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">Add Media</span>
+                        <span className="text-xs text-muted-foreground group-hover:text-primary transition-colors">
+                          Add Media
+                        </span>
                       </label>
                       <input
                         id="media-upload"
@@ -576,19 +563,21 @@ const Cycles = () => {
                               toast({
                                 title: "File too large",
                                 description: "Maximum file size is 20MB",
-                                variant: "destructive"
+                                variant: "destructive",
                               });
                               return;
                             }
                             setMediaFiles([...mediaFiles, file]);
                           }
-                          e.target.value = '';
+                          e.target.value = "";
                         }}
                       />
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">Click + to add images or videos (max 20MB each, up to 6 files)</p>
+                <p className="text-xs text-muted-foreground">
+                  Click + to add images or videos (max 20MB each, up to 6 files)
+                </p>
               </div>
 
               {/* Free Accessories */}
@@ -661,12 +650,15 @@ const Cycles = () => {
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {(formData.specifications || "").split('\n').filter(s => s.trim()).map((spec, index) => (
-                    <Badge key={index} variant="secondary" className="gap-1">
-                      {spec}
-                      <X className="w-3 h-3 cursor-pointer" onClick={() => removeSpecification(spec)} />
-                    </Badge>
-                  ))}
+                  {(formData.specifications || "")
+                    .split("\n")
+                    .filter((s) => s.trim())
+                    .map((spec, index) => (
+                      <Badge key={index} variant="secondary" className="gap-1">
+                        {spec}
+                        <X className="w-3 h-3 cursor-pointer" onClick={() => removeSpecification(spec)} />
+                      </Badge>
+                    ))}
                 </div>
                 <p className="text-xs text-muted-foreground">Type to search and add specifications</p>
               </div>
