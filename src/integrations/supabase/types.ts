@@ -526,7 +526,7 @@ export type Database = {
           security_deposit_month: number
           security_deposit_week: number
           serial_number: string | null
-          specifications: Json | null
+          specifications: string | null
           total_quantity: number
           updated_at: string
           user_manual_url: string | null
@@ -556,7 +556,7 @@ export type Database = {
           security_deposit_month?: number
           security_deposit_week?: number
           serial_number?: string | null
-          specifications?: Json | null
+          specifications?: string | null
           total_quantity?: number
           updated_at?: string
           user_manual_url?: string | null
@@ -586,7 +586,7 @@ export type Database = {
           security_deposit_month?: number
           security_deposit_week?: number
           serial_number?: string | null
-          specifications?: Json | null
+          specifications?: string | null
           total_quantity?: number
           updated_at?: string
           user_manual_url?: string | null

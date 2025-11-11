@@ -898,9 +898,19 @@ const Book = () => {
                           {cyclesData.map((cycle) => {
                             const isSelected = selectedCycles[personIndex]?.id === cycle.id;
                             const freeAccessories = cycle.free_accessories || [];
-                            const specifications = typeof cycle.specifications === 'string' 
-                              ? cycle.specifications.split('\n').filter(s => s.trim())
-                              : [];
+                            // Handle specifications - could be string, array, object, or null
+                            let specifications: string[] = [];
+                            if (Array.isArray(cycle.specifications)) {
+                              specifications = cycle.specifications.filter(s => typeof s === 'string' && s.trim());
+                            } else if (typeof cycle.specifications === 'string' && cycle.specifications.trim()) {
+                              specifications = cycle.specifications.split('\n').filter(s => s.trim());
+                            } else if (cycle.specifications && typeof cycle.specifications === 'object') {
+                              // Handle case where it might be stored as {0: 'spec1', 1: 'spec2'}
+                              const values = Object.values(cycle.specifications);
+                              if (values.length > 0 && typeof values[0] === 'string') {
+                                specifications = values.filter(s => typeof s === 'string' && s.trim()) as string[];
+                              }
+                            }
                             
                             return (
                               <Card
@@ -1520,16 +1530,30 @@ const Book = () => {
                             )}
                             
                             {/* Specifications */}
-                            {cycle.specifications && typeof cycle.specifications === 'string' && cycle.specifications.trim() && (
-                              <div className="mt-2 p-2 bg-accent/50 rounded-md">
-                                <p className="text-xs font-semibold text-muted-foreground mb-1">Specifications:</p>
-                                <ul className="text-xs text-muted-foreground space-y-0.5">
-                                  {cycle.specifications.split('\n').filter(s => s.trim()).map((spec, idx) => (
-                                    <li key={idx}>• {spec}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
+                            {(() => {
+                              let specs: string[] = [];
+                              if (Array.isArray(cycle.specifications)) {
+                                specs = cycle.specifications.filter(s => typeof s === 'string' && s.trim());
+                              } else if (typeof cycle.specifications === 'string' && cycle.specifications.trim()) {
+                                specs = cycle.specifications.split('\n').filter(s => s.trim());
+                              } else if (cycle.specifications && typeof cycle.specifications === 'object') {
+                                const values = Object.values(cycle.specifications);
+                                if (values.length > 0 && typeof values[0] === 'string') {
+                                  specs = values.filter(s => typeof s === 'string' && s.trim()) as string[];
+                                }
+                              }
+                              
+                              return specs.length > 0 && (
+                                <div className="mt-2 p-2 bg-accent/50 rounded-md">
+                                  <p className="text-xs font-semibold text-muted-foreground mb-1">Specifications:</p>
+                                  <ul className="text-xs text-muted-foreground space-y-0.5">
+                                    {specs.map((spec, idx) => (
+                                      <li key={idx}>• {spec}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              );
+                            })()}
                           </div>
                         ))}
                     </div>
