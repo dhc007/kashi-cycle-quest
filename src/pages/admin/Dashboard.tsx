@@ -330,6 +330,13 @@ const DashboardContent = () => {
     return <div className="p-8">Loading dashboard...</div>;
   }
 
+  const getDateRangeLabel = () => {
+    const { start, end } = getDateRange();
+    if (timeFilter === "today") return `Today - ${format(new Date(), 'EEEE, MMMM d, yyyy')}`;
+    if (timeFilter === "yesterday") return `Yesterday - ${format(subDays(new Date(), 1), 'MMMM d, yyyy')}`;
+    return `${format(start, 'MMM d, yyyy')} - ${format(end, 'MMM d, yyyy')}`;
+  };
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -337,6 +344,12 @@ const DashboardContent = () => {
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">Welcome to Bolt91 Admin Panel</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {format(new Date(), 'EEEE, MMMM d, yyyy • h:mm a')}
+            </p>
+            <p className="text-xs text-primary font-medium mt-1">
+              Showing data: {getDateRangeLabel()}
+            </p>
           </div>
           
           <div className="flex items-center gap-4">

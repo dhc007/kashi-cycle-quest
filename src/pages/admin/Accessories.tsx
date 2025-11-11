@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
 import { FileUpload } from "@/components/FileUpload";
-import { Plus, Pencil, Trash2, MoreVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, MoreVertical, Eye } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -468,66 +468,85 @@ const AccessoriesContent = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Image</TableHead>
                 <TableHead>Serial</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Image</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Price/Day</TableHead>
-                <TableHead>Total Qty</TableHead>
-                <TableHead>Available</TableHead>
+                <TableHead>Quantity</TableHead>
                 <TableHead>Status</TableHead>
-                {canEdit && <TableHead>Actions</TableHead>}
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {accessories.map((accessory) => (
                 <TableRow key={accessory.id}>
                   <TableCell>
+                    {accessory.image_url ? (
+                      <img src={accessory.image_url} alt={accessory.name} className="h-12 w-12 object-cover rounded" />
+                    ) : (
+                      <div className="h-12 w-12 bg-muted rounded flex items-center justify-center text-xs">
+                        No img
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
                       {accessory.display_serial}
                     </span>
                   </TableCell>
                   <TableCell className="font-medium">{accessory.name}</TableCell>
-                  <TableCell>
-                    {accessory.image_url ? (
-                      <img src={accessory.image_url} alt={accessory.name} className="h-10 w-10 object-cover rounded" />
-                    ) : (
-                      <div className="h-10 w-10 bg-muted rounded flex items-center justify-center text-xs">
-                        No img
-                      </div>
-                    )}
-                  </TableCell>
+                  <TableCell className="max-w-xs truncate">{accessory.description}</TableCell>
                   <TableCell>₹{accessory.price_per_day}</TableCell>
-                  <TableCell>{accessory.total_quantity}</TableCell>
-                  <TableCell>{accessory.available_quantity}</TableCell>
+                  <TableCell>
+                    {accessory.available_quantity} / {accessory.total_quantity}
+                  </TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs ${accessory.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                       {accessory.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </TableCell>
-                  {canEdit && (
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEditDialog(accessory)}>
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDelete(accessory.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  )}
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingId(accessory.id);
+                          setFormData(accessory);
+                          setDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      {canEdit && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              setEditingId(accessory.id);
+                              setFormData(accessory);
+                              setDialogOpen(true);
+                            }}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(accessory.id)}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

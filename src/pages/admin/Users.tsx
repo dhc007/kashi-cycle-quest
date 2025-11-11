@@ -6,7 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Users as UsersIcon, UserX, Mail, Phone, Search } from "lucide-react";
+import { Users as UsersIcon, UserX, Mail, Phone, Search, Eye, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { extractPhoneFromEmail } from "@/lib/utils";
 
@@ -36,6 +43,8 @@ const Users = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -212,6 +221,7 @@ const Users = () => {
                   <TableHead>Documents</TableHead>
                   <TableHead>Past Bookings</TableHead>
                   <TableHead>Joined</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -284,12 +294,38 @@ const Users = () => {
                     <TableCell>
                       <span className="text-sm">{format(new Date(user.created_at), 'PP')}</span>
                     </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setViewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => navigate(`/admin/bookings?search=${user.profile?.phone_number || user.email}`)}>
+                              View All Bookings
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
 
                 {filteredCustomers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       No customers found
                     </TableCell>
                   </TableRow>
@@ -299,6 +335,93 @@ const Users = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* User Details Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Customer Details</DialogTitle>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Name</p>
+                  <p className="text-base font-semibold">
+                    {selectedUser.profile?.first_name} {selectedUser.profile?.last_name}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Phone</p>
+                  <p className="text-base">{selectedUser.profile?.phone_number}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Email</p>
+                  <p className="text-base">{selectedUser.email || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Joined</p>
+                  <p className="text-base">{format(new Date(selectedUser.created_at), 'PPP')}</p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Documents</p>
+                <div className="flex gap-4">
+                  {selectedUser.profile?.live_photo_url && (
+                    <div>
+                      <p className="text-xs mb-1">Live Photo</p>
+                      <a href={selectedUser.profile.live_photo_url} target="_blank" rel="noopener noreferrer">
+                        <img 
+                          src={selectedUser.profile.live_photo_url} 
+                          alt="Live Photo" 
+                          className="w-32 h-32 object-cover rounded border"
+                        />
+                      </a>
+                    </div>
+                  )}
+                  {selectedUser.profile?.id_proof_url && (
+                    <div>
+                      <p className="text-xs mb-1">ID Proof</p>
+                      <a href={selectedUser.profile.id_proof_url} target="_blank" rel="noopener noreferrer">
+                        <img 
+                          src={selectedUser.profile.id_proof_url} 
+                          alt="ID Proof" 
+                          className="w-32 h-32 object-cover rounded border"
+                        />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  Booking History ({selectedUser.bookings.length} bookings)
+                </p>
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {selectedUser.bookings.map((booking) => (
+                    <div key={booking.id} className="flex justify-between items-center p-2 bg-muted/50 rounded">
+                      <button
+                        onClick={() => {
+                          setViewDialogOpen(false);
+                          navigate(`/admin/bookings?search=${booking.booking_id}`);
+                        }}
+                        className="text-sm text-primary hover:underline font-mono"
+                      >
+                        #{booking.booking_id}
+                      </button>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(booking.created_at), 'PP')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
