@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
@@ -468,11 +469,10 @@ const AccessoriesContent = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Image</TableHead>
                 <TableHead>Serial</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Price/Day</TableHead>
+                <TableHead>Model</TableHead>
+                <TableHead>Image</TableHead>
                 <TableHead>Quantity</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
@@ -482,43 +482,82 @@ const AccessoriesContent = () => {
               {accessories.map((accessory) => (
                 <TableRow key={accessory.id}>
                   <TableCell>
+                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                      {accessory.display_serial}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-semibold">{accessory.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {accessory.model_number || '-'}
+                  </TableCell>
+                  <TableCell>
                     {accessory.image_url ? (
-                      <img src={accessory.image_url} alt={accessory.name} className="h-12 w-12 object-cover rounded" />
+                      <img src={accessory.image_url} alt={accessory.name} className="w-16 h-16 object-cover rounded" />
                     ) : (
-                      <div className="h-12 w-12 bg-muted rounded flex items-center justify-center text-xs">
+                      <div className="w-16 h-16 bg-muted rounded flex items-center justify-center text-xs">
                         No img
                       </div>
                     )}
                   </TableCell>
                   <TableCell>
-                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                      {accessory.display_serial}
+                    <span className="font-semibold">
+                      {accessory.available_quantity} / {accessory.total_quantity}
                     </span>
                   </TableCell>
-                  <TableCell className="font-medium">{accessory.name}</TableCell>
-                  <TableCell className="max-w-xs truncate">{accessory.description}</TableCell>
-                  <TableCell>₹{accessory.price_per_day}</TableCell>
                   <TableCell>
-                    {accessory.available_quantity} / {accessory.total_quantity}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${accessory.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    <Badge variant={accessory.is_active ? 'default' : 'secondary'}>
                       {accessory.is_active ? 'Active' : 'Inactive'}
-                    </span>
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingId(accessory.id);
-                          setFormData(accessory);
-                          setDialogOpen(true);
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
+                    <div className="flex items-center gap-2">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Accessory Details - {accessory.name}</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            {accessory.image_url && (
+                              <img src={accessory.image_url} alt={accessory.name} className="w-full h-48 object-cover rounded" />
+                            )}
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Serial</Label>
+                                <p className="font-mono text-sm">{accessory.display_serial}</p>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Name</Label>
+                                <p className="font-semibold">{accessory.name}</p>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Model Number</Label>
+                                <p>{accessory.model_number || '-'}</p>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Price/Day</Label>
+                                <p className="font-semibold">₹{accessory.price_per_day}</p>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Total Quantity</Label>
+                                <p>{accessory.total_quantity}</p>
+                              </div>
+                              <div>
+                                <Label className="text-xs text-muted-foreground">Available</Label>
+                                <p>{accessory.available_quantity}</p>
+                              </div>
+                              <div className="col-span-2">
+                                <Label className="text-xs text-muted-foreground">Description</Label>
+                                <p className="text-sm">{accessory.description || 'No description'}</p>
+                              </div>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                       {canEdit && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -527,11 +566,7 @@ const AccessoriesContent = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
-                              setEditingId(accessory.id);
-                              setFormData(accessory);
-                              setDialogOpen(true);
-                            }}>
+                            <DropdownMenuItem onClick={() => openEditDialog(accessory)}>
                               <Pencil className="w-4 h-4 mr-2" />
                               Edit
                             </DropdownMenuItem>

@@ -50,46 +50,50 @@ const PricingPlanContent = () => {
 
   const loadPricingPlans = async () => {
     try {
-      const { data: plansData, error } = await supabase
-        .from("pricing_plans")
-        .select("*")
-        .eq("is_active", true)
-        .order("item_type", { ascending: true });
+      // Fetch cycles and accessories directly
+      const [cyclesResponse, accessoriesResponse] = await Promise.all([
+        supabase.from("cycles").select("*").eq("is_active", true).order("name"),
+        supabase.from("accessories").select("*").eq("is_active", true).order("name"),
+      ]);
 
-      if (error) throw error;
+      if (cyclesResponse.error) throw cyclesResponse.error;
+      if (accessoriesResponse.error) throw accessoriesResponse.error;
 
-      // Fetch item details
-      const plansWithDetails = await Promise.all(
-        (plansData || []).map(async (plan) => {
-          if (plan.item_type === "cycle") {
-            const { data: cycleData } = await supabase
-              .from("cycles")
-              .select("name, model")
-              .eq("id", plan.item_id)
-              .single();
-            
-            return {
-              ...plan,
-              item_name: cycleData?.name || "Unknown",
-              item_model: cycleData?.model || "-",
-            };
-          } else {
-            const { data: accessoryData } = await supabase
-              .from("accessories")
-              .select("name")
-              .eq("id", plan.item_id)
-              .single();
-            
-            return {
-              ...plan,
-              item_name: accessoryData?.name || "Unknown",
-              item_model: "-",
-            };
-          }
-        })
-      );
+      // Map cycles
+      const cyclePlans: PricingPlan[] = (cyclesResponse.data || []).map((cycle) => ({
+        id: cycle.id,
+        item_type: "cycle",
+        item_id: cycle.id,
+        price_per_day: cycle.price_per_day || 0,
+        price_per_week: cycle.price_per_week || null,
+        price_per_month: cycle.price_per_month || null,
+        price_per_year: null,
+        security_deposit_day: cycle.security_deposit_day || 2000,
+        security_deposit_week: cycle.security_deposit_week || 3000,
+        security_deposit_month: cycle.security_deposit_month || 5000,
+        is_active: cycle.is_active,
+        item_name: cycle.name,
+        item_model: cycle.model,
+      }));
 
-      setPricingPlans(plansWithDetails);
+      // Map accessories
+      const accessoryPlans: PricingPlan[] = (accessoriesResponse.data || []).map((accessory) => ({
+        id: accessory.id,
+        item_type: "accessory",
+        item_id: accessory.id,
+        price_per_day: accessory.price_per_day || 0,
+        price_per_week: null,
+        price_per_month: null,
+        price_per_year: null,
+        security_deposit_day: 0,
+        security_deposit_week: 0,
+        security_deposit_month: 0,
+        is_active: accessory.is_active,
+        item_name: accessory.name,
+        item_model: accessory.model_number || "-",
+      }));
+
+      setPricingPlans([...cyclePlans, ...accessoryPlans]);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -120,17 +124,25 @@ const PricingPlanContent = () => {
     if (!editingPlan) return;
 
     try {
+      // Update the source table (cycles or accessories)
+      const tableName = editingPlan.item_type === "cycle" ? "cycles" : "accessories";
+      
+      const updates: any = {
+        price_per_day: formData.price_per_day,
+      };
+
+      if (editingPlan.item_type === "cycle") {
+        updates.price_per_week = formData.price_per_week || null;
+        updates.price_per_month = formData.price_per_month || null;
+        updates.security_deposit_day = formData.security_deposit_day;
+        updates.security_deposit_week = formData.security_deposit_week;
+        updates.security_deposit_month = formData.security_deposit_month;
+      }
+
       const { error } = await supabase
-        .from("pricing_plans")
-        .update({
-          price_per_day: formData.price_per_day,
-          price_per_week: formData.price_per_week || null,
-          price_per_month: formData.price_per_month || null,
-          security_deposit_day: formData.security_deposit_day,
-          security_deposit_week: formData.security_deposit_week,
-          security_deposit_month: formData.security_deposit_month,
-        })
-        .eq("id", editingPlan.id);
+        .from(tableName)
+        .update(updates)
+        .eq("id", editingPlan.item_id);
 
       if (error) throw error;
 
@@ -184,16 +196,17 @@ const PricingPlanContent = () => {
         </div>
       </div>
 
-      <Card className="shadow-warm">
+      {/* Cycles Pricing Section */}
+      <Card className="shadow-warm mb-6">
         <CardHeader>
-          <CardTitle>Pricing Plans ({filteredPlans.length})</CardTitle>
+          <CardTitle>Cycles Pricing ({filteredPlans.filter(p => p.item_type === "cycle").length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>Item</TableHead>
+                <TableHead>Cycle Name</TableHead>
+                <TableHead>Model</TableHead>
                 <TableHead>Price/Day</TableHead>
                 <TableHead>Price/Week</TableHead>
                 <TableHead>Price/Month</TableHead>
@@ -202,19 +215,10 @@ const PricingPlanContent = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPlans.map((plan) => (
+              {filteredPlans.filter(p => p.item_type === "cycle").map((plan) => (
                 <TableRow key={plan.id}>
-                  <TableCell>
-                    <Badge variant={plan.item_type === "cycle" ? "default" : "secondary"}>
-                      {plan.item_type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-semibold">{plan.item_name}</p>
-                      <p className="text-sm text-muted-foreground">{plan.item_model}</p>
-                    </div>
-                  </TableCell>
+                  <TableCell className="font-semibold">{plan.item_name}</TableCell>
+                  <TableCell className="text-muted-foreground">{plan.item_model}</TableCell>
                   <TableCell className="font-semibold">₹{plan.price_per_day}</TableCell>
                   <TableCell>₹{plan.price_per_week || "-"}</TableCell>
                   <TableCell>₹{plan.price_per_month || "-"}</TableCell>
@@ -225,6 +229,39 @@ const PricingPlanContent = () => {
                       <p>Month: ₹{plan.security_deposit_month}</p>
                     </div>
                   </TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(plan)}>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Accessories Pricing Section */}
+      <Card className="shadow-warm">
+        <CardHeader>
+          <CardTitle>Accessories Pricing ({filteredPlans.filter(p => p.item_type === "accessory").length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Accessory Name</TableHead>
+                <TableHead>Model</TableHead>
+                <TableHead>Price/Day</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredPlans.filter(p => p.item_type === "accessory").map((plan) => (
+                <TableRow key={plan.id}>
+                  <TableCell className="font-semibold">{plan.item_name}</TableCell>
+                  <TableCell className="text-muted-foreground">{plan.item_model}</TableCell>
+                  <TableCell className="font-semibold">₹{plan.price_per_day}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(plan)}>
                       <Edit className="w-4 h-4" />
@@ -255,58 +292,64 @@ const PricingPlanContent = () => {
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="price_per_week">Price/Week (₹)</Label>
-                <Input
-                  id="price_per_week"
-                  type="number"
-                  value={formData.price_per_week}
-                  onChange={(e) => setFormData({ ...formData, price_per_week: Number(e.target.value) })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="price_per_month">Price/Month (₹)</Label>
-                <Input
-                  id="price_per_month"
-                  type="number"
-                  value={formData.price_per_month}
-                  onChange={(e) => setFormData({ ...formData, price_per_month: Number(e.target.value) })}
-                />
-              </div>
+              {editingPlan?.item_type === "cycle" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="price_per_week">Price/Week (₹)</Label>
+                    <Input
+                      id="price_per_week"
+                      type="number"
+                      value={formData.price_per_week}
+                      onChange={(e) => setFormData({ ...formData, price_per_week: Number(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="price_per_month">Price/Month (₹)</Label>
+                    <Input
+                      id="price_per_month"
+                      type="number"
+                      value={formData.price_per_month}
+                      onChange={(e) => setFormData({ ...formData, price_per_month: Number(e.target.value) })}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="deposit_day">Deposit/Day (₹) *</Label>
-                <Input
-                  id="deposit_day"
-                  type="number"
-                  value={formData.security_deposit_day}
-                  onChange={(e) => setFormData({ ...formData, security_deposit_day: Number(e.target.value) })}
-                  required
-                />
+            {editingPlan?.item_type === "cycle" && (
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="deposit_day">Deposit/Day (₹) *</Label>
+                  <Input
+                    id="deposit_day"
+                    type="number"
+                    value={formData.security_deposit_day}
+                    onChange={(e) => setFormData({ ...formData, security_deposit_day: Number(e.target.value) })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deposit_week">Deposit/Week (₹) *</Label>
+                  <Input
+                    id="deposit_week"
+                    type="number"
+                    value={formData.security_deposit_week}
+                    onChange={(e) => setFormData({ ...formData, security_deposit_week: Number(e.target.value) })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="deposit_month">Deposit/Month (₹) *</Label>
+                  <Input
+                    id="deposit_month"
+                    type="number"
+                    value={formData.security_deposit_month}
+                    onChange={(e) => setFormData({ ...formData, security_deposit_month: Number(e.target.value) })}
+                    required
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="deposit_week">Deposit/Week (₹) *</Label>
-                <Input
-                  id="deposit_week"
-                  type="number"
-                  value={formData.security_deposit_week}
-                  onChange={(e) => setFormData({ ...formData, security_deposit_week: Number(e.target.value) })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="deposit_month">Deposit/Month (₹) *</Label>
-                <Input
-                  id="deposit_month"
-                  type="number"
-                  value={formData.security_deposit_month}
-                  onChange={(e) => setFormData({ ...formData, security_deposit_month: Number(e.target.value) })}
-                  required
-                />
-              </div>
-            </div>
+            )}
 
             <Button type="submit" className="w-full">
               Update Pricing

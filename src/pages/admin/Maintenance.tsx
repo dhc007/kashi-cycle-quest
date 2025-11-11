@@ -325,21 +325,21 @@ const MaintenanceContent = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
-                          {record.status === 'pending' && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {record.status === 'pending' && (
                                 <DropdownMenuItem onClick={() => handleCompleteMaintenance(record)} disabled={processing}>
                                   <CheckCircle2 className="w-4 h-4 mr-2" />
                                   Mark Complete
                                 </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           {record.status === 'completed' && record.completed_at && (
                             <span className="text-xs text-muted-foreground ml-2">
                               {format(new Date(record.completed_at), 'MMM dd, yyyy')}
