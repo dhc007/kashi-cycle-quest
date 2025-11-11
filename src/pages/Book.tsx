@@ -411,10 +411,10 @@ const Book = () => {
 
   // Validate checkout form
   const canProceedToPayment = () => {
-    // For logged-in users: Check phone from profile or entered phone
+    // For logged-in users: Accept profile phone if it exists (10 digits), otherwise check entered phone
     // For non-logged-in users: require phone verification
     const isPhoneValid = user 
-      ? (profileData?.phone_number?.length === 10 || phoneNumber.length === 10) 
+      ? (profileData?.phone_number?.length === 10 || (phoneNumber && phoneNumber.length === 10)) 
       : phoneVerified;
     
     const hasFirstName = !!firstName && firstName.trim().length > 0;
@@ -798,10 +798,23 @@ const Book = () => {
                         <label className="text-sm font-medium">Number of People</label>
                         <Input
                           type="number"
+                          inputMode="numeric"
                           min="1"
                           max="10"
                           value={numberOfPeople}
-                          onChange={(e) => setNumberOfPeople(Math.max(1, Math.min(10, parseInt(e.target.value) || 1)))}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 1;
+                            if (value > 10) {
+                              toast({
+                                title: "Maximum Limit",
+                                description: "You can book for maximum 10 people at once",
+                                variant: "destructive",
+                              });
+                              setNumberOfPeople(10);
+                            } else {
+                              setNumberOfPeople(Math.max(1, Math.min(10, value)));
+                            }
+                          }}
                           placeholder="How many people?"
                         />
                         <p className="text-xs text-muted-foreground">
