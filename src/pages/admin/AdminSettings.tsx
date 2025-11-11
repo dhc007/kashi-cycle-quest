@@ -29,6 +29,7 @@ const AdminSettings = () => {
 
   // Booking settings
   const [maxCyclesPerBooking, setMaxCyclesPerBooking] = useState(10);
+  const [allowUnavailableBookings, setAllowUnavailableBookings] = useState(false);
 
   useEffect(() => {
     checkAdminAndLoadSettings();
@@ -87,6 +88,17 @@ const AdminSettings = () => {
         setMaxCyclesPerBooking((settingsData.value as { value: number }).value);
       }
 
+      // Load allow unavailable bookings setting
+      const { data: unavailableSettingsData } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'allow_unavailable_bookings')
+        .single();
+
+      if (unavailableSettingsData?.value && typeof unavailableSettingsData.value === 'object' && 'enabled' in unavailableSettingsData.value) {
+        setAllowUnavailableBookings((unavailableSettingsData.value as { enabled: boolean }).enabled);
+      }
+
     } catch (error: any) {
       console.error('Error loading data:', error);
       toast({
@@ -115,12 +127,21 @@ const AdminSettings = () => {
 
   const handleSaveBookingSettings = async () => {
     try {
-      const { error } = await supabase
+      // Update max cycles setting
+      const { error: maxCyclesError } = await supabase
         .from('system_settings')
         .update({ value: { value: maxCyclesPerBooking } })
         .eq('key', 'max_cycles_per_booking');
 
-      if (error) throw error;
+      if (maxCyclesError) throw maxCyclesError;
+
+      // Update allow unavailable bookings setting
+      const { error: unavailableError } = await supabase
+        .from('system_settings')
+        .update({ value: { enabled: allowUnavailableBookings } })
+        .eq('key', 'allow_unavailable_bookings');
+
+      if (unavailableError) throw unavailableError;
 
       toast({
         title: "Success",
@@ -330,6 +351,22 @@ const AdminSettings = () => {
                   value={maxCyclesPerBooking}
                   onChange={(e) => setMaxCyclesPerBooking(parseInt(e.target.value) || 1)}
                   className="max-w-xs"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <Label htmlFor="allow-unavailable" className="text-base font-medium">
+                    Allow Bookings When Unavailable
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable this to allow bookings even when cycles are marked as unavailable. Useful for manual inventory management.
+                  </p>
+                </div>
+                <Switch
+                  id="allow-unavailable"
+                  checked={allowUnavailableBookings}
+                  onCheckedChange={setAllowUnavailableBookings}
                 />
               </div>
             </div>

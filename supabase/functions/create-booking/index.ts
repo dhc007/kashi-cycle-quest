@@ -93,30 +93,44 @@ serve(async (req) => {
     // Generate booking ID
     const bookingId = `BLT${Date.now().toString().slice(-8)}`;
 
-    // Check cycle availability
-    const { data: availableCount } = await supabaseClient
-      .rpc('check_cycle_availability', {
-        p_cycle_id: bookingData.cycle_id,
-        p_pickup_date: bookingData.pickup_date,
-        p_return_date: bookingData.return_date,
-      });
+    // Check if we should enforce availability checking
+    const { data: availabilitySettings } = await supabaseClient
+      .from('system_settings')
+      .select('value')
+      .eq('key', 'allow_unavailable_bookings')
+      .single();
 
-    if (availableCount < 1) {
-      throw new Error('Cycle not available for selected dates');
-    }
+    const allowUnavailable = availabilitySettings?.value && 
+      typeof availabilitySettings.value === 'object' && 
+      'enabled' in availabilitySettings.value &&
+      (availabilitySettings.value as { enabled: boolean }).enabled;
 
-    // Check accessory availability if accessories are selected
-    if (bookingData.accessories && bookingData.accessories.length > 0) {
-      for (const acc of bookingData.accessories) {
-        const { data: accAvailable } = await supabaseClient
-          .rpc('check_accessory_availability', {
-            p_accessory_id: acc.id,
-            p_pickup_date: bookingData.pickup_date,
-            p_return_date: bookingData.return_date,
-          });
+    if (!allowUnavailable) {
+      // Check cycle availability
+      const { data: availableCount } = await supabaseClient
+        .rpc('check_cycle_availability', {
+          p_cycle_id: bookingData.cycle_id,
+          p_pickup_date: bookingData.pickup_date,
+          p_return_date: bookingData.return_date,
+        });
 
-        if (accAvailable < 1) {
-          throw new Error(`Accessory ${acc.name} not available for selected dates`);
+      if (availableCount < 1) {
+        throw new Error('Cycle not available for selected dates');
+      }
+
+      // Check accessory availability if accessories are selected
+      if (bookingData.accessories && bookingData.accessories.length > 0) {
+        for (const acc of bookingData.accessories) {
+          const { data: accAvailable } = await supabaseClient
+            .rpc('check_accessory_availability', {
+              p_accessory_id: acc.id,
+              p_pickup_date: bookingData.pickup_date,
+              p_return_date: bookingData.return_date,
+            });
+
+          if (accAvailable < 1) {
+            throw new Error(`Accessory ${acc.name} not available for selected dates`);
+          }
         }
       }
     }
@@ -213,6 +227,45 @@ serve(async (req) => {
         .insert(bookingAccessories);
 
       if (accError) throw accError;
+    }
+
+    // Track coupon usage if a coupon was applied
+    if (bookingData.coupon_code && bookingData.coupon_id && bookingData.discount_amount > 0) {
+      // Insert coupon usage record
+      const { error: couponUsageError } = await supabaseAdmin
+        .from('coupon_usage')
+        .insert({
+          coupon_id: bookingData.coupon_id,
+          user_id: userId,
+          booking_id: booking.id,
+          discount_amount: bookingData.discount_amount,
+        });
+
+      if (couponUsageError) {
+        console.error('Error tracking coupon usage:', couponUsageError);
+        // Don't throw error, just log it - booking was successful
+      }
+
+      // Increment coupon used_count
+      const { data: currentCoupon } = await supabaseAdmin
+        .from('coupons')
+        .select('used_count')
+        .eq('id', bookingData.coupon_id)
+        .single();
+
+      if (currentCoupon) {
+        const { error: couponUpdateError } = await supabaseAdmin
+          .from('coupons')
+          .update({ 
+            used_count: currentCoupon.used_count + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', bookingData.coupon_id);
+
+        if (couponUpdateError) {
+          console.error('Error updating coupon count:', couponUpdateError);
+        }
+      }
     }
 
     console.log('Booking created:', bookingId);

@@ -694,8 +694,8 @@ const Book = () => {
               { num: 2, label: "Select Cycles" },
               { num: 3, label: "Choose Duration" },
               { num: 4, label: "Add Accessories" },
-              { num: 5, label: "Pickup Location" },
-              { num: 6, label: "Checkout" },
+              ...(partnerId ? [] : [{ num: 5, label: "Pickup Location" }]),
+              { num: partnerId ? 5 : 6, label: "Checkout" },
             ].map((s) => (
               <div key={s.num} className="flex items-center gap-2">
                 <div
@@ -1222,18 +1222,29 @@ const Book = () => {
                         </div>
                       </div>
 
-                      <div className="flex gap-4">
+                        <div className="flex gap-4">
                         <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
                           Back
                         </Button>
-                        <Button onClick={() => setStep(5)} className="flex-1 bg-gradient-primary hover:opacity-90">
-                          Continue to Pickup Location
+                        <Button 
+                          onClick={() => {
+                            if (partnerId) {
+                              // Skip pickup location step for partner bookings
+                              setPickupLocationConfirmed(true);
+                              setStep(5);
+                            } else {
+                              setStep(5);
+                            }
+                          }} 
+                          className="flex-1 bg-gradient-primary hover:opacity-90"
+                        >
+                          {partnerId ? 'Continue to Checkout' : 'Continue to Pickup Location'}
                         </Button>
                       </div>
                     </div>
                   )}
 
-                  {step === 5 && (
+                  {step === 5 && !partnerId && (
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -1300,7 +1311,7 @@ const Book = () => {
                         <Button
                           onClick={() => {
                             setPickupLocationConfirmed(true);
-                            setStep(6);
+                            setStep(partnerId ? 5 : 6);
                           }}
                           disabled={!selectedPickupLocation}
                           className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
@@ -1311,7 +1322,7 @@ const Book = () => {
                     </div>
                   )}
 
-                  {step === 6 && (
+                  {((step === 5 && partnerId) || (step === 6 && !partnerId)) && (
                     <div className="space-y-6">
                       {/* Logged in indicator */}
                       {user && (
@@ -1471,7 +1482,7 @@ const Book = () => {
                       </div>
 
                       <div className="flex gap-4">
-                        <Button variant="outline" onClick={() => setStep(5)} className="flex-1">
+                        <Button variant="outline" onClick={() => setStep(partnerId ? 4 : 5)} className="flex-1">
                           Back
                         </Button>
                         <div className="flex-1 space-y-2">
