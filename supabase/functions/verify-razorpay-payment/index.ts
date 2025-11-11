@@ -30,7 +30,8 @@ serve(async (req) => {
       razorpay_order_id, 
       razorpay_payment_id, 
       razorpay_signature,
-      booking_id 
+      booking_id,
+      is_addon
     } = await req.json();
 
     const razorpayKeySecret = Deno.env.get('RAZORPAY_KEY_SECRET');
@@ -61,15 +62,22 @@ serve(async (req) => {
     }
 
     // Update booking with payment details
+    // For add-ons, only update payment tracking fields
+    const updateData: any = {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    };
+
+    // Only update payment status for initial booking, not for add-ons
+    if (!is_addon) {
+      updateData.payment_status = 'completed';
+      updateData.payment_method = 'razorpay';
+    }
+
     const { data: booking, error: updateError } = await supabaseClient
       .from('bookings')
-      .update({
-        razorpay_order_id,
-        razorpay_payment_id,
-        razorpay_signature,
-        payment_status: 'completed',
-        payment_method: 'razorpay',
-      })
+      .update(updateData)
       .eq('booking_id', booking_id)
       .select()
       .single();

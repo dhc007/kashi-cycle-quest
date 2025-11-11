@@ -19,6 +19,7 @@ export type Database = {
           available_quantity: number
           created_at: string
           description: string | null
+          display_serial: string | null
           id: string
           image_url: string | null
           internal_details: Json | null
@@ -36,6 +37,7 @@ export type Database = {
           available_quantity?: number
           created_at?: string
           description?: string | null
+          display_serial?: string | null
           id?: string
           image_url?: string | null
           internal_details?: Json | null
@@ -53,6 +55,7 @@ export type Database = {
           available_quantity?: number
           created_at?: string
           description?: string | null
+          display_serial?: string | null
           id?: string
           image_url?: string | null
           internal_details?: Json | null
@@ -506,6 +509,7 @@ export type Database = {
           available_quantity: number
           created_at: string
           description: string | null
+          display_serial: string | null
           free_accessories: string[] | null
           id: string
           image_url: string | null
@@ -536,6 +540,7 @@ export type Database = {
           available_quantity?: number
           created_at?: string
           description?: string | null
+          display_serial?: string | null
           free_accessories?: string[] | null
           id?: string
           image_url?: string | null
@@ -566,6 +571,7 @@ export type Database = {
           available_quantity?: number
           created_at?: string
           description?: string | null
+          display_serial?: string | null
           free_accessories?: string[] | null
           id?: string
           image_url?: string | null
@@ -962,6 +968,8 @@ export type Database = {
         }
         Returns: number
       }
+      generate_accessory_serial: { Args: never; Returns: string }
+      generate_cycle_serial: { Args: never; Returns: string }
       generate_partner_code: {
         Args: { p_partner_type: string }
         Returns: string

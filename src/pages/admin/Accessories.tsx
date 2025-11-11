@@ -33,6 +33,7 @@ interface Accessory {
   model_number?: string | null;
   internal_tracking_id?: string | null;
   user_manual_url?: string | null;
+  display_serial?: string | null;
 }
 
 const AccessoriesContent = () => {
@@ -467,6 +468,7 @@ const AccessoriesContent = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Serial</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Image</TableHead>
                 <TableHead>Price/Day</TableHead>
@@ -479,6 +481,11 @@ const AccessoriesContent = () => {
             <TableBody>
               {accessories.map((accessory) => (
                 <TableRow key={accessory.id}>
+                  <TableCell>
+                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                      {accessory.display_serial}
+                    </span>
+                  </TableCell>
                   <TableCell className="font-medium">{accessory.name}</TableCell>
                   <TableCell>
                     {accessory.image_url ? (

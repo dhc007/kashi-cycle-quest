@@ -47,6 +47,7 @@ interface Cycle {
   model_number?: string | null;
   internal_tracking_id?: string | null;
   user_manual_url?: string | null;
+  display_serial?: string | null;
 }
 
 const Cycles = () => {
@@ -901,6 +902,7 @@ const Cycles = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Serial</TableHead>
                 <TableHead>Name/Model</TableHead>
                 <TableHead>Pricing</TableHead>
                 <TableHead>Deposits</TableHead>
@@ -912,6 +914,11 @@ const Cycles = () => {
               {filteredCycles.map((cycle) => {
                 return (
                   <TableRow key={cycle.id}>
+                    <TableCell>
+                      <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                        {cycle.display_serial}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <div>
                         <p className="font-semibold">{cycle.name}</p>

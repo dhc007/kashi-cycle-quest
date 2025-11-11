@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { Calendar, Clock, MapPin, Package, CreditCard, XCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, Package, CreditCard, XCircle, Plus } from "lucide-react";
 import { CancellationDialog } from "@/components/CancellationDialog";
+import { AddAccessoriesDialog } from "@/components/AddAccessoriesDialog";
 
 interface Booking {
   id: string;
@@ -61,6 +62,7 @@ const BookingHistory = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [addAccessoriesDialogOpen, setAddAccessoriesDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -133,9 +135,22 @@ const BookingHistory = () => {
     );
   };
 
+  const canAddAccessories = (booking: Booking) => {
+    return (
+      (booking.booking_status === 'confirmed' || booking.booking_status === 'active') &&
+      booking.payment_status === 'completed' &&
+      new Date(booking.return_date) > new Date()
+    );
+  };
+
   const handleCancelClick = (booking: Booking) => {
     setSelectedBooking(booking);
     setCancelDialogOpen(true);
+  };
+
+  const handleAddAccessoriesClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setAddAccessoriesDialogOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -376,16 +391,28 @@ const BookingHistory = () => {
                     </div>
                   )}
 
-                  {canCancelBooking(booking) && (
-                    <div className="pt-4 border-t flex justify-end">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleCancelClick(booking)}
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Request Cancellation
-                      </Button>
+                  {(canCancelBooking(booking) || canAddAccessories(booking)) && (
+                    <div className="pt-4 border-t flex justify-end gap-2">
+                      {canAddAccessories(booking) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddAccessoriesClick(booking)}
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Accessories
+                        </Button>
+                      )}
+                      {canCancelBooking(booking) && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleCancelClick(booking)}
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Request Cancellation
+                        </Button>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -395,17 +422,30 @@ const BookingHistory = () => {
         )}
 
         {selectedBooking && (
-          <CancellationDialog
-            open={cancelDialogOpen}
-            onOpenChange={setCancelDialogOpen}
-            bookingId={selectedBooking.id}
-            pickupDate={selectedBooking.pickup_date}
-            totalAmount={selectedBooking.total_amount}
-            onSuccess={() => {
-              loadBookings();
-              setSelectedBooking(null);
-            }}
-          />
+          <>
+            <CancellationDialog
+              open={cancelDialogOpen}
+              onOpenChange={setCancelDialogOpen}
+              bookingId={selectedBooking.id}
+              pickupDate={selectedBooking.pickup_date}
+              totalAmount={selectedBooking.total_amount}
+              onSuccess={() => {
+                loadBookings();
+                setSelectedBooking(null);
+              }}
+            />
+            <AddAccessoriesDialog
+              open={addAccessoriesDialogOpen}
+              onOpenChange={setAddAccessoriesDialogOpen}
+              bookingId={selectedBooking.id}
+              pickupDate={selectedBooking.pickup_date}
+              returnDate={selectedBooking.return_date}
+              onSuccess={() => {
+                loadBookings();
+                setSelectedBooking(null);
+              }}
+            />
+          </>
         )}
       </div>
     </div>
