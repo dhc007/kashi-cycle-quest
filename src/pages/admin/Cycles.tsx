@@ -222,7 +222,7 @@ const Cycles = () => {
             image_url: imageUrl,
             media_urls: mediaUrls,
             free_accessories: formData.free_accessories || [],
-            specifications: formData.specifications || {},
+            specifications: formData.specifications || "",
             internal_details: {
               ...(formData.internal_details || {}),
               warranty_file_url: warrantyFileUrl,
@@ -257,7 +257,7 @@ const Cycles = () => {
             available_quantity: 1,
             is_active: formData.is_active!,
             free_accessories: formData.free_accessories || [],
-            specifications: formData.specifications || {},
+            specifications: formData.specifications || "",
             internal_details: formData.internal_details || { vendor: "", warranty: "", invoice: "" },
           },
         ]);

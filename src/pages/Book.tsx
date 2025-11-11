@@ -898,7 +898,9 @@ const Book = () => {
                           {cyclesData.map((cycle) => {
                             const isSelected = selectedCycles[personIndex]?.id === cycle.id;
                             const freeAccessories = cycle.free_accessories || [];
-                            const specifications = cycle.specifications || {};
+                            const specifications = typeof cycle.specifications === 'string' 
+                              ? cycle.specifications.split('\n').filter(s => s.trim())
+                              : [];
                             
                             return (
                               <Card
@@ -955,11 +957,14 @@ const Book = () => {
                                     {/* Specifications */}
                                     <div className="space-y-1">
                                       <p className="font-semibold text-primary">Specs:</p>
-                                      {Object.keys(specifications).length > 0 ? (
+                                      {specifications.length > 0 ? (
                                         <ul className="space-y-0.5 text-muted-foreground">
-                                          {Object.entries(specifications).slice(0, 3).map(([key, value]: [string, any]) => (
-                                            <li key={key}>• {key}: {value}</li>
+                                          {specifications.slice(0, 3).map((spec: string, idx: number) => (
+                                            <li key={idx} className="text-[10px] leading-tight">• {spec}</li>
                                           ))}
+                                          {specifications.length > 3 && (
+                                            <li className="text-[10px] text-primary">+{specifications.length - 3} more</li>
+                                          )}
                                         </ul>
                                       ) : (
                                         <p className="text-muted-foreground">Standard specs</p>
@@ -1515,12 +1520,12 @@ const Book = () => {
                             )}
                             
                             {/* Specifications */}
-                            {cycle.specifications && Object.keys(cycle.specifications).length > 0 && (
+                            {cycle.specifications && typeof cycle.specifications === 'string' && cycle.specifications.trim() && (
                               <div className="mt-2 p-2 bg-accent/50 rounded-md">
                                 <p className="text-xs font-semibold text-muted-foreground mb-1">Specifications:</p>
                                 <ul className="text-xs text-muted-foreground space-y-0.5">
-                                  {Object.entries(cycle.specifications).map(([key, value]) => (
-                                    <li key={key}>• {key}: {value as string}</li>
+                                  {cycle.specifications.split('\n').filter(s => s.trim()).map((spec, idx) => (
+                                    <li key={idx}>• {spec}</li>
                                   ))}
                                 </ul>
                               </div>
