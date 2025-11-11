@@ -73,6 +73,7 @@ const Book = () => {
   const [numberOfPeople, setNumberOfPeople] = useState(1);
   const [maxCycles, setMaxCycles] = useState(10);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [operationHours, setOperationHours] = useState({ start_display: "9:00 AM", end_display: "7:00 PM" });
 
   // Get partner ID from URL and persist it
   const partnerParam = searchParams.get("partner");
@@ -298,6 +299,20 @@ const Book = () => {
 
         if (settingsData?.value && typeof settingsData.value === "object" && "value" in settingsData.value) {
           setMaxCycles((settingsData.value as { value: number }).value);
+        }
+
+        // Load operation hours setting
+        const { data: hoursData } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "operation_hours")
+          .single();
+
+        if (hoursData?.value && typeof hoursData.value === "object") {
+          const hours = hoursData.value as { start_display?: string; end_display?: string };
+          if (hours.start_display && hours.end_display) {
+            setOperationHours({ start_display: hours.start_display, end_display: hours.end_display });
+          }
         }
       } catch (error: any) {
         console.error("Error loading data:", error);
@@ -719,12 +734,26 @@ const Book = () => {
                 <CardHeader>
                   <CardTitle className="text-2xl">Book Your Electric Bicycle</CardTitle>
                   {partnerData && (
-                    <div className="mt-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                      <p className="text-sm text-muted-foreground mb-1">Booking through partner:</p>
-                      <p className="text-lg font-semibold text-primary">{partnerData.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {partnerData.address}, {partnerData.city}
-                      </p>
+                    <div className="mt-4 space-y-3">
+                      <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
+                        <p className="text-sm text-muted-foreground mb-1">Booking through partner:</p>
+                        <p className="text-lg font-semibold text-primary">{partnerData.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {partnerData.address}, {partnerData.city}
+                        </p>
+                      </div>
+                      {selectedPickupLocation && (
+                        <div className="p-4 bg-muted/50 border rounded-lg">
+                          <p className="text-sm text-muted-foreground mb-1 flex items-center gap-2">
+                            <MapPin className="w-4 h-4" />
+                            Pickup at:
+                          </p>
+                          <p className="font-semibold">{selectedPickupLocation.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedPickupLocation.address}, {selectedPickupLocation.city}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardHeader>
@@ -844,7 +873,7 @@ const Book = () => {
 
                         <div className="mt-4 p-3 bg-muted rounded-lg">
                           <p className="text-sm text-muted-foreground">
-                            <strong>Operating Hours:</strong> 6:00 AM - 10:00 PM
+                            <strong>Operating Hours:</strong> {operationHours.start_display} - {operationHours.end_display}
                           </p>
                           <p className="text-sm text-muted-foreground mt-1">
                             <strong>Note:</strong> Minimum 2 hours advance booking required

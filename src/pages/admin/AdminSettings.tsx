@@ -30,6 +30,8 @@ const AdminSettings = () => {
   // Booking settings
   const [maxCyclesPerBooking, setMaxCyclesPerBooking] = useState(10);
   const [allowUnavailableBookings, setAllowUnavailableBookings] = useState(false);
+  const [operationStartTime, setOperationStartTime] = useState("09:00");
+  const [operationEndTime, setOperationEndTime] = useState("19:00");
 
   useEffect(() => {
     checkAdminAndLoadSettings();
@@ -99,6 +101,19 @@ const AdminSettings = () => {
         setAllowUnavailableBookings((unavailableSettingsData.value as { enabled: boolean }).enabled);
       }
 
+      // Load operation hours setting
+      const { data: hoursData } = await supabase
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'operation_hours')
+        .single();
+
+      if (hoursData?.value && typeof hoursData.value === 'object') {
+        const hours = hoursData.value as { start?: string; end?: string };
+        if (hours.start) setOperationStartTime(hours.start);
+        if (hours.end) setOperationEndTime(hours.end);
+      }
+
     } catch (error: any) {
       console.error('Error loading data:', error);
       toast({
@@ -142,6 +157,30 @@ const AdminSettings = () => {
         .eq('key', 'allow_unavailable_bookings');
 
       if (unavailableError) throw unavailableError;
+
+      // Format operation hours for display
+      const formatTime = (time24: string) => {
+        const [hours, minutes] = time24.split(':');
+        const hour = parseInt(hours);
+        const period = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        return `${displayHour}:${minutes} ${period}`;
+      };
+
+      // Update operation hours setting
+      const { error: hoursError } = await supabase
+        .from('system_settings')
+        .update({ 
+          value: { 
+            start: operationStartTime, 
+            end: operationEndTime,
+            start_display: formatTime(operationStartTime),
+            end_display: formatTime(operationEndTime)
+          } 
+        })
+        .eq('key', 'operation_hours');
+
+      if (hoursError) throw hoursError;
 
       toast({
         title: "Success",
@@ -368,6 +407,35 @@ const AdminSettings = () => {
                   checked={allowUnavailableBookings}
                   onCheckedChange={setAllowUnavailableBookings}
                 />
+              </div>
+
+              <div className="p-4 border rounded-lg space-y-4">
+                <div>
+                  <Label className="text-base font-medium">Operation Hours</Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Set the operating hours for cycle rentals
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start-time" className="text-sm">Start Time</Label>
+                    <Input
+                      id="start-time"
+                      type="time"
+                      value={operationStartTime}
+                      onChange={(e) => setOperationStartTime(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="end-time" className="text-sm">End Time</Label>
+                    <Input
+                      id="end-time"
+                      type="time"
+                      value={operationEndTime}
+                      onChange={(e) => setOperationEndTime(e.target.value)}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
