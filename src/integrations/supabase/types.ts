@@ -531,6 +531,7 @@ export type Database = {
           price_per_month: number | null
           price_per_week: number
           price_per_year: number | null
+          quantity: number
           security_deposit: number
           security_deposit_day: number
           security_deposit_month: number
@@ -560,6 +561,7 @@ export type Database = {
           price_per_month?: number | null
           price_per_week: number
           price_per_year?: number | null
+          quantity?: number
           security_deposit?: number
           security_deposit_day?: number
           security_deposit_month?: number
@@ -589,6 +591,7 @@ export type Database = {
           price_per_month?: number | null
           price_per_week?: number
           price_per_year?: number | null
+          quantity?: number
           security_deposit?: number
           security_deposit_day?: number
           security_deposit_month?: number
@@ -846,6 +849,57 @@ export type Database = {
           pincode?: string
           state?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      pricing_plans: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          item_id: string
+          item_type: string
+          price_per_day: number
+          price_per_hour: number | null
+          price_per_month: number | null
+          price_per_week: number | null
+          price_per_year: number | null
+          security_deposit_day: number | null
+          security_deposit_month: number | null
+          security_deposit_week: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_id: string
+          item_type: string
+          price_per_day: number
+          price_per_hour?: number | null
+          price_per_month?: number | null
+          price_per_week?: number | null
+          price_per_year?: number | null
+          security_deposit_day?: number | null
+          security_deposit_month?: number | null
+          security_deposit_week?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_id?: string
+          item_type?: string
+          price_per_day?: number
+          price_per_hour?: number | null
+          price_per_month?: number | null
+          price_per_week?: number | null
+          price_per_year?: number | null
+          security_deposit_day?: number | null
+          security_deposit_month?: number | null
+          security_deposit_week?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
