@@ -76,14 +76,14 @@ const Cycles = () => {
     is_active: true,
     free_accessories: [],
     specifications: {},
-    internal_details: { 
-      vendor: "", 
-      warranty: "", 
-      invoice: "", 
+    internal_details: {
+      vendor: "",
+      warranty: "",
+      invoice: "",
       warranty_file_url: "",
       invoice_file_url: "",
       date_received: "",
-      purchase_amount: 0
+      purchase_amount: 0,
     },
   });
   const [specKey, setSpecKey] = useState("");
@@ -95,10 +95,7 @@ const Cycles = () => {
 
   const loadCycles = async () => {
     try {
-      const { data, error } = await supabase
-        .from('cycles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.from("cycles").select("*").order("created_at", { ascending: false });
 
       if (error) throw error;
       setCycles(data || []);
@@ -115,32 +112,27 @@ const Cycles = () => {
 
   const loadAccessories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('accessories')
-        .select('id, name')
-        .eq('is_active', true);
+      const { data, error } = await supabase.from("accessories").select("id, name").eq("is_active", true);
 
       if (error) throw error;
       setAccessories(data || []);
     } catch (error: any) {
-      console.error('Error loading accessories:', error);
+      console.error("Error loading accessories:", error);
     }
   };
 
-  const uploadFile = async (file: File, bucket: string = 'cycles'): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
+  const uploadFile = async (file: File, bucket: string = "cycles"): Promise<string> => {
+    const fileExt = file.name.split(".").pop();
     const fileName = `${Math.random()}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, file);
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(bucket).getPublicUrl(filePath);
 
     return publicUrl;
   };
@@ -148,7 +140,7 @@ const Cycles = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploadingImage(true);
-    
+
     try {
       let imageUrl = formData.image_url;
       let mediaUrls = formData.media_urls || [];
@@ -161,27 +153,25 @@ const Cycles = () => {
 
       // Upload media files
       if (mediaFiles.length > 0) {
-        const uploadedMediaUrls = await Promise.all(
-          mediaFiles.map(file => uploadFile(file))
-        );
+        const uploadedMediaUrls = await Promise.all(mediaFiles.map((file) => uploadFile(file)));
         mediaUrls = uploadedMediaUrls;
       }
 
       // Upload warranty file
       if (warrantyFile) {
-        warrantyFileUrl = await uploadFile(warrantyFile, 'documents');
+        warrantyFileUrl = await uploadFile(warrantyFile, "documents");
       }
 
       // Upload invoice file
       if (invoiceFile) {
-        invoiceFileUrl = await uploadFile(invoiceFile, 'documents');
+        invoiceFileUrl = await uploadFile(invoiceFile, "documents");
       }
-      
+
       if (editingCycle) {
         const { error } = await supabase
-          .from('cycles')
-          .update({ 
-            ...formData, 
+          .from("cycles")
+          .update({
+            ...formData,
             image_url: imageUrl,
             media_urls: mediaUrls,
             free_accessories: formData.free_accessories || [],
@@ -190,9 +180,9 @@ const Cycles = () => {
               ...(formData.internal_details || {}),
               warranty_file_url: warrantyFileUrl,
               invoice_file_url: invoiceFileUrl,
-            }
+            },
           })
-          .eq('id', editingCycle.id);
+          .eq("id", editingCycle.id);
 
         if (error) throw error;
 
@@ -201,9 +191,8 @@ const Cycles = () => {
           description: "Cycle updated successfully",
         });
       } else {
-        const { error } = await supabase
-          .from('cycles')
-          .insert([{ 
+        const { error } = await supabase.from("cycles").insert([
+          {
             name: formData.name!,
             model: formData.model!,
             description: formData.description || null,
@@ -222,8 +211,9 @@ const Cycles = () => {
             is_active: formData.is_active!,
             free_accessories: formData.free_accessories || [],
             specifications: formData.specifications || {},
-            internal_details: formData.internal_details || { vendor: "", warranty: "", invoice: "" }
-          }]);
+            internal_details: formData.internal_details || { vendor: "", warranty: "", invoice: "" },
+          },
+        ]);
 
         if (error) throw error;
 
@@ -266,14 +256,14 @@ const Cycles = () => {
       is_active: true,
       free_accessories: [],
       specifications: {},
-      internal_details: { 
-        vendor: "", 
-        warranty: "", 
-        invoice: "", 
+      internal_details: {
+        vendor: "",
+        warranty: "",
+        invoice: "",
         warranty_file_url: "",
         invoice_file_url: "",
         date_received: "",
-        purchase_amount: 0
+        purchase_amount: 0,
       },
     });
     setImageFile(null);
@@ -302,10 +292,7 @@ const Cycles = () => {
     if (!confirm("Are you sure you want to delete this cycle?")) return;
 
     try {
-      const { error } = await supabase
-        .from('cycles')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("cycles").delete().eq("id", id);
 
       if (error) throw error;
 
@@ -325,16 +312,13 @@ const Cycles = () => {
 
   const toggleActive = async (cycle: Cycle) => {
     try {
-      const { error } = await supabase
-        .from('cycles')
-        .update({ is_active: !cycle.is_active })
-        .eq('id', cycle.id);
+      const { error } = await supabase.from("cycles").update({ is_active: !cycle.is_active }).eq("id", cycle.id);
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: `Cycle ${!cycle.is_active ? 'activated' : 'deactivated'}`,
+        description: `Cycle ${!cycle.is_active ? "activated" : "deactivated"}`,
       });
       loadCycles();
     } catch (error: any) {
@@ -351,7 +335,7 @@ const Cycles = () => {
     if (!current.includes(accessoryId)) {
       setFormData({
         ...formData,
-        free_accessories: [...current, accessoryId]
+        free_accessories: [...current, accessoryId],
       });
     }
     setAccessoryPopoverOpen(false);
@@ -362,7 +346,7 @@ const Cycles = () => {
     const current = formData.free_accessories || [];
     setFormData({
       ...formData,
-      free_accessories: current.filter(id => id !== accessoryId)
+      free_accessories: current.filter((id) => id !== accessoryId),
     });
   };
 
@@ -372,8 +356,8 @@ const Cycles = () => {
         ...formData,
         specifications: {
           ...(formData.specifications || {}),
-          [specKey]: specValue
-        }
+          [specKey]: specValue,
+        },
       });
       setSpecKey("");
       setSpecValue("");
@@ -386,13 +370,14 @@ const Cycles = () => {
     setFormData({ ...formData, specifications: specs });
   };
 
-  const filteredCycles = cycles.filter(cycle =>
-    cycle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cycle.model.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCycles = cycles.filter(
+    (cycle) =>
+      cycle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cycle.model.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const filteredAccessories = accessories.filter(acc =>
-    acc.name.toLowerCase().includes(accessorySearch.toLowerCase())
+  const filteredAccessories = accessories.filter((acc) =>
+    acc.name.toLowerCase().includes(accessorySearch.toLowerCase()),
   );
 
   if (loading) {
@@ -422,7 +407,7 @@ const Cycles = () => {
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingCycle ? 'Edit Cycle' : 'Add New Cycle'}</DialogTitle>
+              <DialogTitle>{editingCycle ? "Edit Cycle" : "Add New Cycle"}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
@@ -431,7 +416,7 @@ const Cycles = () => {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                   />
                 </div>
@@ -440,7 +425,7 @@ const Cycles = () => {
                   <Input
                     id="model"
                     value={formData.model}
-                    onChange={(e) => setFormData({...formData, model: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                     required
                   />
                 </div>
@@ -451,7 +436,7 @@ const Cycles = () => {
                 <Textarea
                   id="description"
                   value={formData.description || ""}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
 
@@ -460,7 +445,7 @@ const Cycles = () => {
                 <Input
                   id="image_url"
                   value={formData.image_url || ""}
-                  onChange={(e) => setFormData({...formData, image_url: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                   placeholder="https://..."
                 />
               </div>
@@ -470,7 +455,7 @@ const Cycles = () => {
                 <Input
                   id="video_url"
                   value={formData.video_url || ""}
-                  onChange={(e) => setFormData({...formData, video_url: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
                   placeholder="https://... (optional video URL)"
                 />
               </div>
@@ -506,29 +491,25 @@ const Cycles = () => {
 
               {/* Free Accessories */}
               <div className="space-y-2">
-                <Label>Free Accessories (Included with cycle)</Label>
+                <Label>Bundle accessories with cycle</Label>
                 <Popover open={accessoryPopoverOpen} onOpenChange={setAccessoryPopoverOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start">
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Free Accessory
+                      Add Accessory
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-full p-0" align="start">
                     <Command>
-                      <CommandInput 
-                        placeholder="Search accessories..." 
+                      <CommandInput
+                        placeholder="Search accessories..."
                         value={accessorySearch}
                         onValueChange={setAccessorySearch}
                       />
                       <CommandEmpty>No accessory found.</CommandEmpty>
                       <CommandGroup className="max-h-64 overflow-auto">
                         {filteredAccessories.map((acc) => (
-                          <CommandItem
-                            key={acc.id}
-                            value={acc.name}
-                            onSelect={() => addAccessory(acc.id)}
-                          >
+                          <CommandItem key={acc.id} value={acc.name} onSelect={() => addAccessory(acc.id)}>
                             {acc.name}
                           </CommandItem>
                         ))}
@@ -537,15 +518,12 @@ const Cycles = () => {
                   </PopoverContent>
                 </Popover>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {(formData.free_accessories || []).map(accId => {
-                    const acc = accessories.find(a => a.id === accId);
+                  {(formData.free_accessories || []).map((accId) => {
+                    const acc = accessories.find((a) => a.id === accId);
                     return acc ? (
                       <Badge key={accId} variant="secondary" className="gap-1">
                         {acc.name}
-                        <X 
-                          className="w-3 h-3 cursor-pointer" 
-                          onClick={() => removeAccessory(accId)}
-                        />
+                        <X className="w-3 h-3 cursor-pointer" onClick={() => removeAccessory(accId)} />
                       </Badge>
                     ) : null;
                   })}
@@ -574,10 +552,7 @@ const Cycles = () => {
                   {Object.entries(formData.specifications || {}).map(([key, value]) => (
                     <Badge key={key} variant="secondary" className="gap-1">
                       {key}: {value as string}
-                      <X 
-                        className="w-3 h-3 cursor-pointer" 
-                        onClick={() => removeSpecification(key)}
-                      />
+                      <X className="w-3 h-3 cursor-pointer" onClick={() => removeSpecification(key)} />
                     </Badge>
                   ))}
                 </div>
@@ -586,37 +561,41 @@ const Cycles = () => {
               {/* Internal Details */}
               <div className="space-y-4 border p-4 rounded-lg bg-accent/20">
                 <Label className="text-base font-semibold">Internal Details (Admin Only)</Label>
-                
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="vendor">Vendor</Label>
                     <Input
                       id="vendor"
                       value={formData.internal_details?.vendor || ""}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        internal_details: { 
-                          ...(formData.internal_details || {}), 
-                          vendor: e.target.value 
-                        }
-                      })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          internal_details: {
+                            ...(formData.internal_details || {}),
+                            vendor: e.target.value,
+                          },
+                        })
+                      }
                       placeholder="Vendor name"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="date_received">Date Received</Label>
                     <Input
                       id="date_received"
                       type="date"
                       value={formData.internal_details?.date_received || ""}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        internal_details: { 
-                          ...(formData.internal_details || {}), 
-                          date_received: e.target.value 
-                        }
-                      })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          internal_details: {
+                            ...(formData.internal_details || {}),
+                            date_received: e.target.value,
+                          },
+                        })
+                      }
                     />
                   </div>
 
@@ -626,29 +605,33 @@ const Cycles = () => {
                       id="purchase_amount"
                       type="number"
                       value={formData.internal_details?.purchase_amount || ""}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        internal_details: { 
-                          ...(formData.internal_details || {}), 
-                          purchase_amount: Number(e.target.value) 
-                        }
-                      })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          internal_details: {
+                            ...(formData.internal_details || {}),
+                            purchase_amount: Number(e.target.value),
+                          },
+                        })
+                      }
                       placeholder="0"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="warranty">Warranty Period</Label>
                     <Input
                       id="warranty"
                       value={formData.internal_details?.warranty || ""}
-                      onChange={(e) => setFormData({
-                        ...formData, 
-                        internal_details: { 
-                          ...(formData.internal_details || {}), 
-                          warranty: e.target.value 
-                        }
-                      })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          internal_details: {
+                            ...(formData.internal_details || {}),
+                            warranty: e.target.value,
+                          },
+                        })
+                      }
                       placeholder="e.g., 1 year"
                     />
                   </div>
@@ -662,7 +645,7 @@ const Cycles = () => {
                     maxSize={10}
                     description="Upload warranty document"
                   />
-                  
+
                   <FileUpload
                     label="Invoice Document (PDF)"
                     accept="application/pdf,image/*"
@@ -677,13 +660,15 @@ const Cycles = () => {
                   <Input
                     id="invoice"
                     value={formData.internal_details?.invoice || ""}
-                    onChange={(e) => setFormData({
-                      ...formData, 
-                      internal_details: { 
-                        ...(formData.internal_details || {}), 
-                        invoice: e.target.value 
-                      }
-                    })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        internal_details: {
+                          ...(formData.internal_details || {}),
+                          invoice: e.target.value,
+                        },
+                      })
+                    }
                     placeholder="Invoice number"
                   />
                 </div>
@@ -696,7 +681,7 @@ const Cycles = () => {
                     id="price_per_day"
                     type="number"
                     value={formData.price_per_day}
-                    onChange={(e) => setFormData({...formData, price_per_day: Number(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, price_per_day: Number(e.target.value) })}
                     required
                   />
                 </div>
@@ -706,7 +691,7 @@ const Cycles = () => {
                     id="price_per_week"
                     type="number"
                     value={formData.price_per_week}
-                    onChange={(e) => setFormData({...formData, price_per_week: Number(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, price_per_week: Number(e.target.value) })}
                     required
                   />
                 </div>
@@ -716,7 +701,7 @@ const Cycles = () => {
                     id="price_per_month"
                     type="number"
                     value={formData.price_per_month || ""}
-                    onChange={(e) => setFormData({...formData, price_per_month: Number(e.target.value) || null})}
+                    onChange={(e) => setFormData({ ...formData, price_per_month: Number(e.target.value) || null })}
                   />
                 </div>
               </div>
@@ -728,7 +713,7 @@ const Cycles = () => {
                     id="deposit_day"
                     type="number"
                     value={formData.security_deposit_day}
-                    onChange={(e) => setFormData({...formData, security_deposit_day: Number(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, security_deposit_day: Number(e.target.value) })}
                     required
                   />
                 </div>
@@ -738,7 +723,7 @@ const Cycles = () => {
                     id="deposit_week"
                     type="number"
                     value={formData.security_deposit_week}
-                    onChange={(e) => setFormData({...formData, security_deposit_week: Number(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, security_deposit_week: Number(e.target.value) })}
                     required
                   />
                 </div>
@@ -748,14 +733,14 @@ const Cycles = () => {
                     id="deposit_month"
                     type="number"
                     value={formData.security_deposit_month}
-                    onChange={(e) => setFormData({...formData, security_deposit_month: Number(e.target.value)})}
+                    onChange={(e) => setFormData({ ...formData, security_deposit_month: Number(e.target.value) })}
                     required
                   />
                 </div>
               </div>
 
               <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90" disabled={uploadingImage}>
-                {uploadingImage ? 'Saving...' : (editingCycle ? 'Update Cycle' : 'Create Cycle')}
+                {uploadingImage ? "Saving..." : editingCycle ? "Update Cycle" : "Create Cycle"}
               </Button>
             </form>
           </DialogContent>
@@ -799,9 +784,7 @@ const Cycles = () => {
                         <p className="font-semibold">{cycle.name}</p>
                         <p className="text-sm text-muted-foreground">{cycle.model}</p>
                         {cycle.free_accessories && cycle.free_accessories.length > 0 && (
-                          <p className="text-xs text-primary mt-1">
-                            +{cycle.free_accessories.length} free accessories
-                          </p>
+                          <p className="text-xs text-primary mt-1">+{cycle.free_accessories.length} free accessories</p>
                         )}
                       </div>
                     </TableCell>
@@ -821,7 +804,7 @@ const Cycles = () => {
                     </TableCell>
                     <TableCell>
                       <Badge variant={cycle.is_active ? "default" : "secondary"}>
-                        {cycle.is_active ? 'Active' : 'Inactive'}
+                        {cycle.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -841,12 +824,9 @@ const Cycles = () => {
                             Duplicate
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toggleActive(cycle)}>
-                            {cycle.is_active ? 'Deactivate' : 'Activate'}
+                            {cycle.is_active ? "Deactivate" : "Activate"}
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDelete(cycle.id)}
-                            className="text-destructive"
-                          >
+                          <DropdownMenuItem onClick={() => handleDelete(cycle.id)} className="text-destructive">
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
