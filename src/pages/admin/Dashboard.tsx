@@ -360,13 +360,13 @@ const DashboardContent = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground">Welcome to Bolt91 Admin Panel</p>
           </div>
           
           <div className="flex items-center gap-4">
             <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] text-foreground">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

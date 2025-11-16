@@ -26,6 +26,7 @@ interface Accessory {
   quantity: number; // Number of people using this accessory (0 to numberOfPeople)
   days: number;
   available: number;
+  securityDeposit: number;
 }
 
 interface PickupLocation {
@@ -269,6 +270,7 @@ const Book = () => {
             quantity: 0, // Number of people using this accessory
             days: 0,
             available: acc.available_quantity || 0,
+            securityDeposit: Number(acc.security_deposit || 0),
           })),
         );
 
@@ -405,6 +407,9 @@ const Book = () => {
 
   // Calculate accessories total (quantity * days * price per day)
   const accessoriesTotal = accessories.reduce((sum, acc) => sum + acc.quantity * acc.pricePerDay * acc.days, 0);
+
+  // Calculate accessories security deposit (quantity * security deposit)
+  const accessoriesDeposit = accessories.reduce((sum, acc) => sum + (acc.quantity > 0 ? acc.quantity * acc.securityDeposit : 0), 0);
 
   // Handle accessory quantity change
   const updateAccessoryQuantity = (id: string, change: number) => {
@@ -1739,15 +1744,22 @@ const Book = () => {
                         </div>
 
                         <div className="flex justify-between text-primary font-bold">
-                          <span>Security Deposit (×{numberOfPeople})</span>
+                          <span>Cycle Security Deposit (×{numberOfPeople})</span>
                           <span>₹{getSecurityDeposit()}</span>
                         </div>
+
+                        {accessoriesDeposit > 0 && (
+                          <div className="flex justify-between text-primary font-bold">
+                            <span>Accessories Security Deposit</span>
+                            <span>₹{accessoriesDeposit}</span>
+                          </div>
+                        )}
 
                         <div className="pt-3 border-t">
                           <div className="flex justify-between text-lg font-bold">
                             <span>Total Amount</span>
                             <span className="text-primary">
-                              ₹{getBasePrice() + accessoriesTotal + getSecurityDeposit()}
+                              ₹{getBasePrice() + accessoriesTotal + getSecurityDeposit() + accessoriesDeposit}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">*Security deposit is fully refundable</p>

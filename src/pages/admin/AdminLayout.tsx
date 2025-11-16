@@ -91,7 +91,7 @@ const AdminLayout = () => {
         </nav>
 
         <div className="p-4 border-t border-border">
-          <Button variant="outline" className="w-full justify-start" asChild>
+          <Button variant="outline" className="w-full justify-start text-foreground hover:bg-accent" asChild>
             <Link to="/">
               <LogOut className="w-4 h-4 mr-2" />
               Back to Site
