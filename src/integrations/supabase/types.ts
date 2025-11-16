@@ -28,6 +28,7 @@ export type Database = {
           model_number: string | null
           name: string
           price_per_day: number
+          security_deposit: number
           serial_number: string | null
           total_quantity: number
           updated_at: string
@@ -46,6 +47,7 @@ export type Database = {
           model_number?: string | null
           name: string
           price_per_day: number
+          security_deposit?: number
           serial_number?: string | null
           total_quantity?: number
           updated_at?: string
@@ -64,6 +66,7 @@ export type Database = {
           model_number?: string | null
           name?: string
           price_per_day?: number
+          security_deposit?: number
           serial_number?: string | null
           total_quantity?: number
           updated_at?: string
