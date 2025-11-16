@@ -18,7 +18,6 @@ import PickupLocations from "./pages/admin/PickupLocations";
 import AdminSettings from "./pages/admin/AdminSettings";
 import PricingPlan from "./pages/admin/PricingPlan";
 import Users from "./pages/admin/Users";
-import Cancellations from "./pages/admin/Cancellations";
 import CycleReturn from "./pages/admin/CycleReturn";
 import Maintenance from "./pages/admin/Maintenance";
 import Coupons from "./pages/admin/Coupons";
@@ -53,7 +52,6 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="bookings" element={<Bookings />} />
-            <Route path="cancellations" element={<Cancellations />} />
             <Route path="cycles" element={<Cycles />} />
             <Route path="accessories" element={<Accessories />} />
             <Route path="partners" element={<Partners />} />
