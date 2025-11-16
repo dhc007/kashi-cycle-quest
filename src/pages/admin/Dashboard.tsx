@@ -199,13 +199,21 @@ const DashboardContent = () => {
         activeBookingsData.map(async (booking) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, phone_number')
+            .select('first_name, last_name, full_name, phone_number')
             .eq('user_id', booking.user_id)
             .single();
           
+          const fullName = profile?.full_name || 
+                          (profile?.first_name && profile?.last_name 
+                            ? `${profile.first_name} ${profile.last_name}` 
+                            : 'N/A');
+          
           return {
             ...booking,
-            profiles: profile || { full_name: 'N/A', phone_number: 'N/A' }
+            profiles: { 
+              full_name: fullName, 
+              phone_number: profile?.phone_number || 'N/A' 
+            }
           };
         })
       );
@@ -339,17 +347,21 @@ const DashboardContent = () => {
 
   return (
     <div className="p-8">
+      {/* Date Range Display - Top Center */}
+      <div className="text-center mb-6">
+        <p className="text-sm text-muted-foreground">
+          {format(new Date(), 'EEEE, MMMM d, yyyy • h:mm a')}
+        </p>
+        <p className="text-base text-primary font-semibold mt-1">
+          Showing data: {getDateRangeLabel()}
+        </p>
+      </div>
+
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Dashboard</h1>
             <p className="text-muted-foreground">Welcome to Bolt91 Admin Panel</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {format(new Date(), 'EEEE, MMMM d, yyyy • h:mm a')}
-            </p>
-            <p className="text-xs text-primary font-medium mt-1">
-              Showing data: {getDateRangeLabel()}
-            </p>
           </div>
           
           <div className="flex items-center gap-4">
@@ -593,9 +605,15 @@ const DashboardContent = () => {
               <TableBody>
                 {activeBookings.length > 0 ? (
                   activeBookings.map((booking) => (
-                    <TableRow key={booking.id} className="cursor-pointer hover:bg-muted/50">
-                      <TableCell className="font-mono font-semibold">{booking.booking_id}</TableCell>
-                      <TableCell className="font-medium text-primary">{booking.profiles?.full_name}</TableCell>
+                    <TableRow 
+                      key={booking.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/admin/bookings?search=${booking.booking_id}`)}
+                    >
+                      <TableCell className="font-mono font-semibold text-primary hover:underline">
+                        {booking.booking_id}
+                      </TableCell>
+                      <TableCell className="font-medium">{booking.profiles?.full_name}</TableCell>
                       <TableCell>{booking.profiles?.phone_number}</TableCell>
                       <TableCell>{booking.duration_type}</TableCell>
                       <TableCell>{format(new Date(booking.pickup_date), 'MMM dd, yyyy')}</TableCell>
