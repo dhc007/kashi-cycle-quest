@@ -801,7 +801,7 @@ const Book = () => {
                                   }}
                                   disabled={(date) => {
                                     const today = new Date(new Date().setHours(0, 0, 0, 0));
-                                    const minBookingDate = new Date('2025-12-01');
+                                    const minBookingDate = new Date(2025, 11, 1); // December 1st, 2025 (month is 0-indexed)
                                     const earliestDate = minBookingDate > today ? minBookingDate : today;
                                     return date < earliestDate || date > maxDate;
                                   }}
