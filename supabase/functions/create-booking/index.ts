@@ -31,6 +31,14 @@ serve(async (req) => {
     // Read request body once
     const bookingData = await req.json();
 
+    // Validate booking date - must be December 1, 2025 or later
+    const minBookingDate = new Date('2025-12-01T00:00:00Z');
+    const pickupDate = new Date(bookingData.pickup_date);
+    
+    if (pickupDate < minBookingDate) {
+      throw new Error('Bookings are only available from December 1st, 2025 onwards');
+    }
+
     // Try to get authenticated user, but allow anonymous bookings
     const { data: { user } } = await supabaseClient.auth.getUser();
     

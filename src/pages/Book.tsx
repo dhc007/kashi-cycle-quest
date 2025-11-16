@@ -794,9 +794,12 @@ const Book = () => {
                                     setSelectedDate(date);
                                     setDatePickerOpen(false);
                                   }}
-                                  disabled={(date) =>
-                                    date < new Date(new Date().setHours(0, 0, 0, 0)) || date > maxDate
-                                  }
+                                  disabled={(date) => {
+                                    const today = new Date(new Date().setHours(0, 0, 0, 0));
+                                    const minBookingDate = new Date('2025-12-01');
+                                    const earliestDate = minBookingDate > today ? minBookingDate : today;
+                                    return date < earliestDate || date > maxDate;
+                                  }}
                                   initialFocus
                                   className={cn("p-3 pointer-events-auto")}
                                 />
