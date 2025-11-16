@@ -7,19 +7,12 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Palette, LayoutDashboard, Moon, Sun, Settings2 } from "lucide-react";
-import { useTheme } from "next-themes";
 
 const AdminSettings = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // useTheme needs to be mounted before we can use it
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [adminTheme, setAdminTheme] = useState<'light' | 'dark'>('light');
   
   // Dashboard customization
   const [showBookingTrends, setShowBookingTrends] = useState(true);
@@ -68,6 +61,12 @@ const AdminSettings = () => {
       }
 
       setIsAdmin(true);
+
+      // Load admin theme from localStorage
+      const savedAdminTheme = localStorage.getItem('adminTheme') as 'light' | 'dark' | null;
+      if (savedAdminTheme) {
+        setAdminTheme(savedAdminTheme);
+      }
 
       // Load dashboard settings from localStorage
       const savedSettings = localStorage.getItem('dashboardSettings');
@@ -234,46 +233,84 @@ const AdminSettings = () => {
       </div>
 
       <div className="space-y-6">
-        {/* Theme Settings */}
+        {/* Booking Settings */}
         <Card className="shadow-warm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Palette className="w-5 h-5 text-primary" />
-              Theme Settings
+              <Settings2 className="w-5 h-5 text-primary" />
+              Booking Settings
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base font-medium">Color Theme</Label>
-                <p className="text-sm text-muted-foreground">
-                  Choose between light and dark mode
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <div className="p-4 border rounded-lg">
+                <Label htmlFor="max-cycles" className="text-base font-medium">
+                  Maximum Cycles Per Booking
+                </Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Set the maximum number of cycles a customer can book in one transaction
                 </p>
+                <Input
+                  id="max-cycles"
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={maxCyclesPerBooking}
+                  onChange={(e) => setMaxCyclesPerBooking(parseInt(e.target.value) || 1)}
+                  className="max-w-xs"
+                />
               </div>
-              <div className="flex items-center gap-2">
-                {mounted && (
-                  <>
-                    <Button
-                      variant={theme === "light" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTheme("light")}
-                      className="gap-2"
-                    >
-                      <Sun className="w-4 h-4" />
-                      Light
-                    </Button>
-                    <Button
-                      variant={theme === "dark" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setTheme("dark")}
-                      className="gap-2"
-                    >
-                      <Moon className="w-4 h-4" />
-                      Dark
-                    </Button>
-                  </>
-                )}
+
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <Label htmlFor="allow-unavailable" className="text-base font-medium">
+                    Allow Bookings When Unavailable
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable this to allow bookings even when cycles are marked as unavailable. Useful for manual inventory management.
+                  </p>
+                </div>
+                <Switch
+                  id="allow-unavailable"
+                  checked={allowUnavailableBookings}
+                  onCheckedChange={setAllowUnavailableBookings}
+                />
               </div>
+
+              <div className="p-4 border rounded-lg space-y-4">
+                <div>
+                  <Label className="text-base font-medium">Operation Hours</Label>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Set the operating hours for cycle rentals
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="start-time" className="text-sm">Start Time</Label>
+                    <Input
+                      id="start-time"
+                      type="time"
+                      value={operationStartTime}
+                      onChange={(e) => setOperationStartTime(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="end-time" className="text-sm">End Time</Label>
+                    <Input
+                      id="end-time"
+                      type="time"
+                      value={operationEndTime}
+                      onChange={(e) => setOperationEndTime(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button onClick={handleSaveBookingSettings} className="w-full">
+                Save Booking Settings
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -365,84 +402,50 @@ const AdminSettings = () => {
           </CardContent>
         </Card>
 
-        {/* Booking Settings */}
+        {/* Theme Settings */}
         <Card className="shadow-warm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Settings2 className="w-5 h-5 text-primary" />
-              Booking Settings
+              <Palette className="w-5 h-5 text-primary" />
+              Theme Settings
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="p-4 border rounded-lg">
-                <Label htmlFor="max-cycles" className="text-base font-medium">
-                  Maximum Cycles Per Booking
-                </Label>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Set the maximum number of cycles a customer can book in one transaction
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base font-medium">Admin Panel Theme</Label>
+                <p className="text-sm text-muted-foreground">
+                  Choose between light and dark mode for admin panel only
                 </p>
-                <Input
-                  id="max-cycles"
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={maxCyclesPerBooking}
-                  onChange={(e) => setMaxCyclesPerBooking(parseInt(e.target.value) || 1)}
-                  className="max-w-xs"
-                />
               </div>
-
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div>
-                  <Label htmlFor="allow-unavailable" className="text-base font-medium">
-                    Allow Bookings When Unavailable
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Enable this to allow bookings even when cycles are marked as unavailable. Useful for manual inventory management.
-                  </p>
-                </div>
-                <Switch
-                  id="allow-unavailable"
-                  checked={allowUnavailableBookings}
-                  onCheckedChange={setAllowUnavailableBookings}
-                />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={adminTheme === "light" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setAdminTheme("light");
+                    localStorage.setItem('adminTheme', 'light');
+                    window.dispatchEvent(new Event('admin-theme-change'));
+                  }}
+                  className="gap-2"
+                >
+                  <Sun className="w-4 h-4" />
+                  Light
+                </Button>
+                <Button
+                  variant={adminTheme === "dark" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setAdminTheme("dark");
+                    localStorage.setItem('adminTheme', 'dark');
+                    window.dispatchEvent(new Event('admin-theme-change'));
+                  }}
+                  className="gap-2"
+                >
+                  <Moon className="w-4 h-4" />
+                  Dark
+                </Button>
               </div>
-
-              <div className="p-4 border rounded-lg space-y-4">
-                <div>
-                  <Label className="text-base font-medium">Operation Hours</Label>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Set the operating hours for cycle rentals
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="start-time" className="text-sm">Start Time</Label>
-                    <Input
-                      id="start-time"
-                      type="time"
-                      value={operationStartTime}
-                      onChange={(e) => setOperationStartTime(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="end-time" className="text-sm">End Time</Label>
-                    <Input
-                      id="end-time"
-                      type="time"
-                      value={operationEndTime}
-                      onChange={(e) => setOperationEndTime(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4">
-              <Button onClick={handleSaveBookingSettings} className="w-full">
-                Save Booking Settings
-              </Button>
             </div>
           </CardContent>
         </Card>
