@@ -57,7 +57,7 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className={`min-h-screen bg-background flex ${adminTheme}`}>
+    <div className={`min-h-screen flex ${adminTheme}`}>
       {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-card flex flex-col">
         <div className="p-6 border-b border-border">
@@ -73,7 +73,11 @@ const AdminLayout = () => {
                 key={item.path}
                 asChild
                 variant={isActive ? "default" : "ghost"}
-                className={`w-full justify-start ${isActive ? "bg-primary text-primary-foreground" : ""}`}
+                className={`w-full justify-start ${
+                  isActive 
+                    ? "bg-primary text-primary-foreground" 
+                    : "text-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
               >
                 <Link to={item.path} className="flex items-center justify-between w-full">
                   <span className="flex items-center">
@@ -97,7 +101,7 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-background">
         <Outlet />
       </main>
     </div>
