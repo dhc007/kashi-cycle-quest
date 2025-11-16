@@ -128,7 +128,6 @@ const AccessoriesContent = () => {
             name: formData.name,
             description: formData.description || null,
             image_url: imageUrl || null,
-            price_per_day: formData.price_per_day,
             total_quantity: formData.total_quantity,
             available_quantity: formData.available_quantity,
             is_active: formData.is_active,
@@ -151,7 +150,7 @@ const AccessoriesContent = () => {
             name: formData.name!,
             description: formData.description || null,
             image_url: imageUrl || null,
-            price_per_day: formData.price_per_day!,
+            price_per_day: 0,
             total_quantity: formData.total_quantity!,
             available_quantity: formData.available_quantity!,
             is_active: formData.is_active ?? true,
@@ -291,15 +290,6 @@ const AccessoriesContent = () => {
                   maxSize={5}
                   description="Upload an accessory image (max 5MB)"
                 />
-                <div className="grid gap-2">
-                  <Label htmlFor="price_per_day">Price per Day (₹) *</Label>
-                  <Input
-                    id="price_per_day"
-                    type="number"
-                    value={formData.price_per_day || ''}
-                    onChange={(e) => setFormData({ ...formData, price_per_day: parseFloat(e.target.value) })}
-                  />
-                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="total_quantity">Total Quantity *</Label>

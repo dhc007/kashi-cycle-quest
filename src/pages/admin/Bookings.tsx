@@ -301,10 +301,6 @@ const BookingsContent = () => {
     b.booking_status === 'cancelled'
   );
 
-  const cancellationRequestBookings = filteredBookings.filter(b =>
-    b.cancellation_status === 'requested'
-  );
-
   const renderBookingCard = (booking: Booking) => (
     <div key={booking.id} className="border rounded-lg p-4 space-y-3 hover:bg-accent/50 transition-colors">
       <div className="flex justify-between items-start gap-2">
@@ -542,15 +538,6 @@ const BookingsContent = () => {
                 <span className="ml-1 text-xs">({completedBookings.length})</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="cancellation-request"
-                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
-              >
-                <XCircle className="h-4 w-4 text-orange-500" />
-                <span className="hidden sm:inline">Cancellation Request</span>
-                <span className="sm:hidden">Req</span>
-                <span className="ml-1 text-xs">({cancellationRequestBookings.length})</span>
-              </TabsTrigger>
-              <TabsTrigger 
                 value="cancelled"
                 className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
               >
@@ -618,21 +605,6 @@ const BookingsContent = () => {
               {renderBookingTable(completedBookings)}
               {completedBookings.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">No completed bookings</p>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="cancellation-request" className="p-4 md:p-6">
-            <div className="md:hidden space-y-3">
-              {cancellationRequestBookings.map(renderBookingCard)}
-              {cancellationRequestBookings.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No cancellation requests</p>
-              )}
-            </div>
-            <div className="hidden md:block">
-              {renderBookingTable(cancellationRequestBookings)}
-              {cancellationRequestBookings.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No cancellation requests</p>
               )}
             </div>
           </TabsContent>

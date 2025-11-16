@@ -204,11 +204,20 @@ const Cycles = () => {
         const { error } = await supabase
           .from("cycles")
           .update({
-            ...formData,
+            name: formData.name,
+            model: formData.model,
+            description: formData.description,
             image_url: imageUrl,
+            video_url: formData.video_url,
             media_urls: mediaUrls,
+            quantity: formData.quantity,
+            is_active: formData.is_active,
             free_accessories: formData.free_accessories || [],
             specifications: formData.specifications || "",
+            serial_number: formData.serial_number,
+            model_number: formData.model_number,
+            internal_tracking_id: formData.internal_tracking_id,
+            user_manual_url: formData.user_manual_url,
             internal_details: {
               ...(formData.internal_details || {}),
               warranty_file_url: warrantyFileUrl,
@@ -233,12 +242,13 @@ const Cycles = () => {
             video_url: formData.video_url || null,
             media_urls: mediaUrls,
             price_per_hour: 0,
-            price_per_day: formData.price_per_day!,
-            price_per_week: formData.price_per_week!,
-            price_per_month: formData.price_per_month || null,
-            security_deposit_day: formData.security_deposit_day!,
-            security_deposit_week: formData.security_deposit_week!,
-            security_deposit_month: formData.security_deposit_month!,
+            price_per_day: 0,
+            price_per_week: 0,
+            price_per_month: 0,
+            security_deposit_day: 2000,
+            security_deposit_week: 3000,
+            security_deposit_month: 5000,
+            quantity: formData.quantity || 1,
             is_active: formData.is_active!,
             free_accessories: formData.free_accessories || [],
             specifications: formData.specifications || "",
@@ -819,71 +829,6 @@ const Cycles = () => {
                       })
                     }
                     placeholder="Invoice number"
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price_per_day">Price/Day (₹) *</Label>
-                  <Input
-                    id="price_per_day"
-                    type="number"
-                    value={formData.price_per_day}
-                    onChange={(e) => setFormData({ ...formData, price_per_day: Number(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price_per_week">Price/Week (₹) *</Label>
-                  <Input
-                    id="price_per_week"
-                    type="number"
-                    value={formData.price_per_week}
-                    onChange={(e) => setFormData({ ...formData, price_per_week: Number(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price_per_month">Price/Month (₹)</Label>
-                  <Input
-                    id="price_per_month"
-                    type="number"
-                    value={formData.price_per_month || ""}
-                    onChange={(e) => setFormData({ ...formData, price_per_month: Number(e.target.value) || null })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="deposit_day">Deposit/Day (₹) *</Label>
-                  <Input
-                    id="deposit_day"
-                    type="number"
-                    value={formData.security_deposit_day}
-                    onChange={(e) => setFormData({ ...formData, security_deposit_day: Number(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="deposit_week">Deposit/Week (₹) *</Label>
-                  <Input
-                    id="deposit_week"
-                    type="number"
-                    value={formData.security_deposit_week}
-                    onChange={(e) => setFormData({ ...formData, security_deposit_week: Number(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="deposit_month">Deposit/Month (₹) *</Label>
-                  <Input
-                    id="deposit_month"
-                    type="number"
-                    value={formData.security_deposit_month}
-                    onChange={(e) => setFormData({ ...formData, security_deposit_month: Number(e.target.value) })}
-                    required
                   />
                 </div>
               </div>
