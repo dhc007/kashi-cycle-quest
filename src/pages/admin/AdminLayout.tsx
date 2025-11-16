@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -19,6 +20,26 @@ import { supabase } from "@/integrations/supabase/client";
 
 const AdminLayout = () => {
   const location = useLocation();
+  const [adminTheme, setAdminTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    // Load admin theme from localStorage
+    const savedTheme = localStorage.getItem('adminTheme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setAdminTheme(savedTheme);
+    }
+
+    // Listen for theme changes
+    const handleThemeChange = () => {
+      const updatedTheme = localStorage.getItem('adminTheme') as 'light' | 'dark' | null;
+      if (updatedTheme) {
+        setAdminTheme(updatedTheme);
+      }
+    };
+
+    window.addEventListener('admin-theme-change', handleThemeChange);
+    return () => window.removeEventListener('admin-theme-change', handleThemeChange);
+  }, []);
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
@@ -36,7 +57,7 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className={`min-h-screen bg-background flex ${adminTheme}`}>
       {/* Sidebar */}
       <aside className="w-64 border-r border-border bg-card flex flex-col">
         <div className="p-6 border-b border-border">
