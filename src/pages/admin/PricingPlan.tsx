@@ -85,7 +85,7 @@ const PricingPlanContent = () => {
         price_per_week: null,
         price_per_month: null,
         price_per_year: null,
-        security_deposit_day: 0,
+        security_deposit_day: accessory.security_deposit || 0,
         security_deposit_week: 0,
         security_deposit_month: 0,
         is_active: accessory.is_active,
@@ -137,6 +137,8 @@ const PricingPlanContent = () => {
         updates.security_deposit_day = formData.security_deposit_day;
         updates.security_deposit_week = formData.security_deposit_week;
         updates.security_deposit_month = formData.security_deposit_month;
+      } else if (editingPlan.item_type === "accessory") {
+        updates.security_deposit = formData.security_deposit_day;
       }
 
       const { error } = await supabase
@@ -253,6 +255,7 @@ const PricingPlanContent = () => {
                 <TableHead>Accessory Name</TableHead>
                 <TableHead>Model</TableHead>
                 <TableHead>Price/Day</TableHead>
+                <TableHead>Security Deposit</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -262,6 +265,7 @@ const PricingPlanContent = () => {
                   <TableCell className="font-semibold">{plan.item_name}</TableCell>
                   <TableCell className="text-muted-foreground">{plan.item_model}</TableCell>
                   <TableCell className="font-semibold">₹{plan.price_per_day}</TableCell>
+                  <TableCell className="font-semibold">₹{plan.security_deposit_day}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(plan)}>
                       <Edit className="w-4 h-4" />
@@ -315,6 +319,19 @@ const PricingPlanContent = () => {
                 </>
               )}
             </div>
+
+            {editingPlan?.item_type === "accessory" && (
+              <div className="space-y-2">
+                <Label htmlFor="security_deposit">Security Deposit (₹) *</Label>
+                <Input
+                  id="security_deposit"
+                  type="number"
+                  value={formData.security_deposit_day}
+                  onChange={(e) => setFormData({ ...formData, security_deposit_day: Number(e.target.value) })}
+                  required
+                />
+              </div>
+            )}
 
             {editingPlan?.item_type === "cycle" && (
               <div className="grid md:grid-cols-3 gap-4">
