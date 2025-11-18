@@ -104,7 +104,8 @@ const Payment = () => {
   const subtotal = basePrice + accessoriesTotal;
   const gst = Math.round(subtotal * 0.18); // 18% GST
   const totalBeforeDeposit = subtotal + gst - discount;
-  const totalAmount = totalBeforeDeposit + securityDeposit;
+  const onlinePaymentAmount = totalBeforeDeposit; // Amount to be paid online (excludes deposit)
+  const totalAmount = totalBeforeDeposit + securityDeposit; // Total including deposit for record-keeping
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -251,10 +252,10 @@ const Payment = () => {
 
       const booking = data.booking;
 
-      // Create Razorpay order
+      // Create Razorpay order (only for rental charges, excluding deposit)
       const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
         body: {
-          amount: totalAmount,
+          amount: onlinePaymentAmount,
           currency: 'INR',
           receipt: booking.booking_id,
         },
@@ -264,10 +265,10 @@ const Payment = () => {
 
       const options = {
         key: orderData.key_id,
-        amount: totalAmount * 100,
+        amount: onlinePaymentAmount * 100,
         currency: 'INR',
         name: 'Blue Bolt Electric Pvt Ltd',
-        description: 'Electric Bicycle Rental',
+        description: 'Electric Bicycle Rental (Deposit payable at pickup)',
         order_id: orderData.order.id,
         handler: async function (response: any) {
           try {
@@ -292,6 +293,8 @@ const Payment = () => {
               state: {
                 ...bookingData,
                 totalAmount,
+                onlinePaymentAmount,
+                securityDeposit,
                 paymentId: response.razorpay_payment_id,
                 bookingId: booking.booking_id,
               },
@@ -463,24 +466,31 @@ const Payment = () => {
                       <span>-₹{discount.toFixed(2)}</span>
                     </div>
                   )}
-                  
-                  {/* Security Deposit */}
-                  <div className="flex justify-between items-center pt-2 border-t bg-green-50 dark:bg-green-950 -mx-4 md:-mx-6 px-4 md:px-6 py-2 rounded">
-                    <span className="flex items-center gap-1 text-xs">
-                      <span className="text-green-600 dark:text-green-400">🔒</span>
-                      <span className="font-medium">Security Deposit</span>
-                      <span className="text-[10px] text-muted-foreground">(Refundable)</span>
-                    </span>
-                    <span className="font-semibold text-green-600 dark:text-green-400">₹{securityDeposit.toFixed(2)}</span>
-                  </div>
 
+                  {/* Online Payment Amount */}
                   <div className="border-t pt-3 flex justify-between items-baseline">
-                    <span className="font-bold text-base md:text-lg">Total Amount</span>
-                    <span className="font-bold text-primary text-lg md:text-xl">₹{totalAmount.toFixed(2)}</span>
+                    <span className="font-bold text-base md:text-lg">Pay Online Now</span>
+                    <span className="font-bold text-primary text-lg md:text-xl">₹{onlinePaymentAmount.toFixed(2)}</span>
                   </div>
                   
+                  {/* Security Deposit - Payable at Pickup */}
+                  <div className="flex flex-col gap-2 pt-2 border-t bg-amber-50 dark:bg-amber-950/30 -mx-4 md:-mx-6 px-4 md:px-6 py-3 rounded">
+                    <div className="flex justify-between items-center">
+                      <span className="flex items-center gap-1 text-xs">
+                        <span className="text-amber-600 dark:text-amber-400">🔒</span>
+                        <span className="font-semibold">Security Deposit</span>
+                        <span className="text-[10px] text-muted-foreground">(Refundable)</span>
+                      </span>
+                      <span className="font-bold text-amber-600 dark:text-amber-400">₹{securityDeposit.toFixed(2)}</span>
+                    </div>
+                    <div className="text-[10px] md:text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-2 py-1.5 rounded">
+                      💳 <span className="font-medium">Payable during pickup</span> - This refundable deposit will be collected at the time of cycle pickup and refunded after safe return.
+                    </div>
+                  </div>
+                  
+                  {/* Total Amount Summary */}
                   <div className="text-[10px] md:text-xs text-center text-muted-foreground bg-muted/50 -mx-4 md:-mx-6 px-4 md:px-6 py-2 rounded">
-                    Security deposit of ₹{securityDeposit} will be refunded after cycle return
+                    Total Booking Value: ₹{totalAmount.toFixed(2)} (₹{onlinePaymentAmount.toFixed(2)} online + ₹{securityDeposit.toFixed(2)} at pickup)
                   </div>
                 </div>
 
@@ -527,11 +537,12 @@ const Payment = () => {
                   className="w-full bg-gradient-primary hover:opacity-90"
                   size="lg"
                 >
-                  {loading ? "Processing..." : "Proceed to Payment"}
+                  {loading ? "Processing..." : `Pay ₹${onlinePaymentAmount.toFixed(2)} Now`}
                 </Button>
 
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
                   <span>🔒 Secure payment powered by Razorpay</span>
+                  <span className="text-[10px]">Deposit of ₹{securityDeposit.toFixed(2)} payable at pickup</span>
                 </div>
               </CardContent>
             </Card>
