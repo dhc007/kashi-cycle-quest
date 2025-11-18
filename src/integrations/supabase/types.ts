@@ -717,6 +717,30 @@ export type Database = {
           },
         ]
       }
+      otp_rate_limits: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_attempt: string
+          phone_number: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_attempt?: string
+          phone_number: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_attempt?: string
+          phone_number?: string
+        }
+        Relationships: []
+      }
       partners: {
         Row: {
           address: string
@@ -1010,6 +1034,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_coupon: {
+        Args: {
+          p_booking_id: string
+          p_coupon_id: string
+          p_discount_amount: number
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       check_accessory_availability: {
         Args: {
           p_accessory_id: string

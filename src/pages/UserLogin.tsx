@@ -95,7 +95,8 @@ export default function UserLogin() {
       // OTP verified! Now authenticate user
       // Using phone as email format for Supabase auth
       const email = `${phoneNumber}@bolt91.app`;
-      const password = `bolt91_${phoneNumber}_secure`;
+      // Use cryptographically secure random password
+      const password = crypto.randomUUID() + crypto.randomUUID();
 
       // Try to sign in first
       let { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({

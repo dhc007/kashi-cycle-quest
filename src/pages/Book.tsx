@@ -587,7 +587,12 @@ const Book = () => {
 
       // Upload live photo only if new one is provided
       if (livePhoto) {
-        const fileName = `${Date.now()}_${livePhoto.name}`;
+        // Use user ID in path for RLS policy
+        const userId = user?.id || session?.user?.id;
+        if (!userId) {
+          throw new Error("User must be authenticated to upload documents");
+        }
+        const fileName = `${userId}/${Date.now()}_${livePhoto.name}`;
         const { data, error } = await supabase.storage.from("booking-documents").upload(fileName, livePhoto, {
           cacheControl: "3600",
           upsert: false,
@@ -604,7 +609,12 @@ const Book = () => {
 
       // Upload ID proof only if new one is provided
       if (idProof) {
-        const fileName = `${Date.now()}_${idProof.name}`;
+        // Use user ID in path for RLS policy
+        const userId = user?.id || session?.user?.id;
+        if (!userId) {
+          throw new Error("User must be authenticated to upload documents");
+        }
+        const fileName = `${userId}/${Date.now()}_${idProof.name}`;
         const { data, error } = await supabase.storage.from("booking-documents").upload(fileName, idProof, {
           cacheControl: "3600",
           upsert: false,
