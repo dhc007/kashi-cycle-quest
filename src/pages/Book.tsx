@@ -702,6 +702,7 @@ const Book = () => {
             quantity: acc.quantity,
             days: acc.days,
             pricePerDay: acc.pricePerDay,
+            securityDeposit: acc.securityDeposit,
           })),
         phoneNumber,
         email,
