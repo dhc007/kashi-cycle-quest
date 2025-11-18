@@ -76,10 +76,17 @@ serve(async (req) => {
           userId = authUser.id;
           console.log('Found existing auth user without profile');
         } else {
-          // Create new anonymous user with secure random password
+          // Create new anonymous user with deterministic password based on phone number
+          // This ensures they can log in later using OTP
+          const encoder = new TextEncoder();
+          const data_buffer = encoder.encode(`bolt91_secure_${phoneNumber}_key`);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data_buffer);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const password = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
+          
           const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
             email: anonymousEmail,
-            password: crypto.randomUUID() + crypto.randomUUID(),
+            password: password,
             email_confirm: true,
             user_metadata: {
               phone_number: phoneNumber,

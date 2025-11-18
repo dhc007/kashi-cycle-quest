@@ -100,6 +100,7 @@ const Book = () => {
   // Authentication state
   const [user, setUser] = useState<any>(null);
   const [session, setSession] = useState<any>(null);
+  const [authChecking, setAuthChecking] = useState(true);
   const [profileData, setProfileData] = useState<any>(null);
 
   // Step 4 - Checkout
@@ -125,12 +126,14 @@ const Book = () => {
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setAuthChecking(false);
     });
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setAuthChecking(false);
     });
 
     return () => subscription.unsubscribe();
@@ -138,14 +141,14 @@ const Book = () => {
 
   // Redirect to login if not authenticated
   useEffect(() => {
-    if (!loading && !user && session === null) {
+    if (!authChecking && !user) {
       toast({
         title: "Login Required",
         description: "Please login to book a ride",
       });
       navigate("/user-login");
     }
-  }, [user, session, loading, navigate, toast]);
+  }, [user, authChecking, navigate, toast]);
 
   // Fetch profile data when user is authenticated
   useEffect(() => {
