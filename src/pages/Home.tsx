@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Package, CheckCircle2, Bike, Camera, Shield, Wrench } from "lucide-react";
@@ -6,6 +8,47 @@ import heroCycle from "@/assets/hero-cycle.png";
 import { Navbar } from "@/components/Navbar";
 
 const Home = () => {
+  const navigate = useNavigate();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    const checkUserAndRedirect = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // User is logged in, check their booking history
+        const { data: bookingsData } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .limit(1);
+
+        if (bookingsData && bookingsData.length > 0) {
+          // Has past bookings, go to bookings page
+          navigate('/bookings');
+        } else {
+          // No past bookings, go to book page
+          navigate('/book');
+        }
+      } else {
+        // Not logged in, stay on home page
+        setIsChecking(false);
+      }
+    };
+
+    checkUserAndRedirect();
+  }, [navigate]);
+
+  if (isChecking) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

@@ -90,10 +90,9 @@ const Book = () => {
       localStorage.setItem("activePartner", partnerParam);
       setPartnerId(partnerParam);
     } else {
-      const storedPartner = localStorage.getItem("activePartner");
-      if (storedPartner) {
-        setPartnerId(storedPartner);
-      }
+      // Clear partner data if no partner param in URL
+      localStorage.removeItem("activePartner");
+      setPartnerId(null);
     }
   }, [partnerParam]);
 

@@ -17,12 +17,15 @@ export default function UserLogin() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Preserve partner parameter from URL
+  // Preserve partner parameter from URL only when user lands on login page
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const partnerId = params.get('partner');
     if (partnerId) {
       localStorage.setItem('pendingPartner', partnerId);
+    } else {
+      // Clear any old partner if no partner in current URL
+      localStorage.removeItem('pendingPartner');
     }
   }, []);
 
