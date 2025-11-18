@@ -62,7 +62,7 @@ serve(async (req) => {
       if (existingProfile) {
         // User exists, reuse their account
         userId = existingProfile.user_id;
-        console.log('Reusing existing user for phone:', phoneNumber);
+        console.log('Reusing existing user');
       } else {
         // Check if auth user exists with this email
         const anonymousEmail = `${phoneNumber}@bolt91.app`;
@@ -74,12 +74,12 @@ serve(async (req) => {
         if (authUser) {
           // Auth user exists but no profile - use existing auth user
           userId = authUser.id;
-          console.log('Found existing auth user without profile:', anonymousEmail);
+          console.log('Found existing auth user without profile');
         } else {
-          // Create new anonymous user
+          // Create new anonymous user with secure random password
           const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
             email: anonymousEmail,
-            password: crypto.randomUUID(),
+            password: crypto.randomUUID() + crypto.randomUUID(),
             email_confirm: true,
             user_metadata: {
               phone_number: phoneNumber,
@@ -93,7 +93,7 @@ serve(async (req) => {
           }
           
           userId = signUpData.user?.id;
-          console.log('Created new anonymous user:', anonymousEmail);
+          console.log('Created new anonymous user');
         }
       }
     }
@@ -237,42 +237,19 @@ serve(async (req) => {
       if (accError) throw accError;
     }
 
-    // Track coupon usage if a coupon was applied
+    // Track coupon usage atomically to prevent race conditions
     if (bookingData.coupon_code && bookingData.coupon_id && bookingData.discount_amount > 0) {
-      // Insert coupon usage record
-      const { error: couponUsageError } = await supabaseAdmin
-        .from('coupon_usage')
-        .insert({
-          coupon_id: bookingData.coupon_id,
-          user_id: userId,
-          booking_id: booking.id,
-          discount_amount: bookingData.discount_amount,
+      const { data: couponApplied, error: couponError } = await supabaseAdmin
+        .rpc('apply_coupon', {
+          p_coupon_id: bookingData.coupon_id,
+          p_user_id: userId,
+          p_booking_id: booking.id,
+          p_discount_amount: bookingData.discount_amount
         });
 
-      if (couponUsageError) {
-        console.error('Error tracking coupon usage:', couponUsageError);
-        // Don't throw error, just log it - booking was successful
-      }
-
-      // Increment coupon used_count
-      const { data: currentCoupon } = await supabaseAdmin
-        .from('coupons')
-        .select('used_count')
-        .eq('id', bookingData.coupon_id)
-        .single();
-
-      if (currentCoupon) {
-        const { error: couponUpdateError } = await supabaseAdmin
-          .from('coupons')
-          .update({ 
-            used_count: currentCoupon.used_count + 1,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', bookingData.coupon_id);
-
-        if (couponUpdateError) {
-          console.error('Error updating coupon count:', couponUpdateError);
-        }
+      if (couponError || !couponApplied) {
+        console.error('Failed to apply coupon:', couponError);
+        // Coupon application failed but booking is still valid
       }
     }
 

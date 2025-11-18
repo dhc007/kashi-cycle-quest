@@ -5,6 +5,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Validation regex
+const PHONE_REGEX = /^[0-9]{10}$/;
+const OTP_REGEX = /^[0-9]{6}$/;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -13,11 +17,29 @@ serve(async (req) => {
   try {
     const { phoneNumber, code } = await req.json();
     
+    // Validate phone number
+    if (!phoneNumber || !PHONE_REGEX.test(phoneNumber)) {
+      console.error('Invalid phone number format');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid phone number format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Validate OTP code
+    if (!code || !OTP_REGEX.test(code)) {
+      console.error('Invalid OTP format');
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid OTP code format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
     const AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
     const VERIFY_SID = Deno.env.get('TWILIO_VERIFY_SERVICE_SID');
     
-    console.log('Verifying OTP for:', phoneNumber);
+    console.log('Verifying OTP for phone ending in:', phoneNumber.slice(-4));
     
     // Call Twilio Verify API to check OTP
     const response = await fetch(
@@ -37,7 +59,7 @@ serve(async (req) => {
     
     const data = await response.json();
     
-    console.log('Verification check result:', data.status, data.valid);
+    console.log('Verification check completed');
     
     return new Response(
       JSON.stringify({ 
