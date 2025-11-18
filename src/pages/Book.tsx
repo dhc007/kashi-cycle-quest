@@ -52,6 +52,7 @@ interface Partner {
   phone_number: string;
   google_maps_link: string | null;
   partner_type: "guest_house" | "cafe/retail";
+  logo_url: string | null;
 }
 
 const Book = () => {
@@ -331,19 +332,40 @@ const Book = () => {
     loadData();
   }, [toast]);
 
-  // Generate time slots from 6 AM to 10 PM in 30-minute intervals
+  // Generate time slots based on operation hours in 30-minute intervals
   const generateTimeSlots = () => {
     const slots = [];
-    for (let hour = 6; hour <= 22; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        if (hour === 22 && minute > 0) break; // Stop at 10:00 PM
-        const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-        const period = hour >= 12 ? "PM" : "AM";
-        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-        const displayTime = `${displayHour}:${minute.toString().padStart(2, "0")} ${period}`;
-        slots.push({ value: time, label: displayTime });
+    
+    // Parse operation hours (format: "9:00 AM" to "7:00 PM")
+    const parseTime = (timeStr: string) => {
+      const [time, period] = timeStr.split(' ');
+      const [hours, minutes] = time.split(':').map(Number);
+      let hour24 = hours;
+      if (period === 'PM' && hours !== 12) hour24 = hours + 12;
+      if (period === 'AM' && hours === 12) hour24 = 0;
+      return { hour: hour24, minute: minutes };
+    };
+
+    const startTime = parseTime(operationHours.start_display);
+    const endTime = parseTime(operationHours.end_display);
+    
+    let currentHour = startTime.hour;
+    let currentMinute = startTime.minute;
+    
+    while (currentHour < endTime.hour || (currentHour === endTime.hour && currentMinute <= endTime.minute)) {
+      const time = `${currentHour.toString().padStart(2, "0")}:${currentMinute.toString().padStart(2, "0")}`;
+      const period = currentHour >= 12 ? "PM" : "AM";
+      const displayHour = currentHour > 12 ? currentHour - 12 : currentHour === 0 ? 12 : currentHour;
+      const displayTime = `${displayHour}:${currentMinute.toString().padStart(2, "0")} ${period}`;
+      slots.push({ value: time, label: displayTime });
+      
+      currentMinute += 30;
+      if (currentMinute >= 60) {
+        currentMinute = 0;
+        currentHour++;
       }
     }
+    
     return slots;
   };
 
@@ -741,11 +763,24 @@ const Book = () => {
                   {partnerData && (
                     <div className="mt-4 space-y-3">
                       <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
-                        <p className="text-sm text-muted-foreground mb-1">Booking through partner:</p>
-                        <p className="text-lg font-semibold text-primary">{partnerData.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {partnerData.address}, {partnerData.city}
-                        </p>
+                        <div className="flex items-start gap-4">
+                          {partnerData.logo_url && (
+                            <div className="flex-shrink-0">
+                              <img 
+                                src={partnerData.logo_url} 
+                                alt={`${partnerData.name} logo`}
+                                className="h-16 w-16 object-contain rounded-lg bg-background p-2 border"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm text-muted-foreground mb-1">Booking through partner:</p>
+                            <p className="text-lg font-semibold text-primary">{partnerData.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {partnerData.address}, {partnerData.city}
+                            </p>
+                          </div>
+                        </div>
                       </div>
                       {selectedPickupLocation && (
                         <div className="p-4 bg-muted/50 border rounded-lg">

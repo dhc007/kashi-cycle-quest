@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
 import { Plus, Pencil, Trash2, QrCode, MoreVertical, Download, Copy, BarChart3 } from "lucide-react";
+import { FileUpload } from "@/components/FileUpload";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +37,7 @@ interface Partner {
   partner_type: 'guest_house' | 'cafe/retail';
   partner_code: string;
   is_active: boolean;
+  logo_url: string | null;
 }
 
 const PartnersContent = () => {
@@ -100,6 +102,16 @@ const PartnersContent = () => {
 
   const handleSave = async () => {
     try {
+      // Validate phone number
+      if (!formData.phone_number || formData.phone_number.length !== 10) {
+        toast({
+          title: "Validation Error",
+          description: "Please enter a valid 10-digit phone number",
+          variant: "destructive",
+        });
+        return;
+      }
+
       if (editingId) {
         const { error } = await supabase
           .from('partners')
@@ -115,6 +127,7 @@ const PartnersContent = () => {
             google_maps_link: formData.google_maps_link || null,
             partner_type: formData.partner_type,
             is_active: formData.is_active,
+            logo_url: formData.logo_url || null,
           })
           .eq('id', editingId);
 
@@ -141,6 +154,7 @@ const PartnersContent = () => {
             partner_type: formData.partner_type || 'cafe/retail',
             partner_code: newCode,
             is_active: formData.is_active ?? true,
+            logo_url: formData.logo_url || null,
           }]);
 
         if (error) throw error;
@@ -338,8 +352,11 @@ const PartnersContent = () => {
                     <Label htmlFor="phone_number">Phone Number *</Label>
                     <Input
                       id="phone_number"
+                      type="tel"
+                      placeholder="10 digit phone number"
                       value={formData.phone_number || ''}
-                      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, phone_number: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                      pattern="[0-9]{10}"
                     />
                   </div>
                 </div>
@@ -410,6 +427,45 @@ const PartnersContent = () => {
                   <p className="text-xs text-muted-foreground">
                     Guest House: Pickup at partner location. Cafe/Retail: Pickup at Bolt 91 Base.
                   </p>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Partner Logo</Label>
+                  <FileUpload
+                    label=""
+                    accept="image/*"
+                    onFileSelect={async (file) => {
+                      if (file) {
+                        const fileName = `${Date.now()}-${file.name}`;
+                        const { data, error } = await supabase.storage
+                          .from('documents')
+                          .upload(fileName, file);
+                        
+                        if (error) {
+                          toast({
+                            title: "Upload Error",
+                            description: error.message,
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        const { data: urlData } = supabase.storage
+                          .from('documents')
+                          .getPublicUrl(fileName);
+                        
+                        setFormData({ ...formData, logo_url: urlData.publicUrl });
+                      } else {
+                        setFormData({ ...formData, logo_url: null });
+                      }
+                    }}
+                    maxSize={5}
+                    description="Upload partner logo (max 5MB)"
+                  />
+                  {formData.logo_url && (
+                    <div className="mt-2">
+                      <img src={formData.logo_url} alt="Partner logo" className="h-20 w-auto rounded-md border" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <Switch
