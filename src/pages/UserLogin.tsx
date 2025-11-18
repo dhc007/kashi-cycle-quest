@@ -96,55 +96,20 @@ export default function UserLogin() {
         return;
       }
 
-      // OTP verified! Now authenticate user
-      const email = `${phoneNumber}@bolt91.app`;
-      
-      // Use a deterministic password based on phone number
-      const encoder = new TextEncoder();
-      const data_buffer = encoder.encode(`bolt91_secure_${phoneNumber}_key`);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data_buffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const password = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
-
-      // Try to sign in first (existing user)
-      let { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      // If user doesn't exist, create account silently
-      if (signInError && signInError.message.includes('Invalid login credentials')) {
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              phone_number: phoneNumber,
-            }
-          }
-        });
-
-        // If signup fails because user already exists (race condition), try sign in again
-        if (signUpError && signUpError.message.includes('already registered')) {
-          const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          
-          if (retryError) throw retryError;
-          authData = retryData;
-        } else if (signUpError) {
-          throw signUpError;
-        } else {
-          authData = signUpData;
-        }
-      } else if (signInError) {
-        throw signInError;
+      // OTP verified and session created by backend!
+      if (!data.session || !data.user) {
+        throw new Error("Failed to create session");
       }
 
-      if (!authData?.user) {
-        throw new Error("Failed to authenticate user");
+      // Set the session in Supabase client
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+      });
+
+      if (sessionError) {
+        console.error('Error setting session:', sessionError);
+        throw sessionError;
       }
 
       toast({
@@ -156,7 +121,7 @@ export default function UserLogin() {
       const { data: bookingsData } = await supabase
         .from('bookings')
         .select('id')
-        .eq('user_id', authData.user.id)
+        .eq('user_id', data.user.id)
         .limit(1);
 
       // Check if there's a pending partner
