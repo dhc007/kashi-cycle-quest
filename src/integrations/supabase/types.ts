@@ -220,6 +220,8 @@ export type Database = {
           return_photos: string[] | null
           return_time: string | null
           security_deposit: number
+          terms_accepted_at: string | null
+          terms_version: string | null
           total_amount: number
           updated_at: string
           user_id: string
@@ -271,6 +273,8 @@ export type Database = {
           return_photos?: string[] | null
           return_time?: string | null
           security_deposit: number
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           total_amount: number
           updated_at?: string
           user_id: string
@@ -322,6 +326,8 @@ export type Database = {
           return_photos?: string[] | null
           return_time?: string | null
           security_deposit?: number
+          terms_accepted_at?: string | null
+          terms_version?: string | null
           total_amount?: number
           updated_at?: string
           user_id?: string

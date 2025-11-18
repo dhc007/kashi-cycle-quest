@@ -15,6 +15,8 @@ import { cn, extractPhoneFromEmail } from "@/lib/utils";
 import { PhoneInput } from "@/components/PhoneInput";
 import { FileUpload } from "@/components/FileUpload";
 import { MediaSlider } from "@/components/MediaSlider";
+import { TermsDialog } from "@/components/TermsDialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -110,6 +112,10 @@ const Book = () => {
   const [idProof, setIdProof] = useState<File | null>(null);
   const [emergencyName, setEmergencyName] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
+
+  // Terms and conditions
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
 
   // Check authentication and load profile
   useEffect(() => {
@@ -484,7 +490,7 @@ const Book = () => {
     const hasLivePhoto = !!livePhoto || !!profileData?.live_photo_url;
     const hasIdProof = !!idProof || !!profileData?.id_proof_url;
 
-    const isValid = isPhoneValid && hasFirstName && hasLastName && hasLivePhoto && hasIdProof;
+    const isValid = isPhoneValid && hasFirstName && hasLastName && hasLivePhoto && hasIdProof && termsAccepted;
 
     return isValid;
   };
@@ -499,6 +505,7 @@ const Book = () => {
     if (!lastName) missing.push("last name");
     if (!livePhoto && !profileData?.live_photo_url) missing.push("live photo");
     if (!idProof && !profileData?.id_proof_url) missing.push("ID proof");
+    if (!termsAccepted) missing.push("terms acceptance");
 
     return missing;
   };
@@ -705,6 +712,8 @@ const Book = () => {
         securityDeposit: getSecurityDeposit(),
         livePhotoUrl,
         idProofUrl,
+        termsAcceptedAt: new Date().toISOString(),
+        termsVersion: "v1.0",
       };
 
       sessionStorage.setItem("bookingData", JSON.stringify(bookingData));
@@ -1590,6 +1599,37 @@ const Book = () => {
                         </div>
                       </div>
 
+                      {/* Terms and Conditions */}
+                      <Card className="border-2 border-primary/20">
+                        <CardContent className="pt-6">
+                          <div className="flex items-start space-x-3">
+                            <Checkbox 
+                              id="terms" 
+                              checked={termsAccepted}
+                              onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                            />
+                            <div className="flex-1 space-y-1">
+                              <label
+                                htmlFor="terms"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                              >
+                                I accept the terms and conditions
+                              </label>
+                              <p className="text-xs text-muted-foreground">
+                                By checking this box, you agree to our{" "}
+                                <button
+                                  type="button"
+                                  onClick={() => setShowTermsDialog(true)}
+                                  className="text-primary underline hover:no-underline"
+                                >
+                                  Rental Agreement and Terms & Conditions
+                                </button>
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
                       <div className="flex gap-4">
                         <Button variant="outline" onClick={() => setStep(partnerId ? 4 : 5)} className="flex-1">
                           Back
@@ -1847,6 +1887,9 @@ const Book = () => {
           </div>
         </div>
       </div>
+
+      {/* Terms and Conditions Dialog */}
+      <TermsDialog open={showTermsDialog} onOpenChange={setShowTermsDialog} />
     </div>
   );
 };
