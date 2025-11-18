@@ -368,132 +368,153 @@ const Users = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-2">Documents</p>
                 <div className="flex gap-4">
-                  {selectedUser.profile?.live_photo_url && (
-                    <div>
-                      <p className="text-xs mb-1 font-medium">Live Photo</p>
-                      <button
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = 'image/*';
-                          input.onchange = async (e: any) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              try {
-                                const fileName = `${Date.now()}_${file.name}`;
-                                const { error: uploadError } = await supabase.storage
-                                  .from('booking-documents')
-                                  .upload(fileName, file);
-                                
-                                if (uploadError) throw uploadError;
-                                
-                                const { data: { publicUrl } } = supabase.storage
-                                  .from('booking-documents')
-                                  .getPublicUrl(fileName);
-                                
-                                const { error: updateError } = await supabase
-                                  .from('profiles')
-                                  .update({ live_photo_url: publicUrl })
-                                  .eq('user_id', selectedUser.id);
-                                
-                                if (updateError) throw updateError;
-                                
-                                toast({
-                                  title: "Success",
-                                  description: "Live photo updated successfully",
-                                });
-                                
-                                // Refresh the user list
-                                await loadUsers();
-                                setViewDialogOpen(false);
-                              } catch (error: any) {
-                                toast({
-                                  title: "Error",
-                                  description: error.message,
-                                  variant: "destructive",
-                                });
-                              }
+                  {/* Live Photo - Always show, even if missing */}
+                  <div>
+                    <p className="text-xs mb-1 font-medium">Live Photo</p>
+                    <button
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = async (e: any) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const fileName = `${Date.now()}_${file.name}`;
+                              const { error: uploadError } = await supabase.storage
+                                .from('booking-documents')
+                                .upload(fileName, file);
+                              
+                              if (uploadError) throw uploadError;
+                              
+                              const { data: { publicUrl } } = supabase.storage
+                                .from('booking-documents')
+                                .getPublicUrl(fileName);
+                              
+                              const { error: updateError } = await supabase
+                                .from('profiles')
+                                .update({ live_photo_url: publicUrl })
+                                .eq('user_id', selectedUser.id);
+                              
+                              if (updateError) throw updateError;
+                              
+                              toast({
+                                title: "Success",
+                                description: "Live photo updated successfully",
+                              });
+                              
+                              // Refresh the user list
+                              await loadUsers();
+                              setViewDialogOpen(false);
+                            } catch (error: any) {
+                              toast({
+                                title: "Error",
+                                description: error.message,
+                                variant: "destructive",
+                              });
                             }
-                          };
-                          input.click();
-                        }}
-                        className="relative group cursor-pointer"
-                      >
-                        <img 
-                          src={selectedUser.profile.live_photo_url} 
-                          alt="Live Photo" 
-                          className="w-32 h-32 object-cover rounded border group-hover:opacity-75 transition-opacity"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded">
-                          <Camera className="w-6 h-6 text-white" />
+                          }
+                        };
+                        input.click();
+                      }}
+                      className="relative group cursor-pointer"
+                    >
+                      {selectedUser.profile?.live_photo_url ? (
+                        <>
+                          <img 
+                            src={selectedUser.profile.live_photo_url} 
+                            alt="Live Photo" 
+                            className="w-32 h-32 object-cover rounded border group-hover:opacity-75 transition-opacity"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded">
+                            <Camera className="w-6 h-6 text-white" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-32 h-32 flex flex-col items-center justify-center border-2 border-dashed rounded group-hover:border-primary group-hover:bg-primary/5 transition-colors">
+                          <Camera className="w-8 h-8 text-muted-foreground group-hover:text-primary" />
+                          <span className="text-xs text-muted-foreground mt-1">Upload</span>
                         </div>
-                      </button>
-                      <p className="text-xs text-muted-foreground mt-1">Click to update</p>
-                    </div>
-                  )}
-                  {selectedUser.profile?.id_proof_url && (
-                    <div>
-                      <p className="text-xs mb-1 font-medium">ID Proof</p>
-                      <button
-                        onClick={() => {
-                          const input = document.createElement('input');
-                          input.type = 'file';
-                          input.accept = 'image/jpeg,image/png,application/pdf';
-                          input.onchange = async (e: any) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              try {
-                                const fileName = `${Date.now()}_${file.name}`;
-                                const { error: uploadError } = await supabase.storage
-                                  .from('booking-documents')
-                                  .upload(fileName, file);
-                                
-                                if (uploadError) throw uploadError;
-                                
-                                const { data: { publicUrl } } = supabase.storage
-                                  .from('booking-documents')
-                                  .getPublicUrl(fileName);
-                                
-                                const { error: updateError } = await supabase
-                                  .from('profiles')
-                                  .update({ id_proof_url: publicUrl })
-                                  .eq('user_id', selectedUser.id);
-                                
-                                if (updateError) throw updateError;
-                                
-                                toast({
-                                  title: "Success",
-                                  description: "ID proof updated successfully",
-                                });
-                                
-                                // Refresh the user list
-                                await loadUsers();
-                                setViewDialogOpen(false);
-                              } catch (error: any) {
-                                toast({
-                                  title: "Error",
-                                  description: error.message,
-                                  variant: "destructive",
-                                });
-                              }
+                      )}
+                    </button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {selectedUser.profile?.live_photo_url ? 'Click to update' : 'Click to upload'}
+                    </p>
+                  </div>
+
+                  {/* ID Proof - Always show, even if missing */}
+                  <div>
+                    <p className="text-xs mb-1 font-medium">ID Proof</p>
+                    <button
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/jpeg,image/png,application/pdf';
+                        input.onchange = async (e: any) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try {
+                              const fileName = `${Date.now()}_${file.name}`;
+                              const { error: uploadError } = await supabase.storage
+                                .from('booking-documents')
+                                .upload(fileName, file);
+                              
+                              if (uploadError) throw uploadError;
+                              
+                              const { data: { publicUrl } } = supabase.storage
+                                .from('booking-documents')
+                                .getPublicUrl(fileName);
+                              
+                              const { error: updateError } = await supabase
+                                .from('profiles')
+                                .update({ id_proof_url: publicUrl })
+                                .eq('user_id', selectedUser.id);
+                              
+                              if (updateError) throw updateError;
+                              
+                              toast({
+                                title: "Success",
+                                description: "ID proof updated successfully",
+                              });
+                              
+                              // Refresh the user list
+                              await loadUsers();
+                              setViewDialogOpen(false);
+                            } catch (error: any) {
+                              toast({
+                                title: "Error",
+                                description: error.message,
+                                variant: "destructive",
+                              });
                             }
-                          };
-                          input.click();
-                        }}
-                        className="relative group cursor-pointer"
-                      >
-                        <img 
-                          src={selectedUser.profile.id_proof_url} 
-                          alt="ID Proof" 
-                          className="w-32 h-32 object-cover rounded border group-hover:opacity-75 transition-opacity"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded">
-                          <Camera className="w-6 h-6 text-white" />
+                          }
+                        };
+                        input.click();
+                      }}
+                      className="relative group cursor-pointer"
+                    >
+                      {selectedUser.profile?.id_proof_url ? (
+                        <>
+                          <img 
+                            src={selectedUser.profile.id_proof_url} 
+                            alt="ID Proof" 
+                            className="w-32 h-32 object-cover rounded border group-hover:opacity-75 transition-opacity"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded">
+                            <Camera className="w-6 h-6 text-white" />
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-32 h-32 flex flex-col items-center justify-center border-2 border-dashed rounded group-hover:border-primary group-hover:bg-primary/5 transition-colors">
+                          <Camera className="w-8 h-8 text-muted-foreground group-hover:text-primary" />
+                          <span className="text-xs text-muted-foreground mt-1">Upload</span>
                         </div>
-                      </button>
-                      <p className="text-xs text-muted-foreground mt-1">Click to update</p>
-                    </div>
-                  )}
+                      )}
+                    </button>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {selectedUser.profile?.id_proof_url ? 'Click to update' : 'Click to upload'}
+                    </p>
+                  </div>
                 </div>
               </div>
 

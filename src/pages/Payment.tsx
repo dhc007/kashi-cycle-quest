@@ -103,11 +103,17 @@ const Payment = () => {
     termsVersion = "v1.0",
   } = bookingData;
 
+  // Calculate accessories security deposit
+  const accessoriesDeposit = accessories.reduce((sum: number, acc: any) => {
+    return sum + (acc.securityDeposit || 0);
+  }, 0);
+  
   const subtotal = basePrice + accessoriesTotal;
   const gst = Math.round(subtotal * 0.18); // 18% GST
   const totalBeforeDeposit = subtotal + gst - discount;
   const onlinePaymentAmount = totalBeforeDeposit; // Amount to be paid online (excludes deposit)
-  const totalAmount = totalBeforeDeposit + securityDeposit; // Total including deposit for record-keeping
+  const totalDeposit = securityDeposit + accessoriesDeposit; // Total deposit including cycle and accessories
+  const totalAmount = totalBeforeDeposit + totalDeposit; // Total including deposit for record-keeping
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -479,13 +485,31 @@ const Payment = () => {
                   
                   {/* Security Deposit - Payable at Pickup */}
                   <div className="flex flex-col gap-2 pt-2 border-t bg-amber-50 dark:bg-amber-950/30 -mx-4 md:-mx-6 px-4 md:px-6 py-3 rounded">
-                    <div className="flex justify-between items-center">
-                      <span className="flex items-center gap-1 text-xs">
-                        <span className="text-amber-600 dark:text-amber-400">🔒</span>
-                        <span className="font-semibold">Security Deposit</span>
-                        <span className="text-[10px] text-muted-foreground">(Refundable)</span>
-                      </span>
-                      <span className="font-bold text-amber-600 dark:text-amber-400">₹{securityDeposit.toFixed(2)}</span>
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="flex items-center gap-1 text-xs">
+                          <span className="text-amber-600 dark:text-amber-400">🔒</span>
+                          <span className="font-semibold">Cycle Deposit</span>
+                          <span className="text-[10px] text-muted-foreground">(Refundable)</span>
+                        </span>
+                        <span className="font-bold text-amber-600 dark:text-amber-400">₹{securityDeposit.toFixed(2)}</span>
+                      </div>
+                      {accessoriesDeposit > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-1 text-xs">
+                            <span className="text-amber-600 dark:text-amber-400">🔒</span>
+                            <span className="font-semibold">Accessories Deposit</span>
+                            <span className="text-[10px] text-muted-foreground">(Refundable)</span>
+                          </span>
+                          <span className="font-bold text-amber-600 dark:text-amber-400">₹{accessoriesDeposit.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {accessoriesDeposit > 0 && (
+                        <div className="flex justify-between items-center pt-1 border-t border-amber-200 dark:border-amber-800">
+                          <span className="text-xs font-bold">Total Deposit</span>
+                          <span className="font-bold text-amber-600 dark:text-amber-400">₹{totalDeposit.toFixed(2)}</span>
+                        </div>
+                      )}
                     </div>
                     <div className="text-[10px] md:text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-2 py-1.5 rounded">
                       💳 <span className="font-medium">Payable during pickup</span> - This refundable deposit will be collected at the time of cycle pickup and refunded after safe return.
@@ -494,7 +518,7 @@ const Payment = () => {
                   
                   {/* Total Amount Summary */}
                   <div className="text-[10px] md:text-xs text-center text-muted-foreground bg-muted/50 -mx-4 md:-mx-6 px-4 md:px-6 py-2 rounded">
-                    Total Booking Value: ₹{totalAmount.toFixed(2)} (₹{onlinePaymentAmount.toFixed(2)} online + ₹{securityDeposit.toFixed(2)} at pickup)
+                    Total Booking Value: ₹{totalAmount.toFixed(2)} (₹{onlinePaymentAmount.toFixed(2)} online + ₹{totalDeposit.toFixed(2)} at pickup)
                   </div>
                 </div>
 
