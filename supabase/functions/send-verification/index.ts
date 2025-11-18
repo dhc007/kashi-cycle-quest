@@ -31,26 +31,30 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Check rate limiting (max 3 attempts per hour per phone)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    // Check rate limiting (max 10 attempts per 15 minutes per phone)
+    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const { data: rateLimitData, error: rateLimitError } = await supabase
       .from('otp_rate_limits')
       .select('*')
       .eq('phone_number', phoneNumber)
-      .gte('last_attempt', oneHourAgo)
+      .gte('last_attempt', fifteenMinutesAgo)
       .maybeSingle();
     
     if (rateLimitError && rateLimitError.code !== 'PGRST116') {
       console.error('Rate limit check error:', rateLimitError);
     }
     
+    const maxAttempts = 10;
+    const remainingAttempts = rateLimitData ? maxAttempts - rateLimitData.attempts : maxAttempts;
+    
     // If rate limit exceeded
-    if (rateLimitData && rateLimitData.attempts >= 3) {
+    if (rateLimitData && rateLimitData.attempts >= maxAttempts) {
       console.warn('Rate limit exceeded for phone ending in', phoneNumber.slice(-4));
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Too many OTP requests. Please try again in an hour.' 
+          error: 'Too many OTP requests. Please try again in 15 minutes.',
+          remainingAttempts: 0
         }),
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -109,7 +113,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         status: data.status,
-        message: 'OTP sent successfully' 
+        message: 'OTP sent successfully',
+        remainingAttempts: remainingAttempts - 1
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
