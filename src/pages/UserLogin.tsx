@@ -96,36 +96,50 @@ export default function UserLogin() {
       const email = `${phoneNumber}@bolt91.app`;
       
       // Use a deterministic password based on phone number
-      // This ensures the same password is used for sign-in and sign-up
       const encoder = new TextEncoder();
       const data_buffer = encoder.encode(`bolt91_secure_${phoneNumber}_key`);
       const hashBuffer = await crypto.subtle.digest('SHA-256', data_buffer);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const password = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
 
-      // Try to sign in first
-      let { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      // Try to sign in first (existing user)
+      let { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      // If sign in fails, create new account
-      if (signInError) {
+      // If user doesn't exist, create account silently
+      if (signInError && signInError.message.includes('Invalid login credentials')) {
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
+            emailRedirectTo: `${window.location.origin}/`,
             data: {
-              phone: phoneNumber,
-            },
-          },
+              phone_number: phoneNumber,
+            }
+          }
         });
 
-        if (signUpError) throw signUpError;
-        signInData = signUpData;
+        // If signup fails because user already exists (race condition), try sign in again
+        if (signUpError && signUpError.message.includes('already registered')) {
+          const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          
+          if (retryError) throw retryError;
+          authData = retryData;
+        } else if (signUpError) {
+          throw signUpError;
+        } else {
+          authData = signUpData;
+        }
+      } else if (signInError) {
+        throw signInError;
       }
 
-      if (!signInData?.user) {
+      if (!authData?.user) {
         throw new Error("Failed to authenticate user");
       }
 
@@ -138,7 +152,7 @@ export default function UserLogin() {
       const { data: bookingsData } = await supabase
         .from('bookings')
         .select('id')
-        .eq('user_id', signInData.user.id)
+        .eq('user_id', authData.user.id)
         .limit(1);
 
       // Check if there's a pending partner
