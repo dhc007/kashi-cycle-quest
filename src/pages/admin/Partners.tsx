@@ -102,8 +102,10 @@ const PartnersContent = () => {
 
   const handleSave = async () => {
     try {
-      // Validate phone number
-      if (!formData.phone_number || formData.phone_number.length !== 10) {
+      // Clean and validate phone number - remove all non-digit characters
+      const cleanPhone = formData.phone_number?.replace(/\D/g, '') || '';
+      
+      if (!cleanPhone || cleanPhone.length !== 10) {
         toast({
           title: "Validation Error",
           description: "Please enter a valid 10-digit phone number",
@@ -118,7 +120,7 @@ const PartnersContent = () => {
           .update({
             name: formData.name,
             email: formData.email || null,
-            phone_number: formData.phone_number,
+            phone_number: cleanPhone,
             address: formData.address,
             landmark: formData.landmark || null,
             city: formData.city,
@@ -144,7 +146,7 @@ const PartnersContent = () => {
           .insert([{
             name: formData.name!,
             email: formData.email || null,
-            phone_number: formData.phone_number!,
+            phone_number: cleanPhone,
             address: formData.address!,
             landmark: formData.landmark || null,
             city: formData.city!,

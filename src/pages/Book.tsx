@@ -1482,43 +1482,70 @@ const Book = () => {
                             </CardContent>
                           </Card>
 
-                          {/* Identity Verification - Only show if not already provided */}
-                          {(!profileData?.live_photo_url || !profileData?.id_proof_url) && (
-                            <Card>
-                              <CardHeader>
-                                <CardTitle className="text-base">Identity Verification</CardTitle>
-                              </CardHeader>
-                              <CardContent className="space-y-4">
-                                {!profileData?.live_photo_url && (
-                                  <FileUpload
-                                    label="Live Photo"
-                                    accept="image/jpeg,image/png"
-                                    onFileSelect={setLivePhoto}
-                                    maxSize={10}
-                                    captureMode="camera"
-                                    description="Use your camera to capture a live photo of yourself"
-                                  />
-                                )}
+                          {/* Identity Verification - Always show */}
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="text-base">Identity Verification</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              {!session && (
+                                <PhoneInput
+                                  value={phoneNumber}
+                                  onChange={setPhoneNumber}
+                                  onVerified={setPhoneVerified}
+                                  verified={phoneVerified}
+                                />
+                              )}
 
-                                {!profileData?.id_proof_url && (
-                                  <FileUpload
-                                    label="ID Proof (Aadhar Card)"
-                                    accept="image/jpeg,image/png,application/pdf"
-                                    onFileSelect={setIdProof}
-                                    maxSize={10}
-                                    captureMode="both"
-                                    description="Capture with camera or upload your Aadhar Card"
-                                  />
+                              {/* Live Photo - Always allow updating */}
+                              <div className="space-y-2">
+                                {profileData?.live_photo_url && (
+                                  <div className="space-y-2">
+                                    <Label>Current Live Photo</Label>
+                                    <div className="flex items-start gap-4">
+                                      <img 
+                                        src={profileData.live_photo_url} 
+                                        alt="Current live photo" 
+                                        className="w-32 h-32 object-cover rounded border"
+                                      />
+                                      <div className="flex-1">
+                                        <p className="text-sm text-muted-foreground mb-2">
+                                          Your previous live photo is shown. Upload a new one to update it.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
                                 )}
+                                <FileUpload
+                                  label={profileData?.live_photo_url ? "Update Live Photo" : "Live Photo"}
+                                  accept="image/*"
+                                  onFileSelect={setLivePhoto}
+                                  maxSize={10}
+                                  captureMode="camera"
+                                  description="Capture a live photo with front camera"
+                                />
+                              </div>
 
-                                {profileData?.live_photo_url && profileData?.id_proof_url && (
+                              {/* ID Proof - Only ask once */}
+                              {profileData?.id_proof_url ? (
+                                <div className="space-y-2">
+                                  <Label>ID Proof (Stored)</Label>
                                   <p className="text-sm text-green-600 dark:text-green-400">
-                                    ✓ Identity verification already completed
+                                    ✓ ID proof already uploaded and verified
                                   </p>
-                                )}
-                              </CardContent>
-                            </Card>
-                          )}
+                                </div>
+                              ) : (
+                                <FileUpload
+                                  label="ID Proof (Aadhar Card)"
+                                  accept="image/jpeg,image/png,application/pdf"
+                                  onFileSelect={setIdProof}
+                                  maxSize={10}
+                                  captureMode="both"
+                                  description="Capture with camera or upload your Aadhar Card"
+                                />
+                              )}
+                            </CardContent>
+                          </Card>
 
                           {/* Emergency Contact */}
                           <Card>
@@ -1774,30 +1801,32 @@ const Book = () => {
                         )}
 
                         <div className="flex justify-between pt-2 border-t">
-                          <span className="text-muted-foreground">Subtotal</span>
+                          <span className="text-muted-foreground">Subtotal (Rental + Accessories)</span>
                           <span className="font-semibold">₹{getBasePrice() + accessoriesTotal}</span>
                         </div>
 
-                        <div className="flex justify-between text-primary font-bold">
-                          <span>Cycle Security Deposit (×{numberOfPeople})</span>
-                          <span>₹{getSecurityDeposit()}</span>
-                        </div>
-
-                        {accessoriesDeposit > 0 && (
-                          <div className="flex justify-between text-primary font-bold">
-                            <span>Accessories Security Deposit</span>
-                            <span>₹{accessoriesDeposit}</span>
-                          </div>
-                        )}
-
                         <div className="pt-3 border-t">
                           <div className="flex justify-between text-lg font-bold">
-                            <span>Total Amount</span>
+                            <span>Pay Online Now</span>
                             <span className="text-primary">
-                              ₹{getBasePrice() + accessoriesTotal + getSecurityDeposit() + accessoriesDeposit}
+                              ₹{getBasePrice() + accessoriesTotal}
                             </span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">*Security deposit is fully refundable</p>
+                        </div>
+
+                        <div className="pt-3 border-t space-y-2">
+                          <p className="text-sm font-semibold text-muted-foreground">Security Deposit (Payable at Pickup)</p>
+                          <div className="flex justify-between text-primary">
+                            <span>Cycle Deposit (×{numberOfPeople})</span>
+                            <span className="font-bold">₹{getSecurityDeposit()}</span>
+                          </div>
+                          {accessoriesDeposit > 0 && (
+                            <div className="flex justify-between text-primary">
+                              <span>Accessories Deposit</span>
+                              <span className="font-bold">₹{accessoriesDeposit}</span>
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-2">*Fully refundable after cycle return & inspection</p>
                         </div>
                       </div>
                     )}

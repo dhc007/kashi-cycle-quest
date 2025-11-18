@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Users as UsersIcon, UserX, Mail, Phone, Search, Eye, MoreVertical } from "lucide-react";
+import { Users as UsersIcon, UserX, Mail, Phone, Search, Eye, MoreVertical, Camera } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -370,26 +370,128 @@ const Users = () => {
                 <div className="flex gap-4">
                   {selectedUser.profile?.live_photo_url && (
                     <div>
-                      <p className="text-xs mb-1">Live Photo</p>
-                      <a href={selectedUser.profile.live_photo_url} target="_blank" rel="noopener noreferrer">
+                      <p className="text-xs mb-1 font-medium">Live Photo</p>
+                      <button
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = async (e: any) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              try {
+                                const fileName = `${Date.now()}_${file.name}`;
+                                const { error: uploadError } = await supabase.storage
+                                  .from('booking-documents')
+                                  .upload(fileName, file);
+                                
+                                if (uploadError) throw uploadError;
+                                
+                                const { data: { publicUrl } } = supabase.storage
+                                  .from('booking-documents')
+                                  .getPublicUrl(fileName);
+                                
+                                const { error: updateError } = await supabase
+                                  .from('profiles')
+                                  .update({ live_photo_url: publicUrl })
+                                  .eq('user_id', selectedUser.id);
+                                
+                                if (updateError) throw updateError;
+                                
+                                toast({
+                                  title: "Success",
+                                  description: "Live photo updated successfully",
+                                });
+                                
+                                // Refresh the user list
+                                await loadUsers();
+                                setViewDialogOpen(false);
+                              } catch (error: any) {
+                                toast({
+                                  title: "Error",
+                                  description: error.message,
+                                  variant: "destructive",
+                                });
+                              }
+                            }
+                          };
+                          input.click();
+                        }}
+                        className="relative group cursor-pointer"
+                      >
                         <img 
                           src={selectedUser.profile.live_photo_url} 
                           alt="Live Photo" 
-                          className="w-32 h-32 object-cover rounded border"
+                          className="w-32 h-32 object-cover rounded border group-hover:opacity-75 transition-opacity"
                         />
-                      </a>
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded">
+                          <Camera className="w-6 h-6 text-white" />
+                        </div>
+                      </button>
+                      <p className="text-xs text-muted-foreground mt-1">Click to update</p>
                     </div>
                   )}
                   {selectedUser.profile?.id_proof_url && (
                     <div>
-                      <p className="text-xs mb-1">ID Proof</p>
-                      <a href={selectedUser.profile.id_proof_url} target="_blank" rel="noopener noreferrer">
+                      <p className="text-xs mb-1 font-medium">ID Proof</p>
+                      <button
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/jpeg,image/png,application/pdf';
+                          input.onchange = async (e: any) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              try {
+                                const fileName = `${Date.now()}_${file.name}`;
+                                const { error: uploadError } = await supabase.storage
+                                  .from('booking-documents')
+                                  .upload(fileName, file);
+                                
+                                if (uploadError) throw uploadError;
+                                
+                                const { data: { publicUrl } } = supabase.storage
+                                  .from('booking-documents')
+                                  .getPublicUrl(fileName);
+                                
+                                const { error: updateError } = await supabase
+                                  .from('profiles')
+                                  .update({ id_proof_url: publicUrl })
+                                  .eq('user_id', selectedUser.id);
+                                
+                                if (updateError) throw updateError;
+                                
+                                toast({
+                                  title: "Success",
+                                  description: "ID proof updated successfully",
+                                });
+                                
+                                // Refresh the user list
+                                await loadUsers();
+                                setViewDialogOpen(false);
+                              } catch (error: any) {
+                                toast({
+                                  title: "Error",
+                                  description: error.message,
+                                  variant: "destructive",
+                                });
+                              }
+                            }
+                          };
+                          input.click();
+                        }}
+                        className="relative group cursor-pointer"
+                      >
                         <img 
                           src={selectedUser.profile.id_proof_url} 
                           alt="ID Proof" 
-                          className="w-32 h-32 object-cover rounded border"
+                          className="w-32 h-32 object-cover rounded border group-hover:opacity-75 transition-opacity"
                         />
-                      </a>
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 rounded">
+                          <Camera className="w-6 h-6 text-white" />
+                        </div>
+                      </button>
+                      <p className="text-xs text-muted-foreground mt-1">Click to update</p>
                     </div>
                   )}
                 </div>
