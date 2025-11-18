@@ -103,9 +103,9 @@ const Payment = () => {
     termsVersion = "v1.0",
   } = bookingData;
 
-  // Calculate accessories security deposit
+  // Calculate accessories security deposit (quantity * security deposit per accessory)
   const accessoriesDeposit = accessories.reduce((sum: number, acc: any) => {
-    return sum + (acc.securityDeposit || 0);
+    return sum + ((acc.quantity || 0) * (acc.securityDeposit || 0));
   }, 0);
   
   const subtotal = basePrice + accessoriesTotal;
@@ -512,13 +512,13 @@ const Payment = () => {
                       )}
                     </div>
                     <div className="text-[10px] md:text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-2 py-1.5 rounded">
-                      💳 <span className="font-medium">Payable during pickup</span> - This refundable deposit will be collected at the time of cycle pickup and refunded after safe return.
+                      💳 <span className="font-medium">Payable during handover</span> - This refundable deposit will be collected at the time of cycle handover and refunded after safe return.
                     </div>
                   </div>
                   
                   {/* Total Amount Summary */}
                   <div className="text-[10px] md:text-xs text-center text-muted-foreground bg-muted/50 -mx-4 md:-mx-6 px-4 md:px-6 py-2 rounded">
-                    Total Booking Value: ₹{totalAmount.toFixed(2)} (₹{onlinePaymentAmount.toFixed(2)} online + ₹{totalDeposit.toFixed(2)} at pickup)
+                    Total Booking Value: ₹{totalAmount.toFixed(2)} (₹{onlinePaymentAmount.toFixed(2)} online + ₹{totalDeposit.toFixed(2)} at handover)
                   </div>
                 </div>
 
