@@ -93,10 +93,15 @@ export default function UserLogin() {
       }
 
       // OTP verified! Now authenticate user
-      // Using phone as email format for Supabase auth
       const email = `${phoneNumber}@bolt91.app`;
-      // Use cryptographically secure random password
-      const password = crypto.randomUUID() + crypto.randomUUID();
+      
+      // Use a deterministic password based on phone number
+      // This ensures the same password is used for sign-in and sign-up
+      const encoder = new TextEncoder();
+      const data_buffer = encoder.encode(`bolt91_secure_${phoneNumber}_key`);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data_buffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const password = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32);
 
       // Try to sign in first
       let { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
@@ -120,7 +125,7 @@ export default function UserLogin() {
         signInData = signUpData;
       }
 
-      if (!signInData.user) {
+      if (!signInData?.user) {
         throw new Error("Failed to authenticate user");
       }
 

@@ -25,15 +25,28 @@ const AdminLogin = () => {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Auth error:', error);
+        throw error;
+      }
+
+      if (!data?.user) {
+        throw new Error('No user data returned');
+      }
 
       // Check if user has admin role
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', data.user.id)
         .eq('role', 'admin')
-        .single();
+        .maybeSingle();
+
+      if (roleError) {
+        console.error('Role check error:', roleError);
+        await supabase.auth.signOut();
+        throw new Error('Failed to verify admin privileges');
+      }
 
       if (!roleData) {
         await supabase.auth.signOut();
