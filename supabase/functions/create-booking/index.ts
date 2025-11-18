@@ -213,6 +213,8 @@ serve(async (req) => {
         has_insurance: bookingData.has_insurance,
         payment_status: 'pending',
         booking_status: 'confirmed',
+        terms_accepted_at: bookingData.terms_accepted_at || new Date().toISOString(),
+        terms_version: bookingData.terms_version || 'v1.0',
       })
       .select()
       .single();

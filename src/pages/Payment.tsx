@@ -99,6 +99,8 @@ const Payment = () => {
     securityDeposit = 0,
     livePhotoUrl,
     idProofUrl,
+    termsAcceptedAt,
+    termsVersion = "v1.0",
   } = bookingData;
 
   const subtotal = basePrice + accessoriesTotal;
@@ -229,6 +231,8 @@ const Payment = () => {
           coupon_id: appliedCoupon?.id || null,
           coupon_code: appliedCoupon?.code || null,
           discount_amount: discount,
+          terms_accepted_at: termsAcceptedAt,
+          terms_version: termsVersion,
           accessories: accessories.map((acc: any) => ({
             id: acc.id,
             name: acc.name,
