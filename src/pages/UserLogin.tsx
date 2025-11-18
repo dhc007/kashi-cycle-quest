@@ -83,12 +83,16 @@ export default function UserLogin() {
 
       if (error) throw error;
       if (!data?.success) {
+        const isExpiredOrUsed = data?.status === 404;
         toast({
-          title: "Invalid OTP",
-          description: "The code you entered is incorrect or has expired",
+          title: isExpiredOrUsed ? "OTP Expired" : "Invalid OTP",
+          description: isExpiredOrUsed
+            ? "This code has expired or was already used. Please request a new OTP. Codes are valid for 5 minutes."
+            : "The code you entered is incorrect. Please try again.",
           variant: "destructive",
         });
         setLoading(false);
+        setOtpSent(false);
         return;
       }
 
