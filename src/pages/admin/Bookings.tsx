@@ -46,7 +46,8 @@ interface Booking {
   refund_amount: number;
   cancellation_requested_at: string | null;
   coupon_code: string | null;
-  discount_amount: number;
+  coupon_id: string | null;
+  discount_amount: number | null;
   profiles?: {
     first_name: string;
     last_name: string;
@@ -69,6 +70,12 @@ interface Booking {
     name: string;
     address: string;
   };
+  coupons?: {
+    code: string;
+    discount_type: string;
+    discount_value: number;
+    description: string | null;
+  } | null;
   booking_accessories?: Array<{
     quantity: number;
     days: number;
@@ -116,7 +123,8 @@ const BookingsContent = () => {
           *,
           cycles (name, model),
           partners (name, city),
-          pickup_locations (name, address)
+          pickup_locations (name, address),
+          coupons (code, discount_type, discount_value, description)
         `);
       
       // Filter by partner if specified
@@ -844,10 +852,24 @@ const BookingsContent = () => {
                     <span className="text-muted-foreground">GST (18%)</span>
                     <span className="font-medium">₹{selectedBooking.gst}</span>
                   </div>
-                  {selectedBooking.coupon_code && selectedBooking.discount_amount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Discount (Coupon: {selectedBooking.coupon_code})</span>
-                      <span className="font-medium">-₹{selectedBooking.discount_amount}</span>
+                  {selectedBooking.coupon_code && selectedBooking.discount_amount && selectedBooking.discount_amount > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-green-600 dark:text-green-400">
+                        <span>
+                          Discount (Coupon: {selectedBooking.coupon_code}
+                          {selectedBooking.coupons && (
+                            <> - {selectedBooking.coupons.discount_type === 'percentage' 
+                              ? `${selectedBooking.coupons.discount_value}%` 
+                              : `₹${selectedBooking.coupons.discount_value}`}</>
+                          )})
+                        </span>
+                        <span className="font-medium">-₹{selectedBooking.discount_amount}</span>
+                      </div>
+                      {selectedBooking.coupons?.description && (
+                        <p className="text-xs text-muted-foreground italic pl-0">
+                          {selectedBooking.coupons.description}
+                        </p>
+                      )}
                     </div>
                   )}
                   <div className="flex justify-between pt-2 border-t">
