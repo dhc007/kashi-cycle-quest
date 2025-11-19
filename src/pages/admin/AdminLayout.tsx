@@ -58,8 +58,8 @@ const AdminLayout = () => {
 
   return (
     <div className={`min-h-screen flex ${adminTheme}`}>
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-border bg-card flex flex-col">
+      {/* Sidebar - Hidden on mobile, visible on desktop */}
+      <aside className="hidden lg:flex w-64 border-r border-border bg-card flex-col">
         <div className="p-6 border-b border-border">
           <img src={bolt91Logo} alt="Bolt91 Admin" className="h-10" />
           <p className="text-xs text-muted-foreground mt-2">Admin Panel</p>
@@ -100,8 +100,31 @@ const AdminLayout = () => {
         </div>
       </aside>
 
+      {/* Mobile Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border">
+        <nav className="flex overflow-x-auto py-2 px-2 gap-1">
+          {menuItems.slice(0, 6).map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex flex-col items-center justify-center min-w-[60px] px-2 py-2 rounded-md transition-colors ${
+                  isActive 
+                    ? "bg-primary text-primary-foreground" 
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+                <span className="text-[10px] mt-1 text-center">{item.label.split(' ')[0]}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-background">
+      <main className="flex-1 overflow-auto bg-background pb-20 lg:pb-0">
         <Outlet />
       </main>
     </div>
