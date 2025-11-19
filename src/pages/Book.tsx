@@ -1839,11 +1839,18 @@ const Book = () => {
                         {accessories
                           .filter((acc) => acc.quantity > 0 && acc.days > 0)
                           .map((acc) => (
-                            <div key={acc.id} className="flex justify-between text-xs ml-6">
-                              <span className="text-muted-foreground">
-                                {acc.name} (×{acc.quantity}, {acc.days}d)
-                              </span>
-                              <span>₹{acc.pricePerDay * acc.quantity * acc.days}</span>
+                            <div key={acc.id} className="space-y-0.5 ml-6">
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">
+                                  {acc.name} (×{acc.quantity}, {acc.days}d)
+                                </span>
+                                <span>₹{acc.pricePerDay * acc.quantity * acc.days}</span>
+                              </div>
+                              {acc.securityDeposit > 0 && (
+                                <div className="text-xs text-amber-600">
+                                  SD: ₹{acc.securityDeposit * acc.quantity}
+                                </div>
+                              )}
                             </div>
                           ))}
                       </div>

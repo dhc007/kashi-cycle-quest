@@ -76,6 +76,7 @@ interface Booking {
     total_cost: number;
     accessories: {
       name: string;
+      security_deposit: number;
     };
   }>;
 }
@@ -138,7 +139,7 @@ const BookingsContent = () => {
 
           const { data: accessories } = await supabase
             .from('booking_accessories')
-            .select('quantity, days, price_per_day, total_cost, accessories(name)')
+            .select('quantity, days, price_per_day, total_cost, accessories(name, security_deposit)')
             .eq('booking_id', booking.id);
           
           return {
@@ -840,7 +841,7 @@ const BookingsContent = () => {
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">GST</span>
+                    <span className="text-muted-foreground">GST (18%)</span>
                     <span className="font-medium">₹{selectedBooking.gst}</span>
                   </div>
                   {selectedBooking.coupon_code && selectedBooking.discount_amount > 0 && (
@@ -850,15 +851,44 @@ const BookingsContent = () => {
                     </div>
                   )}
                   <div className="flex justify-between pt-2 border-t">
-                    <span className="font-semibold">Subtotal</span>
+                    <span className="font-semibold">Online Payment</span>
                     <span className="font-semibold">₹{(selectedBooking.cycle_rental_cost + selectedBooking.accessories_cost + selectedBooking.insurance_cost + selectedBooking.gst - (selectedBooking.discount_amount || 0)).toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Security Deposit (Refundable)</span>
-                    <span className="font-medium text-green-600">₹{selectedBooking.security_deposit}</span>
+                  
+                  {/* Security Deposit Breakdown */}
+                  <div className="pt-2 border-t space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground font-medium">Security Deposit (To be collected at pickup):</span>
+                      <span></span>
+                    </div>
+                    <div className="flex justify-between text-sm pl-4">
+                      <span className="text-muted-foreground">Cycle Security Deposit</span>
+                      <span className="font-medium text-amber-600">
+                        ₹{(() => {
+                          // Calculate cycle deposit from accessories
+                          const accessoriesDeposit = selectedBooking.booking_accessories?.reduce((sum, acc) => 
+                            sum + (acc.accessories.security_deposit * acc.quantity), 0) || 0;
+                          return (selectedBooking.security_deposit - accessoriesDeposit).toFixed(2);
+                        })()}
+                      </span>
+                    </div>
+                    {selectedBooking.booking_accessories && selectedBooking.booking_accessories.length > 0 && (
+                      <div className="flex justify-between text-sm pl-4">
+                        <span className="text-muted-foreground">Accessories Security Deposit</span>
+                        <span className="font-medium text-amber-600">
+                          ₹{selectedBooking.booking_accessories.reduce((sum, acc) => 
+                            sum + (acc.accessories.security_deposit * acc.quantity), 0).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm font-semibold pl-4 pt-1 border-t">
+                      <span className="text-muted-foreground">Total Security Deposit</span>
+                      <span className="text-amber-600">₹{selectedBooking.security_deposit}</span>
+                    </div>
                   </div>
+                  
                   <div className="flex justify-between pt-2 border-t-2 border-primary">
-                    <span className="text-lg font-bold">Total Amount</span>
+                    <span className="text-lg font-bold">Total Amount (Online + Deposit)</span>
                     <span className="text-lg font-bold">₹{selectedBooking.total_amount}</span>
                   </div>
                   <div className="flex justify-between pt-1">

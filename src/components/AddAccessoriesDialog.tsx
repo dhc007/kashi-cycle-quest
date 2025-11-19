@@ -14,6 +14,7 @@ interface Accessory {
   price_per_day: number;
   image_url: string | null;
   available_quantity: number;
+  security_deposit: number;
 }
 
 interface AddAccessoriesDialogProps {
@@ -80,7 +81,7 @@ export function AddAccessoriesDialog({
       setLoading(true);
       const { data, error } = await supabase
         .from('accessories')
-        .select('id, name, price_per_day, image_url, available_quantity')
+        .select('id, name, price_per_day, image_url, available_quantity, security_deposit')
         .eq('is_active', true)
         .gt('available_quantity', 0);
 
@@ -305,6 +306,11 @@ export function AddAccessoriesDialog({
                         <p className="text-sm text-muted-foreground">
                           ₹{accessory.price_per_day}/day
                         </p>
+                        {accessory.security_deposit > 0 && (
+                          <p className="text-xs text-amber-600 font-medium">
+                            SD: ₹{accessory.security_deposit}
+                          </p>
+                        )}
                       </div>
 
                       {selected && (

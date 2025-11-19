@@ -470,10 +470,21 @@ const Payment = () => {
                     <span>₹{gst.toFixed(2)}</span>
                   </div>
 
-                  {discount > 0 && (
-                    <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
-                      <span>Discount ({appliedCoupon?.code})</span>
-                      <span>-₹{discount.toFixed(2)}</span>
+                  {discount > 0 && appliedCoupon && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
+                        <span>
+                          Discount ({appliedCoupon.code} - {appliedCoupon.discount_type === 'percentage' 
+                            ? `${appliedCoupon.discount_value}%` 
+                            : `₹${appliedCoupon.discount_value}`})
+                        </span>
+                        <span>-₹{discount.toFixed(2)}</span>
+                      </div>
+                      {appliedCoupon.description && (
+                        <p className="text-xs text-muted-foreground italic pl-0">
+                          {appliedCoupon.description}
+                        </p>
+                      )}
                     </div>
                   )}
 
