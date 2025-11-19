@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
-import { Plus, Pencil, Trash2, QrCode, MoreVertical, Download, Copy, BarChart3 } from "lucide-react";
+import { Plus, Pencil, Trash2, QrCode, MoreVertical, Download, Copy, BarChart3, Eye } from "lucide-react";
 import { FileUpload } from "@/components/FileUpload";
 import {
   DropdownMenu,
@@ -47,8 +47,10 @@ const PartnersContent = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [formData, setFormData] = useState<Partial<Partner>>({});
   const { toast } = useToast();
   const { canEdit } = useUserRoles();
@@ -252,6 +254,7 @@ const PartnersContent = () => {
       google_maps_link: partner.google_maps_link,
       partner_type: partner.partner_type,
       is_active: partner.is_active,
+      logo_url: partner.logo_url,
     });
     setDialogOpen(true);
   };
@@ -571,6 +574,13 @@ const PartnersContent = () => {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedPartner(partner);
+                              setViewDialogOpen(true);
+                            }}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              View
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditDialog(partner)}>
                               <Pencil className="w-4 h-4 mr-2" />
                               Edit
@@ -593,6 +603,88 @@ const PartnersContent = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Partner View Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Partner Details</DialogTitle>
+          </DialogHeader>
+          {selectedPartner && (
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                {selectedPartner.logo_url && (
+                  <img 
+                    src={selectedPartner.logo_url} 
+                    alt={selectedPartner.name}
+                    className="w-20 h-20 object-contain rounded border"
+                  />
+                )}
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold">{selectedPartner.name}</h3>
+                  <Badge variant="outline" className="mt-1">
+                    {selectedPartner.partner_type === 'guest_house' ? 'Guest House' : 'Cafe/Retail'}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Partner Code</p>
+                  <Badge variant="secondary" className="font-mono mt-1">
+                    {selectedPartner.partner_code}
+                  </Badge>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Status</p>
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs mt-1 ${selectedPartner.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {selectedPartner.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Phone Number</p>
+                  <p className="text-base">{selectedPartner.phone_number}</p>
+                </div>
+                {selectedPartner.email && (
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Email</p>
+                    <p className="text-base">{selectedPartner.email}</p>
+                  </div>
+                )}
+                <div className="col-span-2">
+                  <p className="text-sm font-medium text-muted-foreground">Address</p>
+                  <p className="text-base">
+                    {selectedPartner.address}
+                    {selectedPartner.landmark && `, ${selectedPartner.landmark}`}
+                  </p>
+                  <p className="text-base">
+                    {selectedPartner.city}, {selectedPartner.state} - {selectedPartner.pincode}
+                  </p>
+                </div>
+                {selectedPartner.google_maps_link && (
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground">Google Maps</p>
+                    <a 
+                      href={selectedPartner.google_maps_link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      View on Google Maps
+                    </a>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Bookings</p>
+                  <p className="text-lg font-semibold text-primary">
+                    {partnerStats[selectedPartner.id] || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
         <DialogContent>
