@@ -1220,6 +1220,11 @@ const Book = () => {
                                           <p className="text-sm text-muted-foreground">
                                             ₹{accessory.pricePerDay}/day per person
                                           </p>
+                                          {accessory.securityDeposit > 0 && (
+                                            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5">
+                                              SD: ₹{accessory.securityDeposit} per person
+                                            </p>
+                                          )}
                                         </div>
                                         <div className="text-right sm:hidden">
                                           {accessory.quantity > 0 ? (
@@ -1230,6 +1235,11 @@ const Book = () => {
                                               <p className="text-xs text-muted-foreground">
                                                 {accessory.quantity} × {accessory.days}d
                                               </p>
+                                              {accessory.securityDeposit > 0 && (
+                                                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                                  SD: ₹{accessory.securityDeposit * accessory.quantity}
+                                                </p>
+                                              )}
                                             </div>
                                           ) : (
                                             <span className="text-muted-foreground text-sm">Not added</span>
@@ -1317,6 +1327,11 @@ const Book = () => {
                                           <p className="text-xs text-muted-foreground">
                                             {accessory.quantity} × {accessory.days}d
                                           </p>
+                                          {accessory.securityDeposit > 0 && (
+                                            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-1">
+                                              SD: ₹{accessory.securityDeposit * accessory.quantity}
+                                            </p>
+                                          )}
                                         </div>
                                       ) : (
                                         <span className="text-muted-foreground text-sm">Not added</span>
