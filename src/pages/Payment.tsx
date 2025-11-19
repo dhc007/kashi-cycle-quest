@@ -304,9 +304,12 @@ const Payment = () => {
                 ...bookingData,
                 totalAmount,
                 onlinePaymentAmount,
-                securityDeposit,
+                securityDeposit: totalDeposit,
                 paymentId: response.razorpay_payment_id,
                 bookingId: booking.booking_id,
+                appliedCoupon,
+                discount,
+                gst,
               },
             });
           } catch (error: any) {
