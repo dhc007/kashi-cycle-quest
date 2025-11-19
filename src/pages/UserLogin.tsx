@@ -120,26 +120,31 @@ export default function UserLogin() {
         description: "You have been successfully logged in",
       });
 
-      // Check if user has any bookings
-      const { data: bookingsData } = await supabase
-        .from('bookings')
-        .select('id')
-        .eq('user_id', data.user.id)
-        .limit(1);
-
       // Check if there's a pending partner
       const pendingPartner = localStorage.getItem('pendingPartner');
-      const partnerParam = pendingPartner ? `?partner=${pendingPartner}` : '';
       
       // Clear pending partner after using it
       if (pendingPartner) {
         localStorage.removeItem('pendingPartner');
       }
 
-      if (bookingsData && bookingsData.length > 0) {
-        navigate(`/bookings${partnerParam}`);
+      // If partner exists, ALWAYS go to book page with partner (even for existing users)
+      if (pendingPartner) {
+        navigate(`/book?partner=${pendingPartner}`);
       } else {
-        navigate(`/book${partnerParam}`);
+        // No partner - check if user has bookings to decide where to navigate
+        const { data: bookingsData } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .limit(1);
+
+        // If user has bookings, navigate to bookings page, otherwise to book page
+        if (bookingsData && bookingsData.length > 0) {
+          navigate('/bookings');
+        } else {
+          navigate('/book');
+        }
       }
     } catch (error: any) {
       toast({
