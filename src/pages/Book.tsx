@@ -145,9 +145,11 @@ const Book = () => {
         title: "Login Required",
         description: "Please login to book a ride",
       });
-      navigate("/user-login");
+      // Preserve partner parameter when redirecting to login
+      const loginUrl = partnerId ? `/user-login?partner=${partnerId}` : "/user-login";
+      navigate(loginUrl);
     }
-  }, [user, authChecking, navigate, toast]);
+  }, [user, authChecking, navigate, toast, partnerId]);
 
   // Fetch profile data when user is authenticated
   useEffect(() => {
@@ -736,6 +738,11 @@ const Book = () => {
       });
     }
   };
+
+  // Don't show loading screen if auth is still checking or user is not authenticated
+  if (authChecking || !user) {
+    return null;
+  }
 
   if (loading) {
     return (
