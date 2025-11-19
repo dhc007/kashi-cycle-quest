@@ -24,6 +24,7 @@ const Confirmation = () => {
     paymentId,
     accessories = [],
     pickupLocation,
+    partnerData,
   } = bookingData;
 
   useEffect(() => {
@@ -128,6 +129,31 @@ const Confirmation = () => {
                       )}
                     </div>
                   </div>
+
+                  {partnerData && (
+                    <div className="flex items-start gap-3">
+                      <div className="w-5 h-5 mt-0.5 flex items-center justify-center">
+                        {partnerData.logo_url ? (
+                          <img 
+                            src={partnerData.logo_url} 
+                            alt={partnerData.name}
+                            className="w-5 h-5 object-contain rounded"
+                          />
+                        ) : (
+                          <div className="w-5 h-5 bg-primary/10 rounded flex items-center justify-center text-primary text-xs font-bold">
+                            {partnerData.name[0]}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">Booking Partner</p>
+                        <p className="text-sm text-muted-foreground font-medium">{partnerData.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {partnerData.partner_type.replace('/', ' / ')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col items-center justify-center border-l pl-6">

@@ -673,6 +673,12 @@ const Book = () => {
         returnDate: returnDate ? format(returnDate, "yyyy-MM-dd") : null,
         returnTime: selectedTime,
         partnerId,
+        partnerData: partnerData ? {
+          id: partnerData.id,
+          name: partnerData.name,
+          logo_url: partnerData.logo_url,
+          partner_type: partnerData.partner_type,
+        } : null,
         pickupLocationId: selectedPickupLocation?.id,
         pickupLocation: selectedPickupLocation
           ? {
