@@ -29,6 +29,8 @@ interface Booking {
   cancellation_reason: string | null;
   cancellation_fee: number | null;
   refund_amount: number | null;
+  coupon_code: string | null;
+  discount_amount: number | null;
   cycles: {
     name: string;
     model: string;
@@ -299,36 +301,57 @@ export default function ManageBooking() {
               )}
 
               <div className="border-t pt-4">
-                <h4 className="font-semibold mb-2">Cost Breakdown</h4>
-                <div className="space-y-1 text-sm">
+                <h4 className="font-semibold mb-3">Payment Summary</h4>
+                <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span>Cycle Rental</span>
+                    <span className="text-muted-foreground">Cycle Rental</span>
                     <span>₹{booking.cycle_rental_cost}</span>
                   </div>
                   {booking.accessories_cost > 0 && (
                     <div className="flex justify-between">
-                      <span>Accessories</span>
+                      <span className="text-muted-foreground">Accessories</span>
                       <span>₹{booking.accessories_cost}</span>
                     </div>
                   )}
                   {booking.has_insurance && (
                     <div className="flex justify-between">
-                      <span>Insurance</span>
+                      <span className="text-muted-foreground">Insurance</span>
                       <span>₹{booking.insurance_cost}</span>
                     </div>
                   )}
+                  <div className="flex justify-between border-t pt-2">
+                    <span className="font-medium">Subtotal</span>
+                    <span className="font-medium">₹{booking.cycle_rental_cost + booking.accessories_cost + booking.insurance_cost}</span>
+                  </div>
                   <div className="flex justify-between">
-                    <span>GST (18%)</span>
+                    <span className="text-muted-foreground">GST (18%)</span>
                     <span>₹{booking.gst}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Security Deposit (Refundable)</span>
-                    <span>₹{booking.security_deposit}</span>
+                  {booking.coupon_code && booking.discount_amount && booking.discount_amount > 0 && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>Discount ({booking.coupon_code})</span>
+                      <span>-₹{booking.discount_amount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-semibold border-t pt-2 bg-primary/5 -mx-4 px-4 py-2 rounded">
+                    <span>Amount Paid Online</span>
+                    <span className="text-primary">₹{booking.cycle_rental_cost + booking.accessories_cost + booking.insurance_cost + booking.gst - (booking.discount_amount || 0)}</span>
                   </div>
-                  <div className="flex justify-between font-bold text-base pt-2 border-t">
-                    <span>Total Amount</span>
-                    <span>₹{booking.total_amount}</span>
+                  <div className="flex justify-between items-center bg-amber-50 dark:bg-amber-950 -mx-4 px-4 py-2 rounded mt-2">
+                    <span className="flex items-center gap-1 font-medium">
+                      <span className="text-amber-600 dark:text-amber-400">💰</span>
+                      <span className="text-amber-600 dark:text-amber-400">Security Deposit</span>
+                      <span className="text-xs text-muted-foreground">(Refundable)</span>
+                    </span>
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">₹{booking.security_deposit}</span>
                   </div>
+                  <div className="flex justify-between font-bold text-base pt-2 border-t-2 border-primary">
+                    <span>Total Booking Amount</span>
+                    <span className="text-primary">₹{booking.total_amount}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground italic pt-1">
+                    = Online Payment + Security Deposit (to be collected at pickup)
+                  </p>
                 </div>
               </div>
 
