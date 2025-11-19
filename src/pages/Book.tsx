@@ -345,37 +345,37 @@ const Book = () => {
   // Generate time slots based on operation hours in 30-minute intervals
   const generateTimeSlots = () => {
     const slots = [];
-    
+
     // Parse operation hours (format: "9:00 AM" to "7:00 PM")
     const parseTime = (timeStr: string) => {
-      const [time, period] = timeStr.split(' ');
-      const [hours, minutes] = time.split(':').map(Number);
+      const [time, period] = timeStr.split(" ");
+      const [hours, minutes] = time.split(":").map(Number);
       let hour24 = hours;
-      if (period === 'PM' && hours !== 12) hour24 = hours + 12;
-      if (period === 'AM' && hours === 12) hour24 = 0;
+      if (period === "PM" && hours !== 12) hour24 = hours + 12;
+      if (period === "AM" && hours === 12) hour24 = 0;
       return { hour: hour24, minute: minutes };
     };
 
     const startTime = parseTime(operationHours.start_display);
     const endTime = parseTime(operationHours.end_display);
-    
+
     let currentHour = startTime.hour;
     let currentMinute = startTime.minute;
-    
+
     while (currentHour < endTime.hour || (currentHour === endTime.hour && currentMinute <= endTime.minute)) {
       const time = `${currentHour.toString().padStart(2, "0")}:${currentMinute.toString().padStart(2, "0")}`;
       const period = currentHour >= 12 ? "PM" : "AM";
       const displayHour = currentHour > 12 ? currentHour - 12 : currentHour === 0 ? 12 : currentHour;
       const displayTime = `${displayHour}:${currentMinute.toString().padStart(2, "0")} ${period}`;
       slots.push({ value: time, label: displayTime });
-      
+
       currentMinute += 30;
       if (currentMinute >= 60) {
         currentMinute = 0;
         currentHour++;
       }
     }
-    
+
     return slots;
   };
 
@@ -441,7 +441,10 @@ const Book = () => {
   const accessoriesTotal = accessories.reduce((sum, acc) => sum + acc.quantity * acc.pricePerDay * acc.days, 0);
 
   // Calculate accessories security deposit (quantity * security deposit)
-  const accessoriesDeposit = accessories.reduce((sum, acc) => sum + (acc.quantity > 0 ? acc.quantity * acc.securityDeposit : 0), 0);
+  const accessoriesDeposit = accessories.reduce(
+    (sum, acc) => sum + (acc.quantity > 0 ? acc.quantity * acc.securityDeposit : 0),
+    0,
+  );
 
   // Handle accessory quantity change
   const updateAccessoryQuantity = (id: string, change: number) => {
@@ -675,12 +678,14 @@ const Book = () => {
         returnDate: returnDate ? format(returnDate, "yyyy-MM-dd") : null,
         returnTime: selectedTime,
         partnerId,
-        partnerData: partnerData ? {
-          id: partnerData.id,
-          name: partnerData.name,
-          logo_url: partnerData.logo_url,
-          partner_type: partnerData.partner_type,
-        } : null,
+        partnerData: partnerData
+          ? {
+              id: partnerData.id,
+              name: partnerData.name,
+              logo_url: partnerData.logo_url,
+              partner_type: partnerData.partner_type,
+            }
+          : null,
         pickupLocationId: selectedPickupLocation?.id,
         pickupLocation: selectedPickupLocation
           ? {
@@ -801,8 +806,8 @@ const Book = () => {
                         <div className="flex items-start gap-4">
                           {partnerData.logo_url && (
                             <div className="flex-shrink-0">
-                              <img 
-                                src={partnerData.logo_url} 
+                              <img
+                                src={partnerData.logo_url}
                                 alt={`${partnerData.name} logo`}
                                 className="h-16 w-16 object-contain rounded-lg bg-background p-2 border"
                               />
@@ -951,7 +956,8 @@ const Book = () => {
 
                         <div className="mt-4 p-3 bg-muted rounded-lg">
                           <p className="text-sm text-muted-foreground">
-                            <strong>Operating Hours:</strong> {operationHours.start_display} - {operationHours.end_display}
+                            <strong>Operating Hours:</strong> {operationHours.start_display} -{" "}
+                            {operationHours.end_display}
                           </p>
                           <p className="text-sm text-muted-foreground mt-1">
                             <strong>Note:</strong> Minimum 2 hours advance booking required
@@ -1222,7 +1228,7 @@ const Book = () => {
                                           </p>
                                           {accessory.securityDeposit > 0 && (
                                             <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-0.5">
-                                              SD: ₹{accessory.securityDeposit} per person
+                                              Security Deposit: ₹{accessory.securityDeposit} per person
                                             </p>
                                           )}
                                         </div>
@@ -1344,11 +1350,11 @@ const Book = () => {
                         </div>
                       </div>
 
-                        <div className="flex gap-4">
+                      <div className="flex gap-4">
                         <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
                           Back
                         </Button>
-                        <Button 
+                        <Button
                           onClick={() => {
                             if (partnerId) {
                               // Skip pickup location step for partner bookings
@@ -1357,10 +1363,10 @@ const Book = () => {
                             } else {
                               setStep(5);
                             }
-                          }} 
+                          }}
                           className="flex-1 bg-gradient-primary hover:opacity-90"
                         >
-                          {partnerId ? 'Continue to Checkout' : 'Continue to Pickup Location'}
+                          {partnerId ? "Continue to Checkout" : "Continue to Pickup Location"}
                         </Button>
                       </div>
                     </div>
@@ -1486,11 +1492,11 @@ const Book = () => {
                                   </Label>
                                   <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
                                     <span className="text-sm font-medium">+91 {phoneNumber}</span>
-                                    <Badge variant="secondary" className="ml-auto text-xs">Verified</Badge>
+                                    <Badge variant="secondary" className="ml-auto text-xs">
+                                      Verified
+                                    </Badge>
                                   </div>
-                                  <p className="text-xs text-muted-foreground">
-                                    This is the number you logged in with
-                                  </p>
+                                  <p className="text-xs text-muted-foreground">This is the number you logged in with</p>
                                 </div>
                               )}
 
@@ -1553,9 +1559,9 @@ const Book = () => {
                                   <div className="space-y-2">
                                     <Label>Current Live Photo</Label>
                                     <div className="flex items-start gap-4">
-                                      <img 
-                                        src={profileData.live_photo_url} 
-                                        alt="Current live photo" 
+                                      <img
+                                        src={profileData.live_photo_url}
+                                        alt="Current live photo"
                                         className="w-32 h-32 object-cover rounded border"
                                       />
                                       <div className="flex-1">
@@ -1634,8 +1640,8 @@ const Book = () => {
                       <Card className="border-2 border-primary/20">
                         <CardContent className="pt-6">
                           <div className="flex items-start space-x-3">
-                            <Checkbox 
-                              id="terms" 
+                            <Checkbox
+                              id="terms"
                               checked={termsAccepted}
                               onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
                             />
@@ -1862,9 +1868,7 @@ const Book = () => {
                                 <span>₹{acc.pricePerDay * acc.quantity * acc.days}</span>
                               </div>
                               {acc.securityDeposit > 0 && (
-                                <div className="text-xs text-amber-600">
-                                  SD: ₹{acc.securityDeposit * acc.quantity}
-                                </div>
+                                <div className="text-xs text-amber-600">SD: ₹{acc.securityDeposit * acc.quantity}</div>
                               )}
                             </div>
                           ))}
@@ -1896,14 +1900,14 @@ const Book = () => {
                         <div className="pt-3 border-t">
                           <div className="flex justify-between text-lg font-bold">
                             <span>Pay Online Now</span>
-                            <span className="text-primary">
-                              ₹{getBasePrice() + accessoriesTotal}
-                            </span>
+                            <span className="text-primary">₹{getBasePrice() + accessoriesTotal}</span>
                           </div>
                         </div>
 
                         <div className="pt-3 border-t space-y-2">
-                          <p className="text-sm font-semibold text-muted-foreground">Security Deposit (Payable at Pickup)</p>
+                          <p className="text-sm font-semibold text-muted-foreground">
+                            Security Deposit (Payable at Pickup)
+                          </p>
                           <div className="flex justify-between text-primary">
                             <span>Cycle Deposit (×{numberOfPeople})</span>
                             <span className="font-bold">₹{getSecurityDeposit()}</span>
@@ -1914,7 +1918,9 @@ const Book = () => {
                               <span className="font-bold">₹{accessoriesDeposit}</span>
                             </div>
                           )}
-                          <p className="text-xs text-muted-foreground mt-2">*Fully refundable after cycle return & inspection</p>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            *Fully refundable after cycle return & inspection
+                          </p>
                         </div>
                       </div>
                     )}
