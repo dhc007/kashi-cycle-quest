@@ -216,6 +216,9 @@ serve(async (req) => {
         booking_status: 'confirmed',
         terms_accepted_at: bookingData.terms_accepted_at || new Date().toISOString(),
         terms_version: bookingData.terms_version || 'v1.0',
+        coupon_code: bookingData.coupon_code || null,
+        coupon_id: bookingData.coupon_id || null,
+        discount_amount: bookingData.discount_amount || 0,
       })
       .select()
       .single();
