@@ -78,6 +78,7 @@ const Book = () => {
   const [maxCycles, setMaxCycles] = useState(10);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [operationHours, setOperationHours] = useState({ start_display: "9:00 AM", end_display: "7:00 PM" });
+  const [allowUnavailableBookings, setAllowUnavailableBookings] = useState(false);
 
   // Get partner ID from URL and persist it
   const partnerParam = searchParams.get("partner");
@@ -327,6 +328,18 @@ const Book = () => {
             setOperationHours({ start_display: hours.start_display, end_display: hours.end_display });
           }
         }
+
+        // Load allow_unavailable_bookings setting
+        const { data: bookingSettingsData } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "allow_unavailable_bookings")
+          .single();
+
+        if (bookingSettingsData?.value && typeof bookingSettingsData.value === "object") {
+          const setting = bookingSettingsData.value as { enabled?: boolean };
+          setAllowUnavailableBookings(setting.enabled || false);
+        }
       } catch (error: any) {
         console.error("Error loading data:", error);
         toast({
@@ -537,56 +550,58 @@ const Book = () => {
       return;
     }
 
-    // Check availability before proceeding
-    try {
-      // Check availability for each selected cycle
-      for (let i = 0; i < selectedCycles.length; i++) {
-        const cycle = selectedCycles[i];
-        const { data: cycleAvailable, error: cycleError } = await supabase.rpc("check_cycle_availability", {
-          p_cycle_id: cycle.id,
-          p_pickup_date: format(selectedDate!, "yyyy-MM-dd"),
-          p_return_date: returnDate ? format(returnDate, "yyyy-MM-dd") : format(selectedDate!, "yyyy-MM-dd"),
-        });
-
-        if (cycleError) throw cycleError;
-
-        if (!cycleAvailable || cycleAvailable < 1) {
-          toast({
-            title: "Cycle Unavailable",
-            description: `${cycle.name} is not available for the selected dates for Person ${i + 1}.`,
-            variant: "destructive",
+    // Check availability before proceeding (skip if admin allows unavailable bookings)
+    if (!allowUnavailableBookings) {
+      try {
+        // Check availability for each selected cycle
+        for (let i = 0; i < selectedCycles.length; i++) {
+          const cycle = selectedCycles[i];
+          const { data: cycleAvailable, error: cycleError } = await supabase.rpc("check_cycle_availability", {
+            p_cycle_id: cycle.id,
+            p_pickup_date: format(selectedDate!, "yyyy-MM-dd"),
+            p_return_date: returnDate ? format(returnDate, "yyyy-MM-dd") : format(selectedDate!, "yyyy-MM-dd"),
           });
-          return;
+
+          if (cycleError) throw cycleError;
+
+          if (!cycleAvailable || cycleAvailable < 1) {
+            toast({
+              title: "Cycle Unavailable",
+              description: `${cycle.name} is not available for the selected dates for Person ${i + 1}.`,
+              variant: "destructive",
+            });
+            return;
+          }
         }
-      }
 
-      // Check each accessory
-      for (const acc of accessories.filter((a) => a.quantity > 0 && a.days > 0)) {
-        const { data: accAvailable, error: accError } = await supabase.rpc("check_accessory_availability", {
-          p_accessory_id: acc.id,
-          p_pickup_date: format(selectedDate!, "yyyy-MM-dd"),
-          p_return_date: returnDate ? format(returnDate, "yyyy-MM-dd") : format(selectedDate!, "yyyy-MM-dd"),
-        });
-
-        if (accError) throw accError;
-
-        if (!accAvailable || accAvailable < acc.quantity) {
-          toast({
-            title: "Accessory Unavailable",
-            description: `Only ${accAvailable} units of ${acc.name} available, but you need ${acc.quantity}.`,
-            variant: "destructive",
+        // Check each accessory
+        for (const acc of accessories.filter((a) => a.quantity > 0 && a.days > 0)) {
+          const { data: accAvailable, error: accError } = await supabase.rpc("check_accessory_availability", {
+            p_accessory_id: acc.id,
+            p_pickup_date: format(selectedDate!, "yyyy-MM-dd"),
+            p_return_date: returnDate ? format(returnDate, "yyyy-MM-dd") : format(selectedDate!, "yyyy-MM-dd"),
           });
-          return;
+
+          if (accError) throw accError;
+
+          if (!accAvailable || accAvailable < acc.quantity) {
+            toast({
+              title: "Accessory Unavailable",
+              description: `Only ${accAvailable} units of ${acc.name} available, but you need ${acc.quantity}.`,
+              variant: "destructive",
+            });
+            return;
+          }
         }
+      } catch (error) {
+        console.error("Error checking availability:", error);
+        toast({
+          title: "Error",
+          description: "Failed to check availability. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
-    } catch (error) {
-      console.error("Error checking availability:", error);
-      toast({
-        title: "Error",
-        description: "Failed to check availability. Please try again.",
-        variant: "destructive",
-      });
-      return;
     }
 
     // Upload files to Supabase storage
