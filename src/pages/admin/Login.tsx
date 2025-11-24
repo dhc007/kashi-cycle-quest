@@ -116,18 +116,6 @@ const AdminLogin = () => {
               >
                 {loading ? "Signing in..." : "Sign In"}
               </Button>
-              
-              <div className="text-center text-sm mt-4">
-                Don't have an account?{" "}
-                <Button
-                  type="button"
-                  variant="link"
-                  className="p-0"
-                  onClick={() => navigate("/signup")}
-                >
-                  Sign Up
-                </Button>
-              </div>
             </form>
           </CardContent>
         </Card>
