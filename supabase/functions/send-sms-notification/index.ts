@@ -12,8 +12,6 @@ serve(async (req) => {
 
   // DISABLED: SMS notifications after booking confirmation
   // This function is now only used for OTP verification
-  console.log('SMS notification disabled - only OTP active');
-
   return new Response(
     JSON.stringify({ 
       success: true, 
