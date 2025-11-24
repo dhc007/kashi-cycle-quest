@@ -54,7 +54,7 @@ const Signup = () => {
         description: "Account created successfully! You can now log in.",
       });
 
-      navigate("/admin/login");
+      navigate("/user-login");
     } catch (error: any) {
       toast({
         title: "Error",
@@ -113,7 +113,7 @@ const Signup = () => {
                     type="button"
                     variant="link"
                     className="p-0"
-                    onClick={() => navigate("/admin/login")}
+                    onClick={() => navigate("/user-login")}
                   >
                     Log In
                   </Button>
