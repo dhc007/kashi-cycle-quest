@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { Calendar, Clock, MapPin, Package, CreditCard, XCircle } from "lucide-react";
+import { Calendar, Clock, MapPin, Package, CreditCard, XCircle, Edit } from "lucide-react";
 import { CancellationDialog } from "@/components/CancellationDialog";
+import { EditBookingDialog } from "@/components/EditBookingDialog";
 
 interface Booking {
   id: string;
@@ -50,6 +51,7 @@ interface Booking {
     google_maps_link: string | null;
   } | null;
   booking_accessories?: Array<{
+    accessory_id: string;
     quantity: number;
     days: number;
     price_per_day: number;
@@ -64,6 +66,7 @@ const BookingHistory = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -100,7 +103,7 @@ const BookingHistory = () => {
         (data || []).map(async (booking) => {
           const { data: accessories } = await supabase
             .from('booking_accessories')
-            .select('quantity, days, price_per_day, total_cost, accessories(name)')
+            .select('accessory_id, quantity, days, price_per_day, total_cost, accessories(name)')
             .eq('booking_id', booking.id);
           
           return {
@@ -139,6 +142,23 @@ const BookingHistory = () => {
   const handleCancelClick = (booking: Booking) => {
     setSelectedBooking(booking);
     setCancelDialogOpen(true);
+  };
+
+  const canEditBooking = (booking: Booking) => {
+    const now = new Date();
+    const pickupDateTime = new Date(`${booking.pickup_date}T${booking.pickup_time}`);
+    const twoHoursBefore = new Date(pickupDateTime.getTime() - 2 * 60 * 60 * 1000);
+    
+    return (
+      (booking.booking_status === 'confirmed' || booking.booking_status === 'active') &&
+      booking.payment_status === 'completed' &&
+      now < twoHoursBefore
+    );
+  };
+
+  const handleEditClick = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setEditDialogOpen(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -395,16 +415,28 @@ const BookingHistory = () => {
                     </div>
                   )}
 
-                  {canCancelBooking(booking) && (
-                    <div className="pt-4 border-t flex justify-end">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleCancelClick(booking)}
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Request Cancellation
-                      </Button>
+                  {(canEditBooking(booking) || canCancelBooking(booking)) && (
+                    <div className="pt-4 border-t flex justify-end gap-2">
+                      {canEditBooking(booking) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditClick(booking)}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Accessories
+                        </Button>
+                      )}
+                      {canCancelBooking(booking) && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleCancelClick(booking)}
+                        >
+                          <XCircle className="w-4 h-4 mr-2" />
+                          Request Cancellation
+                        </Button>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -414,17 +446,32 @@ const BookingHistory = () => {
         )}
 
         {selectedBooking && (
-          <CancellationDialog
-            open={cancelDialogOpen}
-            onOpenChange={setCancelDialogOpen}
-            bookingId={selectedBooking.id}
-            pickupDate={selectedBooking.pickup_date}
-            totalAmount={selectedBooking.total_amount}
-            onSuccess={() => {
-              loadBookings();
-              setSelectedBooking(null);
-            }}
-          />
+          <>
+            <CancellationDialog
+              open={cancelDialogOpen}
+              onOpenChange={setCancelDialogOpen}
+              bookingId={selectedBooking.id}
+              pickupDate={selectedBooking.pickup_date}
+              totalAmount={selectedBooking.total_amount}
+              onSuccess={() => {
+                loadBookings();
+                setSelectedBooking(null);
+              }}
+            />
+            <EditBookingDialog
+              open={editDialogOpen}
+              onOpenChange={setEditDialogOpen}
+              bookingId={selectedBooking.id}
+              pickupDate={selectedBooking.pickup_date}
+              returnDate={selectedBooking.return_date}
+              pickupTime={selectedBooking.pickup_time}
+              currentAccessories={selectedBooking.booking_accessories || []}
+              onSuccess={() => {
+                loadBookings();
+                setSelectedBooking(null);
+              }}
+            />
+          </>
         )}
       </div>
     </div>

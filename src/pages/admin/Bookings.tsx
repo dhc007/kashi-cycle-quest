@@ -316,7 +316,10 @@ const BookingsContent = () => {
 
   const renderBookingCard = (booking: Booking) => (
     <div key={booking.id} className="border rounded-lg p-4 space-y-3 hover:bg-accent/50 transition-colors">
-      <div className="flex justify-between items-start gap-2">
+      <div className="flex items-start gap-2">
+        <Button variant="ghost" size="sm" onClick={() => viewDetails(booking)} className="flex-shrink-0">
+          <Eye className="h-4 w-4" />
+        </Button>
         <div className="flex-1 min-w-0">
           <p className="font-mono text-sm font-semibold truncate">{booking.booking_id}</p>
           <p className="font-medium truncate">
@@ -324,9 +327,6 @@ const BookingsContent = () => {
           </p>
           <p className="text-xs text-muted-foreground">{booking.profiles?.phone_number}</p>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => viewDetails(booking)}>
-          <Eye className="h-4 w-4" />
-        </Button>
       </div>
       
       <div className="grid grid-cols-2 gap-2 text-sm">
