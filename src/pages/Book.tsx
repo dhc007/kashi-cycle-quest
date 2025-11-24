@@ -670,19 +670,14 @@ const Book = () => {
         if (firstName) updateData.first_name = firstName;
         if (lastName) updateData.last_name = lastName;
 
-        console.log("Updating profile with documents:", updateData);
-
         const { error: profileError } = await supabase.from("profiles").update(updateData).eq("user_id", user.id);
 
         if (profileError) {
-          console.error("Error updating profile with documents:", profileError);
           toast({
             title: "Warning",
             description: "Documents uploaded but profile update failed. Continuing with booking...",
             variant: "destructive",
           });
-        } else {
-          console.log("Profile updated successfully with documents");
         }
       }
 

@@ -40,8 +40,6 @@ serve(async (req) => {
     const AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
     const VERIFY_SID = Deno.env.get('TWILIO_VERIFY_SERVICE_SID');
     
-    console.log('Verifying OTP for phone ending in:', phoneNumber.slice(-4));
-    
     // Call Twilio Verify API to check OTP
     const response = await fetch(
       `https://verify.twilio.com/v2/Services/${VERIFY_SID}/VerificationCheck`,
@@ -59,8 +57,6 @@ serve(async (req) => {
     );
     
     const data = await response.json();
-    
-    console.log('Verification check completed, status:', data.status);
     
     // If OTP verification failed, return early
     if (data.status !== 'approved') {
@@ -84,8 +80,6 @@ serve(async (req) => {
     // Generate a fresh random password for this login session
     const newPassword = crypto.randomUUID() + crypto.randomUUID();
 
-    console.log('Checking if user exists:', email);
-
     // Check if user already exists
     const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
     const userExists = existingUser?.users?.find(u => u.email === email);
@@ -93,7 +87,6 @@ serve(async (req) => {
     let userId: string;
 
     if (userExists) {
-      console.log('User exists, updating password');
       // Update existing user's password
       const { data: updateData, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
         userExists.id,
@@ -101,13 +94,11 @@ serve(async (req) => {
       );
 
       if (updateError) {
-        console.error('Error updating user password:', updateError);
         throw updateError;
       }
 
       userId = userExists.id;
     } else {
-      console.log('Creating new user');
       // Create new user
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -119,7 +110,6 @@ serve(async (req) => {
       });
 
       if (createError) {
-        console.error('Error creating user:', createError);
         throw createError;
       }
 
@@ -138,11 +128,8 @@ serve(async (req) => {
     });
 
     if (signInError) {
-      console.error('Error creating session:', signInError);
       throw signInError;
     }
-
-    console.log('Authentication successful');
 
     return new Response(
       JSON.stringify({ 
@@ -154,7 +141,6 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error verifying OTP:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),

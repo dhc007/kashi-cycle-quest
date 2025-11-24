@@ -28,8 +28,6 @@ Deno.serve(async (req) => {
 
     const { bookingId, accessories, priceDifference } = await req.json();
 
-    console.log('Updating booking accessories:', { bookingId, accessories, priceDifference });
-
     // Verify booking belongs to user
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
@@ -119,10 +117,8 @@ Deno.serve(async (req) => {
         },
       });
     } catch (notifError) {
-      console.error('Failed to send admin notification:', notifError);
+      // Non-blocking notification
     }
-
-    console.log('Booking accessories updated successfully');
 
     return new Response(
       JSON.stringify({
@@ -137,7 +133,6 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('Error updating booking accessories:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal server error' }),
       {

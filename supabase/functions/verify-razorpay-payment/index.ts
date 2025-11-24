@@ -83,38 +83,22 @@ serve(async (req) => {
       .single();
 
     if (updateError) {
-      console.error('Error updating booking:', updateError);
       throw updateError;
     }
-
-    console.log('Payment verified and booking updated:', booking_id);
 
     // Send SMS notifications (non-blocking)
     try {
       // Send customer SMS
       supabaseClient.functions.invoke('send-sms-notification', {
         body: { booking_id }
-      }).then(result => {
-        if (result.error) {
-          console.error('Customer SMS failed:', result.error);
-        } else {
-          console.log('Customer SMS sent successfully');
-        }
       });
 
       // Send admin SMS
       supabaseClient.functions.invoke('send-admin-notification', {
         body: { booking_id }
-      }).then(result => {
-        if (result.error) {
-          console.error('Admin SMS failed:', result.error);
-        } else {
-          console.log('Admin SMS sent successfully');
-        }
       });
     } catch (smsError) {
-      // Log but don't fail the payment
-      console.error('Error triggering SMS:', smsError);
+      // SMS notifications are non-blocking
     }
 
     return new Response(
@@ -123,7 +107,6 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error:', error);
     const message = error instanceof Error ? error.message : 'An error occurred';
     return new Response(
       JSON.stringify({ error: message }),

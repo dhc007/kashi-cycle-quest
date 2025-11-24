@@ -111,7 +111,6 @@ export default function UserLogin() {
       });
 
       if (sessionError) {
-        console.error('Error setting session:', sessionError);
         throw sessionError;
       }
 

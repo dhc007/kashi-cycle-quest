@@ -62,7 +62,6 @@ serve(async (req) => {
       if (existingProfile) {
         // User exists, reuse their account
         userId = existingProfile.user_id;
-        console.log('Reusing existing user');
       } else {
         // Check if auth user exists with this email
         const anonymousEmail = `${phoneNumber}@bolt91.app`;
@@ -74,7 +73,6 @@ serve(async (req) => {
         if (authUser) {
           // Auth user exists but no profile - use existing auth user
           userId = authUser.id;
-          console.log('Found existing auth user without profile');
         } else {
           // Create new anonymous user with random password
           // Password will be reset when they login via OTP
@@ -89,12 +87,10 @@ serve(async (req) => {
           });
 
           if (signUpError) {
-            console.error('Failed to create anonymous user:', signUpError);
             throw new Error('Unable to create booking user: ' + signUpError.message);
           }
           
           userId = signUpData.user?.id;
-          console.log('Created new anonymous user');
         }
       }
     }
@@ -254,12 +250,9 @@ serve(async (req) => {
         });
 
       if (couponError || !couponApplied) {
-        console.error('Failed to apply coupon:', couponError);
         // Coupon application failed but booking is still valid
       }
     }
-
-    console.log('Booking created:', bookingId);
 
     return new Response(
       JSON.stringify({ booking }),
@@ -267,7 +260,6 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error:', error);
     const message = error instanceof Error ? error.message : 'An error occurred';
     return new Response(
       JSON.stringify({ error: message }),
