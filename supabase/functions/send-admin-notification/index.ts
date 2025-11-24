@@ -11,8 +11,6 @@ serve(async (req) => {
   }
 
   // DISABLED: Admin SMS notifications after booking confirmation
-  console.log('Admin SMS notification disabled');
-
   return new Response(
     JSON.stringify({ 
       success: true, 

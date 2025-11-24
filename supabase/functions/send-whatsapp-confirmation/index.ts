@@ -11,8 +11,6 @@ serve(async (req) => {
   }
 
   // DISABLED: WhatsApp notifications after booking confirmation
-  console.log('WhatsApp notification disabled');
-
   return new Response(
     JSON.stringify({ 
       success: true, 

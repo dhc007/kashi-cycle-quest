@@ -185,7 +185,6 @@ const Book = () => {
         // Mark phone as verified since they're logged in
         setPhoneVerified(true);
       } else if (error) {
-        console.log("Profile not found, user can create one during booking");
         // Set phone from auth data even if profile doesn't exist
         setPhoneNumber(authPhone);
         setPhoneVerified(true);
@@ -231,7 +230,6 @@ const Book = () => {
           google_maps_link: partnerData.google_maps_link,
         };
         setSelectedPickupLocation(partnerLocation);
-        console.log("Guest house pickup location set:", partnerLocation);
       } else if (!selectedPickupLocation) {
         // For cafe/retail, use Bolt 91 Base only if not already set
         const bolt91Base = pickupLocations.find(

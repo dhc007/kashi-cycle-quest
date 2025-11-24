@@ -29,15 +29,8 @@ export const FileUpload = ({
     const selectedFile = e.target.files?.[0];
     
     if (!selectedFile) {
-      console.log('FileUpload: No file selected');
       return;
     }
-
-    console.log('FileUpload: File selected', {
-      name: selectedFile.name,
-      size: selectedFile.size,
-      type: selectedFile.type
-    });
 
     // Check file size
     if (selectedFile.size > maxSize * 1024 * 1024) {
@@ -57,7 +50,6 @@ export const FileUpload = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result as string);
-        console.log('FileUpload: Preview created for', selectedFile.name);
       };
       reader.readAsDataURL(selectedFile);
     }
