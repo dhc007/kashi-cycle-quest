@@ -25,7 +25,7 @@ interface Accessory {
   name: string;
   pricePerDay: number;
   imageUrl: string | null;
-  quantity: number; // Number of people using this accessory (0 to numberOfPeople)
+  quantity: number; // Number of cycles using this accessory (0 to numberOfCycles)
   days: number;
   available: number;
   securityDeposit: number;
@@ -67,14 +67,14 @@ const Book = () => {
   const [selectedDuration, setSelectedDuration] = useState<string>();
   const [accessories, setAccessories] = useState<Accessory[]>([]);
   const [cyclesData, setCyclesData] = useState<any[]>([]);
-  const [selectedCycles, setSelectedCycles] = useState<any[]>([]); // Array of cycles, one per person
+  const [selectedCycles, setSelectedCycles] = useState<any[]>([]); // Array of cycles, one per cycle
   const [loading, setLoading] = useState(true);
   const [partnerId, setPartnerId] = useState<string | null>(null);
   const [partnerData, setPartnerData] = useState<Partner | null>(null);
   const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
   const [selectedPickupLocation, setSelectedPickupLocation] = useState<PickupLocation | null>(null);
   const [pickupLocationConfirmed, setPickupLocationConfirmed] = useState(false);
-  const [numberOfPeople, setNumberOfPeople] = useState(1);
+  const [numberOfCycles, setNumberOfCycles] = useState(1);
   const [maxCycles, setMaxCycles] = useState(10);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [operationHours, setOperationHours] = useState({ start_display: "9:00 AM", end_display: "7:00 PM" });
@@ -279,7 +279,7 @@ const Book = () => {
             name: acc.name,
             pricePerDay: Number(acc.price_per_day),
             imageUrl: acc.image_url,
-            quantity: 0, // Number of people using this accessory
+            quantity: 0, // Number of cycles using this accessory
             days: 0,
             available: acc.available_quantity || 0,
             securityDeposit: Number(acc.security_deposit || 0),
@@ -437,17 +437,17 @@ const Book = () => {
     }, 0);
   };
 
-  // Get security deposit based on duration and number of people
+  // Get security deposit based on duration and number of cycles
   const getSecurityDeposit = () => {
     if (selectedCycles.length === 0) return 0;
-    const perPersonDeposit = (() => {
+    const perCycleDeposit = (() => {
       const firstCycle = selectedCycles[0];
       if (selectedDuration === "One Day") return Number(firstCycle.security_deposit_day || 2000);
       if (selectedDuration === "One Week") return Number(firstCycle.security_deposit_week || 3000);
       if (selectedDuration === "One Month") return Number(firstCycle.security_deposit_month || 5000);
       return Number(firstCycle.security_deposit || 2000);
     })();
-    return perPersonDeposit * numberOfPeople; // Multiply by number of people
+    return perCycleDeposit * numberOfCycles; // Multiply by number of cycles
   };
 
   // Calculate accessories total (quantity * days * price per day)
@@ -477,7 +477,7 @@ const Book = () => {
             return acc;
           }
 
-          const newQuantity = Math.max(0, Math.min(numberOfPeople, acc.quantity + change));
+          const newQuantity = Math.max(0, Math.min(numberOfCycles, acc.quantity + change));
           return { ...acc, quantity: newQuantity, days: newQuantity > 0 ? acc.days || 1 : 0 };
         }
         return acc;
@@ -541,10 +541,10 @@ const Book = () => {
       return;
     }
 
-    if (selectedCycles.length !== numberOfPeople) {
+    if (selectedCycles.length !== numberOfCycles) {
       toast({
         title: "Error",
-        description: `Please select a cycle for all ${numberOfPeople} ${numberOfPeople === 1 ? "person" : "people"}`,
+        description: `Please select a cycle for all ${numberOfCycles} ${numberOfCycles === 1 ? "cycle" : "cycles"}`,
         variant: "destructive",
       });
       return;
@@ -713,7 +713,7 @@ const Book = () => {
               google_maps_link: selectedPickupLocation.google_maps_link,
             }
           : null,
-        numberOfPeople,
+        numberOfCycles,
         cycleId: selectedCycles[0]?.id,
         cycleName: selectedCycles[0]?.name,
         cycleModel: selectedCycles[0]?.model,
@@ -922,16 +922,16 @@ const Book = () => {
 
                           {/* Number of People */}
                           <div className="space-y-2">
-                            <label className="text-sm font-medium">Number of People</label>
+                            <label className="text-sm font-medium">Number of Cycles</label>
                             <Input
                               type="text"
                               inputMode="numeric"
-                              value={numberOfPeople || ""}
+                              value={numberOfCycles || ""}
                               onChange={(e) => {
                                 const rawValue = e.target.value;
                                 // Allow empty string for backspace
                                 if (rawValue === "") {
-                                  setNumberOfPeople(0);
+                                  setNumberOfCycles(0);
                                   return;
                                 }
                                 const value = parseInt(rawValue);
@@ -943,26 +943,26 @@ const Book = () => {
                                     description: `You can book a maximum of ${maxCycles} cycles at once.`,
                                     variant: "destructive",
                                   });
-                                  setNumberOfPeople(maxCycles);
+                                  setNumberOfCycles(maxCycles);
                                 } else if (value < 1) {
-                                  setNumberOfPeople(0);
+                                  setNumberOfCycles(0);
                                 } else {
-                                  setNumberOfPeople(value);
+                                  setNumberOfCycles(value);
                                 }
                               }}
                               onBlur={() => {
                                 // Reset to 1 if empty when focus is lost
-                                if (numberOfPeople === 0 || !numberOfPeople) {
-                                  setNumberOfPeople(1);
+                                if (numberOfCycles === 0 || !numberOfCycles) {
+                                  setNumberOfCycles(1);
                                 }
                               }}
-                              placeholder="How many people?"
+                              placeholder="How many cycles?"
                             />
                             <div className="space-y-1">
                               <p className="text-xs text-muted-foreground">
-                                {numberOfPeople > 0
-                                  ? `${numberOfPeople} cycle${numberOfPeople > 1 ? "s" : ""} will be booked`
-                                  : "Enter number of people"}
+                                {numberOfCycles > 0
+                                  ? `${numberOfCycles} cycle${numberOfCycles > 1 ? "s" : ""} will be booked`
+                                  : "Enter number of cycles"}
                               </p>
                               <p className="text-xs text-muted-foreground">Maximum {maxCycles} cycles per booking</p>
                             </div>
@@ -995,15 +995,15 @@ const Book = () => {
                       <div>
                         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                           <Bike className="w-5 h-5 text-primary" />
-                          Select Cycles for Each Person
+                          Select Cycles
                         </h3>
                         <p className="text-muted-foreground mb-4">
-                          Choose a cycle for each of the {numberOfPeople} {numberOfPeople === 1 ? "person" : "people"}
+                          Choose a cycle for each of the {numberOfCycles} cycle{numberOfCycles === 1 ? "" : "s"}
                         </p>
 
-                        {Array.from({ length: numberOfPeople }).map((_, personIndex) => (
+                        {Array.from({ length: numberOfCycles }).map((_, personIndex) => (
                           <div key={personIndex} className="mb-6">
-                            <h4 className="text-sm font-semibold mb-3 text-primary">Person {personIndex + 1}</h4>
+                            <h4 className="text-sm font-semibold mb-3 text-primary">Cycle {personIndex + 1}</h4>
                             <div className="grid md:grid-cols-2 gap-4">
                               {cyclesData.map((cycle) => {
                                 const isSelected = selectedCycles[personIndex]?.id === cycle.id;
@@ -1111,8 +1111,8 @@ const Book = () => {
                         <Button
                           onClick={() => setStep(3)}
                           disabled={
-                            selectedCycles.length !== numberOfPeople ||
-                            selectedCycles.filter((c) => c).length !== numberOfPeople
+                            selectedCycles.length !== numberOfCycles ||
+                            selectedCycles.filter((c) => c).length !== numberOfCycles
                           }
                           className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                         >
@@ -1198,7 +1198,7 @@ const Book = () => {
                           Add Accessories (Optional)
                         </h3>
                         <p className="text-muted-foreground mb-4">
-                          Select quantity (max {numberOfPeople}) and days for each accessory
+                          Select quantity (max {numberOfCycles}) and days for each accessory
                         </p>
 
                         <div className="space-y-4">
@@ -1290,14 +1290,14 @@ const Book = () => {
                                             variant="outline"
                                             size="icon"
                                             onClick={() => updateAccessoryQuantity(accessory.id, 1)}
-                                            disabled={accessory.quantity >= numberOfPeople}
+                                            disabled={accessory.quantity >= numberOfCycles}
                                             className="h-7 w-7"
                                           >
                                             <Plus className="w-3 h-3" />
                                           </Button>
 
                                           <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                            (max {numberOfPeople})
+                                            (max {numberOfCycles})
                                           </span>
                                         </div>
                                       </div>
@@ -1895,7 +1895,7 @@ const Book = () => {
                       <div className="space-y-2 animate-fade-in">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">
-                            Cycle Rental ({numberOfPeople} {numberOfPeople === 1 ? "cycle" : "cycles"})
+                            Cycle Rental ({numberOfCycles} {numberOfCycles === 1 ? "cycle" : "cycles"})
                           </span>
                           <span className="font-semibold">₹{getBasePrice()}</span>
                         </div>
@@ -1924,7 +1924,7 @@ const Book = () => {
                             Security Deposit (Payable at Pickup)
                           </p>
                           <div className="flex justify-between text-primary">
-                            <span>Cycle Deposit (×{numberOfPeople})</span>
+                            <span>Cycle Deposit (×{numberOfCycles})</span>
                             <span className="font-bold">₹{getSecurityDeposit()}</span>
                           </div>
                           {accessoriesDeposit > 0 && (
