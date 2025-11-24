@@ -45,9 +45,7 @@ const Payment = () => {
   // Get booking data from sessionStorage
   const getBookingData = () => {
     const stored = sessionStorage.getItem('bookingData');
-    console.log('SessionStorage bookingData:', stored);
     if (!stored) {
-      console.error('No booking data found in sessionStorage');
       toast({
         title: "Error",
         description: "Booking data not found. Please start over.",
@@ -59,7 +57,6 @@ const Payment = () => {
     try {
       return JSON.parse(stored);
     } catch (error) {
-      console.error('Failed to parse booking data:', error);
       toast({
         title: "Error",
         description: "Invalid booking data. Please start over.",
@@ -313,7 +310,6 @@ const Payment = () => {
               },
             });
           } catch (error: any) {
-            console.error('Payment verification error:', error);
             toast({
               title: "Payment Verification Failed",
               description: error.message,
@@ -342,7 +338,6 @@ const Payment = () => {
       setLoading(false);
 
     } catch (error: any) {
-      console.error('Payment error:', error);
       setLoading(false);
       toast({
         title: "Payment Failed",

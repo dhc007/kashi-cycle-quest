@@ -47,7 +47,6 @@ export const PhoneInput = ({ value, onChange, onVerified, verified }: PhoneInput
         throw new Error(data.error || 'Failed to send OTP');
       }
     } catch (error: any) {
-      console.error('Error sending OTP:', error);
       toast({
         title: "Failed to Send OTP",
         description: error.message || "Please try again",
@@ -87,7 +86,6 @@ export const PhoneInput = ({ value, onChange, onVerified, verified }: PhoneInput
         throw new Error('Invalid OTP code');
       }
     } catch (error: any) {
-      console.error('Error verifying OTP:', error);
       toast({
         title: "Verification Failed",
         description: error.message || "Please check your code and try again",
