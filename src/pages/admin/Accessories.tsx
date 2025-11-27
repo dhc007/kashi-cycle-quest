@@ -497,42 +497,144 @@ const AccessoriesContent = () => {
                             <Eye className="w-4 h-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
+                        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>Accessory Details - {accessory.name}</DialogTitle>
                           </DialogHeader>
-                          <div className="space-y-4">
+                          <div className="space-y-6">
+                            {/* Image */}
                             {accessory.image_url && (
                               <img src={accessory.image_url} alt={accessory.name} className="w-full h-48 object-cover rounded" />
                             )}
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Serial</Label>
-                                <p className="font-mono text-sm">{accessory.display_serial}</p>
+                            
+                            {/* Basic Info */}
+                            <div className="space-y-2">
+                              <h3 className="font-semibold text-sm text-primary border-b pb-1">Basic Information</h3>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Display Serial</Label>
+                                  <p className="font-mono text-sm bg-muted px-2 py-1 rounded inline-block">{accessory.display_serial || '-'}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Name</Label>
+                                  <p className="font-semibold">{accessory.name}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Status</Label>
+                                  <Badge variant={accessory.is_active ? 'default' : 'secondary'}>
+                                    {accessory.is_active ? 'Active' : 'Inactive'}
+                                  </Badge>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Serial Number</Label>
+                                  <p>{accessory.serial_number || '-'}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Model Number</Label>
+                                  <p>{accessory.model_number || '-'}</p>
+                                </div>
+                                <div className="col-span-2 md:col-span-3">
+                                  <Label className="text-xs text-muted-foreground">Description</Label>
+                                  <p className="text-sm">{accessory.description || 'No description'}</p>
+                                </div>
                               </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Name</Label>
-                                <p className="font-semibold">{accessory.name}</p>
+                            </div>
+
+                            {/* Pricing & Inventory */}
+                            <div className="space-y-2">
+                              <h3 className="font-semibold text-sm text-primary border-b pb-1">Pricing & Inventory</h3>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Price/Day</Label>
+                                  <p className="font-semibold text-lg">₹{accessory.price_per_day}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Security Deposit</Label>
+                                  <p className="font-semibold">₹{(accessory as any).security_deposit || 0}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Total Quantity</Label>
+                                  <p className="font-semibold">{accessory.total_quantity}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Available Quantity</Label>
+                                  <p className="font-semibold text-green-600">{accessory.available_quantity}</p>
+                                </div>
                               </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Model Number</Label>
-                                <p>{accessory.model_number || '-'}</p>
+                            </div>
+
+                            {/* Internal Details (Admin Only) */}
+                            <div className="space-y-2 bg-accent/20 p-4 rounded-lg">
+                              <h3 className="font-semibold text-sm text-primary border-b pb-1">Internal Details (Admin Only)</h3>
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Vendor Name</Label>
+                                  <p>{accessory.internal_details?.vendor_name || '-'}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Date of Purchase</Label>
+                                  <p>{accessory.internal_details?.date_of_purchase || '-'}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Purchase Amount</Label>
+                                  <p>{accessory.internal_details?.purchase_amount ? `₹${accessory.internal_details.purchase_amount}` : '-'}</p>
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Legacy Model Number</Label>
+                                  <p>{accessory.internal_details?.model_number || '-'}</p>
+                                </div>
                               </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Price/Day</Label>
-                                <p className="font-semibold">₹{accessory.price_per_day}</p>
-                              </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Total Quantity</Label>
-                                <p>{accessory.total_quantity}</p>
-                              </div>
-                              <div>
-                                <Label className="text-xs text-muted-foreground">Available</Label>
-                                <p>{accessory.available_quantity}</p>
-                              </div>
-                              <div className="col-span-2">
-                                <Label className="text-xs text-muted-foreground">Description</Label>
-                                <p className="text-sm">{accessory.description || 'No description'}</p>
+                            </div>
+
+                            {/* Documents */}
+                            <div className="space-y-2">
+                              <h3 className="font-semibold text-sm text-primary border-b pb-1">Documents</h3>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Warranty Document</Label>
+                                  {accessory.internal_details?.warranty_file_url ? (
+                                    <a 
+                                      href={accessory.internal_details.warranty_file_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-primary hover:underline block"
+                                    >
+                                      View Warranty
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Not uploaded</p>
+                                  )}
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Invoice Document</Label>
+                                  {accessory.internal_details?.invoice_file_url ? (
+                                    <a 
+                                      href={accessory.internal_details.invoice_file_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-primary hover:underline block"
+                                    >
+                                      View Invoice
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Not uploaded</p>
+                                  )}
+                                </div>
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">User Manual</Label>
+                                  {accessory.user_manual_url ? (
+                                    <a 
+                                      href={accessory.user_manual_url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-primary hover:underline block"
+                                    >
+                                      View Manual
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">Not uploaded</p>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
