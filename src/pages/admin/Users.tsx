@@ -216,18 +216,58 @@ const Users = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[100px]">Actions</TableHead>
                   <TableHead className="w-12">Sr.</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Documents</TableHead>
                   <TableHead>Past Bookings</TableHead>
                   <TableHead>Joined</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCustomers.map((user, index) => (
                   <TableRow key={user.id}>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setViewDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedUser(user);
+                              setViewDialogOpen(true);
+                            }}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              setSelectedUser(user);
+                              setEditDocumentsDialogOpen(true);
+                            }}>
+                              <Camera className="w-4 h-4 mr-2" />
+                              Update Documents
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => navigate(`/admin/bookings?search=${user.profile?.phone_number || user.email}`)}>
+                              View All Bookings
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
                     <TableCell className="font-medium">{index + 1}</TableCell>
                     <TableCell>
                       <div>
@@ -294,46 +334,6 @@ const Users = () => {
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{format(new Date(user.created_at), 'PP')}</span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setViewDialogOpen(true);
-                          }}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => {
-                              setSelectedUser(user);
-                              setViewDialogOpen(true);
-                            }}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Details
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => {
-                              setSelectedUser(user);
-                              setEditDocumentsDialogOpen(true);
-                            }}>
-                              <Camera className="w-4 h-4 mr-2" />
-                              Update Documents
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/admin/bookings?search=${user.profile?.phone_number || user.email}`)}>
-                              View All Bookings
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

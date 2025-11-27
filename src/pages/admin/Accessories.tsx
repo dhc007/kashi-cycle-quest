@@ -192,9 +192,27 @@ const AccessoriesContent = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this accessory?")) return;
-
     try {
+      // Check if accessory is referenced in booking_accessories
+      const { data: bookingAccessories, error: checkError } = await supabase
+        .from('booking_accessories')
+        .select('id')
+        .eq('accessory_id', id)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      if (bookingAccessories && bookingAccessories.length > 0) {
+        toast({
+          title: "Cannot Delete Accessory",
+          description: "This accessory has been used in bookings. You can deactivate it instead.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!confirm("Are you sure you want to delete this accessory?")) return;
+
       const { error } = await supabase
         .from('accessories')
         .delete()
@@ -459,46 +477,18 @@ const AccessoriesContent = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px]">Actions</TableHead>
                 <TableHead>Serial</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Model</TableHead>
                 <TableHead>Image</TableHead>
                 <TableHead>Quantity</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {accessories.map((accessory) => (
                 <TableRow key={accessory.id}>
-                  <TableCell>
-                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
-                      {accessory.display_serial}
-                    </span>
-                  </TableCell>
-                  <TableCell className="font-semibold">{accessory.name}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {accessory.model_number || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {accessory.image_url ? (
-                      <img src={accessory.image_url} alt={accessory.name} className="w-16 h-16 object-cover rounded" />
-                    ) : (
-                      <div className="w-16 h-16 bg-muted rounded flex items-center justify-center text-xs">
-                        No img
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="font-semibold">
-                      {accessory.available_quantity} / {accessory.total_quantity}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={accessory.is_active ? 'default' : 'secondary'}>
-                      {accessory.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Dialog>
@@ -555,7 +545,7 @@ const AccessoriesContent = () => {
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="start">
                             <DropdownMenuItem onClick={() => openEditDialog(accessory)}>
                               <Pencil className="w-4 h-4 mr-2" />
                               Edit
@@ -571,6 +561,34 @@ const AccessoriesContent = () => {
                         </DropdownMenu>
                       )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                      {accessory.display_serial}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-semibold">{accessory.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {accessory.model_number || '-'}
+                  </TableCell>
+                  <TableCell>
+                    {accessory.image_url ? (
+                      <img src={accessory.image_url} alt={accessory.name} className="w-16 h-16 object-cover rounded" />
+                    ) : (
+                      <div className="w-16 h-16 bg-muted rounded flex items-center justify-center text-xs">
+                        No img
+                      </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span className="font-semibold">
+                      {accessory.available_quantity} / {accessory.total_quantity}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={accessory.is_active ? 'default' : 'secondary'}>
+                      {accessory.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
                   </TableCell>
                 </TableRow>
               ))}

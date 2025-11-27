@@ -422,8 +422,11 @@ const DashboardContent = () => {
           // Determine navigation path
           const getNavigationPath = (title: string) => {
             if (title === "Total Bookings") return "/admin/bookings";
+            if (title === "Active Bookings") return "/admin/bookings";
+            if (title === "Cancelled Bookings") return "/admin/cancellations";
             if (title === "Total Partners") return "/admin/partners";
             if (title === "Available Cycles" || title === "Cycles in Use") return "/admin/cycles";
+            if (title === "Gross Revenue" || title === "Net Revenue" || title === "Refunds Processed") return "/admin/bookings";
             return null;
           };
 
