@@ -153,9 +153,9 @@ export function AddAccessoriesDialog({
     try {
       setProcessing(true);
 
-      // Create Razorpay order
+      // Create PhonePe order
       const { data: orderData, error: orderError } = await supabase.functions.invoke(
-        'create-razorpay-order',
+        'create-phonepe-order',
         {
           body: {
             amount: grandTotal,
@@ -167,31 +167,53 @@ export function AddAccessoriesDialog({
 
       if (orderError) throw orderError;
 
-      const options = {
-        key: orderData.key_id,
-        amount: orderData.order.amount,
-        currency: orderData.order.currency,
-        name: 'Bolt91 Cycles',
-        description: 'Add Accessories to Booking',
-        order_id: orderData.order.id,
-        handler: async (response: any) => {
-          try {
-            // Verify payment
-            const { error: verifyError } = await supabase.functions.invoke(
-              'verify-razorpay-payment',
-              {
-                body: {
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature,
-                  booking_id: bookingId,
-                  is_addon: true,
-                },
-              }
-            );
+      if (!orderData.redirectUrl) {
+        throw new Error('Failed to get payment URL');
+      }
 
-            if (verifyError) throw verifyError;
+      // Store addon data in sessionStorage for callback
+      sessionStorage.setItem('addonPaymentData', JSON.stringify({
+        bookingId,
+        merchantOrderId: orderData.merchantOrderId,
+        selectedAccessories: selectedAccessories.map((selected) => {
+          const accessory = accessories.find((a) => a.id === selected.id)!;
+          return {
+            accessory_id: selected.id,
+            quantity: 1,
+            days: selected.days,
+            price_per_day: accessory.price_per_day,
+            total_cost: accessory.price_per_day * selected.days,
+          };
+        }),
+        totalAmount,
+        grandTotal,
+      }));
 
+      // Open PhonePe payment in a new window
+      const paymentWindow = window.open(orderData.redirectUrl, '_blank');
+      
+      // Poll for payment completion
+      const pollInterval = setInterval(async () => {
+        try {
+          const { data: verifyData, error: verifyError } = await supabase.functions.invoke(
+            'verify-phonepe-payment',
+            {
+              body: {
+                merchantOrderId: orderData.merchantOrderId,
+                booking_id: bookingId,
+                is_addon: true,
+              },
+            }
+          );
+
+          if (verifyError) {
+            console.error('Verification error:', verifyError);
+            return;
+          }
+
+          if (verifyData.verified && verifyData.state === 'COMPLETED') {
+            clearInterval(pollInterval);
+            
             // Add accessories to booking
             const accessoriesToInsert = selectedAccessories.map((selected) => {
               const accessory = accessories.find((a) => a.id === selected.id)!;
@@ -220,7 +242,7 @@ export function AddAccessoriesDialog({
 
             if (fetchError) throw fetchError;
 
-            const { error: updateError } = await supabase
+            await supabase
               .from('bookings')
               .update({
                 accessories_cost: (bookingData.accessories_cost || 0) + totalAmount,
@@ -228,33 +250,41 @@ export function AddAccessoriesDialog({
               })
               .eq('id', bookingId);
 
-            if (updateError) throw updateError;
-
             toast({
               title: "Success",
               description: "Accessories added successfully",
             });
 
+            setProcessing(false);
             onSuccess();
             onOpenChange(false);
-          } catch (error) {
-            console.error('Error processing payment:', error);
+          } else if (verifyData.state === 'FAILED') {
+            clearInterval(pollInterval);
+            setProcessing(false);
             toast({
-              title: "Error",
-              description: "Failed to process payment",
+              title: "Payment Failed",
+              description: "The payment was not successful",
               variant: "destructive",
             });
           }
-        },
-        modal: {
-          ondismiss: () => {
-            setProcessing(false);
-          },
-        },
-      };
+        } catch (err) {
+          console.error('Poll error:', err);
+        }
+      }, 3000);
 
-      const razorpay = new (window as any).Razorpay(options);
-      razorpay.open();
+      // Stop polling after 10 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval);
+        if (processing) {
+          setProcessing(false);
+          toast({
+            title: "Payment Timeout",
+            description: "Payment verification timed out. Please check your booking.",
+            variant: "destructive",
+          });
+        }
+      }, 600000);
+
     } catch (error) {
       console.error('Error:', error);
       toast({

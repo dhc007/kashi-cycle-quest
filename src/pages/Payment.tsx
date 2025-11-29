@@ -8,14 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-
 import { Bike } from "lucide-react";
-
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
 
 const Payment = () => {
   const location = useLocation();
@@ -29,18 +22,6 @@ const Payment = () => {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [discount, setDiscount] = useState(0);
-
-  useEffect(() => {
-    // Load Razorpay script
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
 
   // Get booking data from sessionStorage
   const getBookingData = () => {
@@ -211,6 +192,7 @@ const Payment = () => {
 
   const handlePayment = async () => {
     setLoading(true);
+    setProcessingPayment(true);
 
     try {
       // Create booking in database
@@ -259,86 +241,43 @@ const Payment = () => {
 
       const booking = data.booking;
 
-      // Create Razorpay order (only for rental charges, excluding deposit)
-      const { data: orderData, error: orderError } = await supabase.functions.invoke('create-razorpay-order', {
+      // Store booking ID for callback verification
+      sessionStorage.setItem('pendingBookingId', booking.booking_id);
+
+      // Create PhonePe order
+      const { data: orderData, error: orderError } = await supabase.functions.invoke('create-phonepe-order', {
         body: {
           amount: onlinePaymentAmount,
           currency: 'INR',
           receipt: booking.booking_id,
+          booking_id: booking.booking_id,
         },
       });
 
       if (orderError) throw orderError;
 
-      const options = {
-        key: orderData.key_id,
-        amount: onlinePaymentAmount * 100,
-        currency: 'INR',
-        name: 'Blue Bolt Electric Pvt Ltd',
-        description: 'Electric Bicycle Rental (Deposit payable at pickup)',
-        order_id: orderData.order.id,
-        handler: async function (response: any) {
-          try {
-            // Verify payment
-            const { error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
-              body: {
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-                booking_id: booking.booking_id,
-              },
-            });
+      if (!orderData.redirectUrl) {
+        throw new Error('Failed to get payment URL');
+      }
 
-            if (verifyError) throw verifyError;
+      // Update booking data in session storage for confirmation page
+      sessionStorage.setItem('bookingData', JSON.stringify({
+        ...bookingData,
+        totalAmount,
+        onlinePaymentAmount,
+        securityDeposit: totalDeposit,
+        bookingId: booking.booking_id,
+        appliedCoupon,
+        discount,
+        gst,
+      }));
 
-            toast({
-              title: "Payment Successful",
-              description: "Your booking has been confirmed!",
-            });
-
-            navigate("/confirmation", {
-              state: {
-                ...bookingData,
-                totalAmount,
-                onlinePaymentAmount,
-                securityDeposit: totalDeposit,
-                paymentId: response.razorpay_payment_id,
-                bookingId: booking.booking_id,
-                appliedCoupon,
-                discount,
-                gst,
-              },
-            });
-          } catch (error: any) {
-            toast({
-              title: "Payment Verification Failed",
-              description: error.message,
-              variant: "destructive",
-            });
-          }
-        },
-        prefill: {
-          name: `${firstName} ${lastName}`,
-          email: email || '',
-          contact: phoneNumber || '',
-        },
-        theme: {
-          color: '#F5A623',
-        },
-      };
-
-      const razorpay = new window.Razorpay(options);
-      
-      // Set payment processing state when Razorpay is opened
-      razorpay.on('payment.submit', () => {
-        setProcessingPayment(true);
-      });
-      
-      razorpay.open();
-      setLoading(false);
+      // Redirect to PhonePe payment page
+      window.location.href = orderData.redirectUrl;
 
     } catch (error: any) {
       setLoading(false);
+      setProcessingPayment(false);
       toast({
         title: "Payment Failed",
         description: error.message || "Something went wrong",
@@ -358,7 +297,7 @@ const Payment = () => {
             <div className="animate-spin">
               <Bike className="w-12 h-12 md:w-16 md:h-16 mx-auto" />
             </div>
-            <p className="text-lg md:text-xl font-semibold">Payment Processing...</p>
+            <p className="text-lg md:text-xl font-semibold">Redirecting to Payment...</p>
             <p className="text-xs md:text-sm text-muted-foreground">Please wait</p>
           </div>
         </div>
@@ -578,7 +517,7 @@ const Payment = () => {
                 </Button>
 
                 <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
-                  <span>🔒 Secure payment powered by Razorpay</span>
+                  <span>🔒 Secure payment powered by PhonePe</span>
                   <span className="text-[10px]">Deposit of ₹{securityDeposit.toFixed(2)} payable at pickup</span>
                 </div>
               </CardContent>

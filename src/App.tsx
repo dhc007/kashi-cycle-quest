@@ -25,7 +25,7 @@ import NotFound from "./pages/NotFound";
 import Signup from "./pages/Signup";
 import BookingHistory from "./pages/BookingHistory";
 import ManageBooking from "./pages/ManageBooking";
-
+import PaymentCallback from "./pages/PaymentCallback";
 import UserLogin from "./pages/UserLogin";
 
 const queryClient = new QueryClient();
@@ -41,6 +41,7 @@ const App = () => (
           <Route path="/home" element={<Home />} />
           <Route path="/book" element={<Book />} />
           <Route path="/payment" element={<Payment />} />
+          <Route path="/payment-callback" element={<PaymentCallback />} />
           <Route path="/confirmation" element={<Confirmation />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/user-login" element={<UserLogin />} />
