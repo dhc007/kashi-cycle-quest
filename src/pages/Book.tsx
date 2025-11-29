@@ -475,7 +475,19 @@ const Book = () => {
             return acc;
           }
 
-          const newQuantity = Math.max(0, Math.min(numberOfCycles, acc.quantity + change));
+          // Check if accessory is available before adding
+          if (change > 0 && acc.available <= 0) {
+            toast({
+              title: "Not Available",
+              description: `${acc.name} is currently not available.`,
+              variant: "destructive",
+            });
+            return acc;
+          }
+
+          // Ensure quantity doesn't exceed available stock
+          const maxAllowed = Math.min(numberOfCycles, acc.available);
+          const newQuantity = Math.max(0, Math.min(maxAllowed, acc.quantity + change));
           return { ...acc, quantity: newQuantity, days: newQuantity > 0 ? acc.days || 1 : 0 };
         }
         return acc;

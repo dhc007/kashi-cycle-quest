@@ -220,8 +220,8 @@ const Coupons = () => {
   }
 
   return (
-    <div className="p-8 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Tag className="w-8 h-8" />
@@ -245,7 +245,7 @@ const Coupons = () => {
               <DialogTitle>{editingCoupon ? 'Edit Coupon' : 'Create New Coupon'}</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="code">Coupon Code *</Label>
                   <Input
@@ -281,7 +281,7 @@ const Coupons = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="discountValue">
                     Discount Value * {discountType === 'percentage' ? '(%)' : '(₹)'}
@@ -309,7 +309,7 @@ const Coupons = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="maxUses">Max Uses (leave empty for unlimited)</Label>
                   <Input
@@ -333,7 +333,7 @@ const Coupons = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="validFrom">Valid From</Label>
                   <Input
@@ -375,16 +375,16 @@ const Coupons = () => {
         <CardHeader>
           <CardTitle>All Coupons</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[100px]">Actions</TableHead>
                 <TableHead>Code</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead className="hidden md:table-cell">Description</TableHead>
                 <TableHead>Discount</TableHead>
-                <TableHead>Usage</TableHead>
-                <TableHead>Valid Until</TableHead>
+                <TableHead className="hidden md:table-cell">Usage</TableHead>
+                <TableHead className="hidden md:table-cell">Valid Until</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -399,7 +399,7 @@ const Coupons = () => {
                 coupons.map((coupon) => (
                   <TableRow key={coupon.id}>
                     <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -433,7 +433,7 @@ const Coupons = () => {
                       </div>
                     </TableCell>
                     <TableCell className="font-mono font-bold">{coupon.code}</TableCell>
-                    <TableCell className="max-w-xs truncate">{coupon.description || '-'}</TableCell>
+                    <TableCell className="max-w-xs truncate hidden md:table-cell">{coupon.description || '-'}</TableCell>
                     <TableCell>
                       {coupon.discount_type === 'percentage' 
                         ? `${coupon.discount_value}%` 
@@ -444,11 +444,11 @@ const Coupons = () => {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {coupon.used_count}
                       {coupon.max_uses && ` / ${coupon.max_uses}`}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {coupon.valid_until 
                         ? format(new Date(coupon.valid_until), 'PP')
                         : 'No expiry'}

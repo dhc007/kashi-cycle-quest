@@ -120,8 +120,6 @@ const MaintenanceContent = () => {
 
       if (error) throw error;
 
-      // Cycle is now under maintenance (individual cycle tracking)
-
       toast({
         title: "Success",
         description: "Maintenance record created. Cycle marked as unavailable.",
@@ -157,8 +155,6 @@ const MaintenanceContent = () => {
 
       if (error) throw error;
 
-      // Cycle is now available again (individual cycle tracking)
-
       toast({
         title: "Success",
         description: "Maintenance completed. Cycle is now available.",
@@ -190,8 +186,8 @@ const MaintenanceContent = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-4 md:p-8">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Cycle Maintenance</h1>
           <p className="text-muted-foreground">Track and manage cycle maintenance activities</p>
@@ -283,36 +279,23 @@ const MaintenanceContent = () => {
               Maintenance Records
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[100px]">Actions</TableHead>
                   <TableHead>Cycle</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead className="hidden md:table-cell">Description</TableHead>
                   <TableHead>Cost</TableHead>
-                  <TableHead>Reported</TableHead>
+                  <TableHead className="hidden md:table-cell">Reported</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {maintenanceRecords.length > 0 ? (
                   maintenanceRecords.map((record) => (
                     <TableRow key={record.id}>
-                      <TableCell>
-                        <div className="font-medium">{record.cycles?.name}</div>
-                        <div className="text-xs text-muted-foreground">{record.cycles?.model}</div>
-                      </TableCell>
-                      <TableCell className="capitalize">{record.maintenance_type.replace('_', ' ')}</TableCell>
-                      <TableCell className="max-w-xs truncate">{record.description || '-'}</TableCell>
-                      <TableCell className="font-semibold">₹{record.cost}</TableCell>
-                      <TableCell>{format(new Date(record.reported_at), 'MMM dd, yyyy')}</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusBadge(record.status)}>
-                          {record.status}
-                        </Badge>
-                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
@@ -331,7 +314,7 @@ const MaintenanceContent = () => {
                                 <MoreVertical className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="start">
                               {record.status === 'pending' && (
                                 <DropdownMenuItem onClick={() => handleCompleteMaintenance(record)} disabled={processing}>
                                   <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -340,12 +323,20 @@ const MaintenanceContent = () => {
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                          {record.status === 'completed' && record.completed_at && (
-                            <span className="text-xs text-muted-foreground ml-2">
-                              {format(new Date(record.completed_at), 'MMM dd, yyyy')}
-                            </span>
-                          )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{record.cycles?.name}</div>
+                        <div className="text-xs text-muted-foreground">{record.cycles?.model}</div>
+                      </TableCell>
+                      <TableCell className="capitalize">{record.maintenance_type.replace('_', ' ')}</TableCell>
+                      <TableCell className="max-w-xs truncate hidden md:table-cell">{record.description || '-'}</TableCell>
+                      <TableCell className="font-semibold">₹{record.cost}</TableCell>
+                      <TableCell className="hidden md:table-cell">{format(new Date(record.reported_at), 'MMM dd, yyyy')}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusBadge(record.status)}>
+                          {record.status}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))
@@ -359,68 +350,68 @@ const MaintenanceContent = () => {
               </TableBody>
             </Table>
           </CardContent>
-          </Card>
-        </div>
+        </Card>
+      </div>
 
-        {/* View Details Dialog */}
-        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Maintenance Details</DialogTitle>
-            </DialogHeader>
-            {viewingRecord && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Cycle</Label>
-                    <p className="font-medium">{viewingRecord.cycles?.name}</p>
-                    <p className="text-xs text-muted-foreground">{viewingRecord.cycles?.model}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Type</Label>
-                    <p className="capitalize">{viewingRecord.maintenance_type.replace('_', ' ')}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Cost</Label>
-                    <p className="font-semibold">₹{viewingRecord.cost}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Status</Label>
-                    <Badge className={getStatusBadge(viewingRecord.status)}>
-                      {viewingRecord.status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Reported</Label>
-                    <p>{format(new Date(viewingRecord.reported_at), 'MMM dd, yyyy')}</p>
-                  </div>
-                  {viewingRecord.completed_at && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Completed</Label>
-                      <p>{format(new Date(viewingRecord.completed_at), 'MMM dd, yyyy')}</p>
-                    </div>
-                  )}
+      {/* View Details Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Maintenance Details</DialogTitle>
+          </DialogHeader>
+          {viewingRecord && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Cycle</Label>
+                  <p className="font-medium">{viewingRecord.cycles?.name}</p>
+                  <p className="text-xs text-muted-foreground">{viewingRecord.cycles?.model}</p>
                 </div>
-                {viewingRecord.description && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Type</Label>
+                  <p className="capitalize">{viewingRecord.maintenance_type.replace('_', ' ')}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Cost</Label>
+                  <p className="font-semibold">₹{viewingRecord.cost}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Status</Label>
+                  <Badge className={getStatusBadge(viewingRecord.status)}>
+                    {viewingRecord.status}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Reported</Label>
+                  <p>{format(new Date(viewingRecord.reported_at), 'MMM dd, yyyy')}</p>
+                </div>
+                {viewingRecord.completed_at && (
                   <div>
-                    <Label className="text-xs text-muted-foreground">Description</Label>
-                    <p className="text-sm mt-1">{viewingRecord.description}</p>
+                    <Label className="text-xs text-muted-foreground">Completed</Label>
+                    <p>{format(new Date(viewingRecord.completed_at), 'MMM dd, yyyy')}</p>
                   </div>
                 )}
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
-    );
-  };
-  
-  const Maintenance = () => {
-    return (
-      <RoleGuard allowedRoles={['admin', 'manager']}>
-        <MaintenanceContent />
-      </RoleGuard>
-    );
-  };
-  
-  export default Maintenance;
+              {viewingRecord.description && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Description</Label>
+                  <p className="text-sm mt-1">{viewingRecord.description}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+const Maintenance = () => {
+  return (
+    <RoleGuard allowedRoles={['admin', 'manager']}>
+      <MaintenanceContent />
+    </RoleGuard>
+  );
+};
+
+export default Maintenance;

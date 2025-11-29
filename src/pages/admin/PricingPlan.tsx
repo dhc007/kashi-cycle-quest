@@ -4,12 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard } from "@/components/admin/RoleGuard";
-import { DollarSign, Edit, Search } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { IndianRupee, Edit, Search, Eye, MoreVertical } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PricingPlan {
   id: string;
@@ -31,7 +36,9 @@ const PricingPlanContent = () => {
   const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
+  const [viewingPlan, setViewingPlan] = useState<PricingPlan | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
@@ -118,6 +125,11 @@ const PricingPlanContent = () => {
     setDialogOpen(true);
   };
 
+  const handleView = (plan: PricingPlan) => {
+    setViewingPlan(plan);
+    setViewDialogOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -176,10 +188,10 @@ const PricingPlanContent = () => {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <DollarSign className="w-8 h-8" />
+          <IndianRupee className="w-8 h-8" />
           Pricing Management
         </h1>
         <p className="text-muted-foreground">Manage pricing for cycles and accessories</p>
@@ -203,38 +215,53 @@ const PricingPlanContent = () => {
         <CardHeader>
           <CardTitle>Cycles Pricing ({filteredPlans.filter(p => p.item_type === "cycle").length})</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px]">Actions</TableHead>
                 <TableHead>Cycle Name</TableHead>
                 <TableHead>Model</TableHead>
                 <TableHead>Price/Day</TableHead>
-                <TableHead>Price/Week</TableHead>
-                <TableHead>Price/Month</TableHead>
-                <TableHead>Deposits</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="hidden md:table-cell">Price/Week</TableHead>
+                <TableHead className="hidden md:table-cell">Price/Month</TableHead>
+                <TableHead className="hidden lg:table-cell">Deposits</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPlans.filter(p => p.item_type === "cycle").map((plan) => (
                 <TableRow key={plan.id}>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleView(plan)}>
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => handleEdit(plan)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit Pricing
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
                   <TableCell className="font-semibold">{plan.item_name}</TableCell>
                   <TableCell className="text-muted-foreground">{plan.item_model}</TableCell>
                   <TableCell className="font-semibold">₹{plan.price_per_day}</TableCell>
-                  <TableCell>₹{plan.price_per_week || "-"}</TableCell>
-                  <TableCell>₹{plan.price_per_month || "-"}</TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">₹{plan.price_per_week || "-"}</TableCell>
+                  <TableCell className="hidden md:table-cell">₹{plan.price_per_month || "-"}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
                     <div className="text-sm">
                       <p>Day: ₹{plan.security_deposit_day}</p>
                       <p>Week: ₹{plan.security_deposit_week}</p>
                       <p>Month: ₹{plan.security_deposit_month}</p>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(plan)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -248,35 +275,122 @@ const PricingPlanContent = () => {
         <CardHeader>
           <CardTitle>Accessories Pricing ({filteredPlans.filter(p => p.item_type === "accessory").length})</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px]">Actions</TableHead>
                 <TableHead>Accessory Name</TableHead>
                 <TableHead>Model</TableHead>
                 <TableHead>Price/Day</TableHead>
                 <TableHead>Security Deposit</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPlans.filter(p => p.item_type === "accessory").map((plan) => (
                 <TableRow key={plan.id}>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => handleView(plan)}>
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => handleEdit(plan)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit Pricing
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
                   <TableCell className="font-semibold">{plan.item_name}</TableCell>
                   <TableCell className="text-muted-foreground">{plan.item_model}</TableCell>
                   <TableCell className="font-semibold">₹{plan.price_per_day}</TableCell>
                   <TableCell className="font-semibold">₹{plan.security_deposit_day}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(plan)}>
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* View Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Pricing Details - {viewingPlan?.item_name}</DialogTitle>
+          </DialogHeader>
+          {viewingPlan && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Item Type</Label>
+                  <p className="capitalize font-medium">{viewingPlan.item_type}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Model</Label>
+                  <p>{viewingPlan.item_model}</p>
+                </div>
+              </div>
+              
+              <div className="border-t pt-4">
+                <Label className="text-xs text-muted-foreground mb-2 block">Pricing</Label>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground">Per Day</p>
+                    <p className="font-semibold text-lg">₹{viewingPlan.price_per_day}</p>
+                  </div>
+                  {viewingPlan.item_type === "cycle" && (
+                    <>
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-xs text-muted-foreground">Per Week</p>
+                        <p className="font-semibold text-lg">₹{viewingPlan.price_per_week || "-"}</p>
+                      </div>
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-xs text-muted-foreground">Per Month</p>
+                        <p className="font-semibold text-lg">₹{viewingPlan.price_per_month || "-"}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <Label className="text-xs text-muted-foreground mb-2 block">Security Deposits</Label>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-xs text-muted-foreground">Day</p>
+                    <p className="font-semibold text-lg">₹{viewingPlan.security_deposit_day}</p>
+                  </div>
+                  {viewingPlan.item_type === "cycle" && (
+                    <>
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-xs text-muted-foreground">Week</p>
+                        <p className="font-semibold text-lg">₹{viewingPlan.security_deposit_week}</p>
+                      </div>
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-xs text-muted-foreground">Month</p>
+                        <p className="font-semibold text-lg">₹{viewingPlan.security_deposit_month}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <Button className="w-full" onClick={() => { setViewDialogOpen(false); handleEdit(viewingPlan); }}>
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Pricing
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

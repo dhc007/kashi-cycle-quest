@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, DollarSign, Bike, Users, TrendingUp, Package } from "lucide-react";
+import { Calendar, IndianRupee, Bike, Users, TrendingUp, Package } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -282,55 +282,57 @@ const DashboardContent = () => {
       title: "Total Bookings", 
       value: metrics.totalBookings.toString(), 
       icon: Calendar,
-      color: "text-primary"
-    },
-    { 
-      title: "Gross Revenue", 
-      value: `₹${metrics.totalRevenue.toLocaleString('en-IN')}`, 
-      icon: DollarSign,
-      color: "text-green-600"
+      color: "text-primary",
+      path: "/admin/bookings"
     },
     { 
       title: "Net Revenue", 
       value: `₹${metrics.netRevenue.toLocaleString('en-IN')}`, 
-      icon: DollarSign,
-      color: "text-emerald-600"
+      icon: IndianRupee,
+      color: "text-emerald-600",
+      path: "/admin/bookings"
     },
     { 
       title: "Cancelled Bookings", 
       value: metrics.cancelledBookings.toString(), 
       icon: Calendar,
-      color: "text-red-600"
+      color: "text-red-600",
+      path: "/admin/cancellations"
     },
     { 
       title: "Refunds Processed", 
       value: `₹${metrics.refundsProcessed.toLocaleString('en-IN')}`, 
-      icon: DollarSign,
-      color: "text-red-500"
+      icon: IndianRupee,
+      color: "text-red-500",
+      path: "/admin/cancellations"
     },
     { 
       title: "Active Bookings", 
       value: metrics.activeBookings.toString(), 
       icon: TrendingUp,
-      color: "text-indigo-600"
+      color: "text-indigo-600",
+      path: "/admin/bookings"
     },
     { 
       title: "Total Partners", 
       value: metrics.totalPartners.toString(), 
       icon: Users,
-      color: "text-purple-600"
+      color: "text-purple-600",
+      path: "/admin/partners"
     },
     { 
       title: "Available Cycles", 
       value: metrics.availableCycles.toString(), 
       icon: Package,
-      color: "text-blue-600"
+      color: "text-blue-600",
+      path: "/admin/cycles"
     },
     { 
       title: "Cycles in Use", 
       value: metrics.cyclesInUse.toString(), 
       icon: Bike,
-      color: "text-orange-600"
+      color: "text-orange-600",
+      path: "/admin/cycle-return"
     },
   ];
 
@@ -417,39 +419,24 @@ const DashboardContent = () => {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6 mb-8">
-        {metricCards.map((metric) => {
-          // Determine navigation path
-          const getNavigationPath = (title: string) => {
-            if (title === "Total Bookings") return "/admin/bookings";
-            if (title === "Active Bookings") return "/admin/bookings";
-            if (title === "Cancelled Bookings") return "/admin/cancellations";
-            if (title === "Total Partners") return "/admin/partners";
-            if (title === "Available Cycles" || title === "Cycles in Use") return "/admin/cycles";
-            if (title === "Gross Revenue" || title === "Net Revenue" || title === "Refunds Processed") return "/admin/bookings";
-            return null;
-          };
-
-          const navPath = getNavigationPath(metric.title);
-
-          return (
-            <Card 
-              key={metric.title} 
-              className={`hover:shadow-warm transition-all ${navPath ? 'cursor-pointer' : ''}`}
-              onClick={() => navPath && navigate(navPath)}
-            >
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {metric.title}
-                </CardTitle>
-                <metric.icon className={`w-5 h-5 ${metric.color}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold">{metric.value}</div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        {metricCards.map((metric) => (
+          <Card 
+            key={metric.title} 
+            className="hover:shadow-warm transition-all cursor-pointer"
+            onClick={() => navigate(metric.path)}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {metric.title}
+              </CardTitle>
+              <metric.icon className={`w-5 h-5 ${metric.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{metric.value}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Charts */}
