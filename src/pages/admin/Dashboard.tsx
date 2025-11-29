@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, IndianRupee, Bike, Users, TrendingUp, Package } from "lucide-react";
+import { Calendar, IndianRupee, Bike, Users, TrendingUp, Package, Clock } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -25,12 +25,12 @@ interface DashboardMetrics {
   totalBookings: number;
   totalRevenue: number;
   netRevenue: number;
-  refundsProcessed: number;
   cancelledBookings: number;
   totalPartners: number;
   availableCycles: number;
   cyclesInUse: number;
   activeBookings: number;
+  upcomingBookings: number;
 }
 
 interface CycleUsage {
@@ -63,12 +63,12 @@ const DashboardContent = () => {
     totalBookings: 0,
     totalRevenue: 0,
     netRevenue: 0,
-    refundsProcessed: 0,
     cancelledBookings: 0,
     totalPartners: 0,
     availableCycles: 0,
     cyclesInUse: 0,
     activeBookings: 0,
+    upcomingBookings: 0,
   });
   const [activeBookings, setActiveBookings] = useState<Booking[]>([]);
   const [cycleUsageData, setCycleUsageData] = useState<CycleUsage[]>([]);
@@ -154,22 +154,25 @@ const DashboardContent = () => {
 
       // Calculate metrics (exclude cancelled bookings from revenue)
       const totalBookings = bookings?.length || 0;
-      const activeBookings = bookings?.filter(b => b.booking_status !== 'cancelled') || [];
+      const nonCancelledBookings = bookings?.filter(b => b.booking_status !== 'cancelled') || [];
       const cancelledBookings = bookings?.filter(b => b.booking_status === 'cancelled') || [];
-      const totalRevenue = activeBookings.reduce((sum, b) => sum + Number(b.total_amount), 0);
-      const refundsProcessed = cancelledBookings.reduce((sum, b) => sum + Number(b.refund_amount || 0), 0);
-      const netRevenue = totalRevenue - refundsProcessed;
+      const totalRevenue = nonCancelledBookings.reduce((sum, b) => sum + Number(b.total_amount), 0);
+      const netRevenue = totalRevenue;
       const totalPartners = partners?.length || 0;
       
-      // Calculate active bookings (only current/future bookings)
+      // Calculate active bookings (only bookings with status 'active')
       const today = new Date().toISOString().split('T')[0];
       const currentActiveBookings = bookings?.filter(b => 
-        (b.booking_status === 'active' || b.booking_status === 'confirmed') && 
-        b.return_date >= today
+        b.booking_status === 'active'
       ) || [];
       const activeBookingsCount = currentActiveBookings.length;
       
-      // Calculate cycles in use based on actual active bookings
+      // Calculate upcoming bookings (confirmed bookings with future pickup date)
+      const upcomingBookingsCount = bookings?.filter(b => 
+        b.booking_status === 'confirmed' && b.pickup_date > today
+      ).length || 0;
+      
+      // Calculate cycles in use based on ONLY active bookings
       const cyclesInUseCount = currentActiveBookings.length;
       
       // Calculate total available cycles (each cycle entry = 1 physical cycle)
@@ -182,12 +185,12 @@ const DashboardContent = () => {
         totalBookings,
         totalRevenue,
         netRevenue,
-        refundsProcessed,
         cancelledBookings: cancelledBookingsCount,
         totalPartners,
         availableCycles: availableCyclesCount,
         cyclesInUse: cyclesInUseCount,
         activeBookings: activeBookingsCount,
+        upcomingBookings: upcomingBookingsCount,
       });
 
       // Get active bookings with profiles
@@ -293,25 +296,25 @@ const DashboardContent = () => {
       path: "/admin/bookings"
     },
     { 
-      title: "Cancelled Bookings", 
-      value: metrics.cancelledBookings.toString(), 
-      icon: Calendar,
-      color: "text-red-600",
-      path: "/admin/cancellations"
-    },
-    { 
-      title: "Refunds Processed", 
-      value: `₹${metrics.refundsProcessed.toLocaleString('en-IN')}`, 
-      icon: IndianRupee,
-      color: "text-red-500",
-      path: "/admin/cancellations"
+      title: "Upcoming Bookings", 
+      value: metrics.upcomingBookings.toString(), 
+      icon: Clock,
+      color: "text-blue-600",
+      path: "/admin/bookings?tab=upcoming"
     },
     { 
       title: "Active Bookings", 
       value: metrics.activeBookings.toString(), 
       icon: TrendingUp,
       color: "text-indigo-600",
-      path: "/admin/bookings"
+      path: "/admin/bookings?tab=active"
+    },
+    { 
+      title: "Cancelled Bookings", 
+      value: metrics.cancelledBookings.toString(), 
+      icon: Calendar,
+      color: "text-red-600",
+      path: "/admin/cancellations"
     },
     { 
       title: "Total Partners", 
@@ -332,7 +335,7 @@ const DashboardContent = () => {
       value: metrics.cyclesInUse.toString(), 
       icon: Bike,
       color: "text-orange-600",
-      path: "/admin/cycle-return"
+      path: "/admin/bookings?tab=active"
     },
   ];
 

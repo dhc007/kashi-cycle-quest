@@ -1,12 +1,23 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 
 const NotFound = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
+    
+    // If the path starts with /admin, redirect to admin dashboard
+    if (location.pathname.startsWith('/admin')) {
+      navigate('/admin', { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  // If admin path, don't show the 404 page (will redirect)
+  if (location.pathname.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-100">

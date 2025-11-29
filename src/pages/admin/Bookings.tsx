@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -92,6 +92,7 @@ const BookingsContent = () => {
   const [searchParams] = useSearchParams();
   const partnerFilter = searchParams.get("partner");
   const searchQuery = searchParams.get("search");
+  const tabParam = searchParams.get("tab");
   
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
@@ -104,6 +105,7 @@ const BookingsContent = () => {
   const [selectedProfile, setSelectedProfile] = useState<Booking['profiles'] | null>(null);
   const [sortField, setSortField] = useState<'created_at' | 'pickup_date'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [activeTab, setActiveTab] = useState(tabParam || "all");
   const { toast } = useToast();
   const { canEdit } = useUserRoles();
 
@@ -362,6 +364,7 @@ const BookingsContent = () => {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="min-w-[80px]">Actions</TableHead>
             <TableHead className="min-w-[120px]">Booking ID</TableHead>
             <TableHead className="min-w-[120px]">Booking Date</TableHead>
             <TableHead className="min-w-[150px]">Customer</TableHead>
@@ -372,12 +375,34 @@ const BookingsContent = () => {
             <TableHead className="min-w-[80px]">Amount</TableHead>
             <TableHead className="min-w-[100px]">Payment</TableHead>
             <TableHead className="min-w-[130px]">Status</TableHead>
-            <TableHead className="min-w-[80px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {bookings.map((booking) => (
             <TableRow key={booking.id}>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={() => viewDetails(booking)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                      {canEdit && (
+                        <DropdownMenuItem onClick={() => viewDetails(booking)}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit/Manage
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </TableCell>
               <TableCell className="font-mono text-sm">{booking.booking_id}</TableCell>
               <TableCell className="text-sm">
                 {format(new Date(booking.created_at), 'MMM dd, yyyy')}
@@ -439,28 +464,6 @@ const BookingsContent = () => {
                   </span>
                 )}
               </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => viewDetails(booking)}>
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  {canEdit && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => viewDetails(booking)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit/Manage
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -512,7 +515,7 @@ const BookingsContent = () => {
       </Card>
 
       <Card className="shadow-warm">
-        <Tabs defaultValue="all" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="border-b px-4 md:px-6">
             <TabsList className="w-full justify-start h-auto flex-wrap bg-transparent p-0">
               <TabsTrigger 
