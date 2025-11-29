@@ -209,6 +209,8 @@ export type Database = {
           payment_id: string | null
           payment_method: string | null
           payment_status: string
+          phonepe_order_id: string | null
+          phonepe_transaction_id: string | null
           pickup_date: string
           pickup_location_id: string | null
           pickup_time: string
@@ -262,6 +264,8 @@ export type Database = {
           payment_id?: string | null
           payment_method?: string | null
           payment_status?: string
+          phonepe_order_id?: string | null
+          phonepe_transaction_id?: string | null
           pickup_date: string
           pickup_location_id?: string | null
           pickup_time: string
@@ -315,6 +319,8 @@ export type Database = {
           payment_id?: string | null
           payment_method?: string | null
           payment_status?: string
+          phonepe_order_id?: string | null
+          phonepe_transaction_id?: string | null
           pickup_date?: string
           pickup_location_id?: string | null
           pickup_time?: string
