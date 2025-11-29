@@ -16,20 +16,8 @@ const Home = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        // User is logged in, check their booking history
-        const { data: bookingsData } = await supabase
-          .from('bookings')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .limit(1);
-
-        if (bookingsData && bookingsData.length > 0) {
-          // Has past bookings, go to bookings page
-          navigate('/bookings');
-        } else {
-          // No past bookings, go to book page
-          navigate('/book');
-        }
+        // User is logged in, redirect to My Bookings
+        navigate('/bookings');
       } else {
         // Not logged in, stay on home page
         setIsChecking(false);
