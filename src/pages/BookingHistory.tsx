@@ -382,9 +382,11 @@ const BookingHistory = () => {
                     <div className="pt-4 border-t">
                       <p className="text-sm font-medium mb-3">Accessories</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {booking.booking_accessories.map((acc, idx) => (
+                        {booking.booking_accessories
+                          .filter((acc) => acc.accessories)
+                          .map((acc, idx) => (
                           <div key={idx} className="bg-muted/50 p-3 rounded-md">
-                            <p className="font-medium text-sm">{acc.accessories.name}</p>
+                            <p className="font-medium text-sm">{acc.accessories?.name || 'Unknown Accessory'}</p>
                             <div className="flex justify-between text-xs text-muted-foreground mt-1">
                               <span>Qty: {acc.quantity} × {acc.days} days</span>
                               <span className="font-medium">₹{acc.total_cost.toLocaleString()}</span>
