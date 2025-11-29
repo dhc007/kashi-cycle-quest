@@ -39,7 +39,7 @@ export const Navbar = () => {
         
         <div className="flex items-center gap-2 md:gap-4">
           <Button variant="ghost" size="sm" asChild className="hidden md:inline-flex">
-            <Link to="/">Home</Link>
+            <Link to={user ? "/bookings" : "/"}>Home</Link>
           </Button>
           <Button variant="ghost" size="sm" asChild>
             <Link to="/book">Book</Link>
