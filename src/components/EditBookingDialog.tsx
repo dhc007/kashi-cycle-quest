@@ -98,8 +98,31 @@ export const EditBookingDialog = ({
   };
 
   const updateQuantity = (accessoryId: string, change: number) => {
+    const accessory = allAccessories.find((a) => a.id === accessoryId);
+    if (!accessory) return;
+    
     const current = selectedAccessories.get(accessoryId) || 0;
     const newValue = Math.max(0, current + change);
+    
+    // Prevent adding if no stock available
+    if (change > 0 && accessory.available_quantity <= 0) {
+      toast({
+        title: "Not Available",
+        description: `${accessory.name} is currently not available`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Prevent exceeding available quantity
+    if (newValue > accessory.available_quantity) {
+      toast({
+        title: "Quantity Exceeded",
+        description: `Only ${accessory.available_quantity} ${accessory.name}(s) available`,
+        variant: "destructive",
+      });
+      return;
+    }
     
     const newMap = new Map(selectedAccessories);
     if (newValue === 0) {
@@ -232,14 +255,19 @@ export const EditBookingDialog = ({
               {allAccessories.map((accessory) => {
                 const currentQty = selectedAccessories.get(accessory.id) || 0;
                 const maxQty = accessory.available_quantity;
+                const isUnavailable = maxQty <= 0;
 
                 return (
-                  <div key={accessory.id} className="border rounded-lg p-4">
+                  <div key={accessory.id} className={`border rounded-lg p-4 ${isUnavailable ? 'opacity-60' : ''}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <p className="font-medium">{accessory.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          ₹{accessory.price_per_day}/day • Available: {maxQty}
+                          ₹{accessory.price_per_day}/day • {isUnavailable ? (
+                            <span className="text-destructive font-medium">Not Available</span>
+                          ) : (
+                            `Available: ${maxQty}`
+                          )}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -258,7 +286,7 @@ export const EditBookingDialog = ({
                           variant="outline"
                           size="icon"
                           onClick={() => updateQuantity(accessory.id, 1)}
-                          disabled={currentQty >= maxQty}
+                          disabled={isUnavailable || currentQty >= maxQty}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
