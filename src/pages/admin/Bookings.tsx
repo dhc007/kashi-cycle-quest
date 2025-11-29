@@ -11,13 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
 import { format, isBefore, isAfter, startOfDay } from "date-fns";
-import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown, MoreVertical, Edit } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -352,9 +346,26 @@ const BookingsContent = () => {
       
       <div className="flex justify-between items-center pt-2 border-t">
         <span className="font-semibold">₹{booking.total_amount}</span>
-        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(booking.booking_status)}`}>
-          {booking.booking_status}
-        </span>
+        {canEdit ? (
+          <Select
+            value={booking.booking_status}
+            onValueChange={(value) => updateBookingStatus(booking.id, value)}
+          >
+            <SelectTrigger className="w-[120px] h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(booking.booking_status)}`}>
+            {booking.booking_status}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -381,27 +392,9 @@ const BookingsContent = () => {
           {bookings.map((booking) => (
             <TableRow key={booking.id}>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start">
-                      <DropdownMenuItem onClick={() => viewDetails(booking)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Details
-                      </DropdownMenuItem>
-                      {canEdit && (
-                        <DropdownMenuItem onClick={() => viewDetails(booking)}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit/Manage
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <Button variant="ghost" size="icon" onClick={() => viewDetails(booking)}>
+                  <Eye className="h-4 w-4" />
+                </Button>
               </TableCell>
               <TableCell className="font-mono text-sm">{booking.booking_id}</TableCell>
               <TableCell className="text-sm">

@@ -175,8 +175,8 @@ const DashboardContent = () => {
       // Calculate cycles in use based on ONLY active bookings
       const cyclesInUseCount = currentActiveBookings.length;
       
-      // Calculate total available cycles (each cycle entry = 1 physical cycle)
-      const totalCyclesCount = cycles?.filter(c => c.is_active).length || 0;
+      // Calculate total available cycles (sum of quantity field for all active cycles)
+      const totalCyclesCount = cycles?.reduce((sum, c) => sum + (c.quantity || 1), 0) || 0;
       const availableCyclesCount = totalCyclesCount - cyclesInUseCount;
       
       const cancelledBookingsCount = cancelledBookings.length;
@@ -232,13 +232,16 @@ const DashboardContent = () => {
           .in('booking_status', ['confirmed', 'active'])
           .gte('return_date', today);
         
+        const totalUnits = cycle.quantity || 1;
+        const inUseCount = count || 0;
+        
         return {
           id: cycle.id,
           name: cycle.name,
           model: cycle.model,
-          total: 1, // Each cycle entry = 1 physical cycle
-          inUse: count || 0,
-          available: count ? 0 : 1
+          total: totalUnits,
+          inUse: inUseCount,
+          available: Math.max(0, totalUnits - inUseCount)
         };
       }));
       setCycleUsageData(cycleUsage);
