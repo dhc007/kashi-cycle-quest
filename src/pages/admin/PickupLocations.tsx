@@ -160,7 +160,7 @@ export default function PickupLocations() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Pickup Locations</CardTitle>
@@ -290,21 +290,58 @@ export default function PickupLocations() {
             </DialogContent>
           </Dialog>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px]">Actions</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Address</TableHead>
                 <TableHead>City/State</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {locations.map((location) => (
                 <TableRow key={location.id}>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(location)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {location.google_maps_link && (
+                            <DropdownMenuItem onClick={() => window.open(location.google_maps_link!, "_blank")}>
+                              <MapPin className="w-4 h-4 mr-2" />
+                              View on Map
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => openEditDialog(location)}>
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDelete(location.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
                   <TableCell className="font-medium">{location.name}</TableCell>
                   <TableCell>
                     <div className="text-sm">
@@ -330,43 +367,6 @@ export default function PickupLocations() {
                     <Badge variant={location.is_active ? "default" : "secondary"}>
                       {location.is_active ? "Active" : "Inactive"}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(location)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {location.google_maps_link && (
-                            <DropdownMenuItem onClick={() => window.open(location.google_maps_link!, "_blank")}>
-                              <MapPin className="w-4 h-4 mr-2" />
-                              View on Map
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => openEditDialog(location)}>
-                            <Pencil className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDelete(location.id)}
-                            className="text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
                   </TableCell>
                 </TableRow>
               ))}

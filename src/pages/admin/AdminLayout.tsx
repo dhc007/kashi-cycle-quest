@@ -13,7 +13,7 @@ import {
   PackageCheck,
   Wrench,
   Tag,
-  DollarSign,
+  IndianRupee,
   Menu,
   X,
 } from "lucide-react";
@@ -62,7 +62,7 @@ const AdminLayout = () => {
     { icon: PackageCheck, label: "Cycle Returns", path: "/admin/cycle-return" },
     { icon: Wrench, label: "Maintenance", path: "/admin/maintenance" },
     { icon: Tag, label: "Coupons", path: "/admin/coupons" },
-    { icon: DollarSign, label: "Pricing Plan", path: "/admin/pricing-plan" },
+    { icon: IndianRupee, label: "Pricing Plan", path: "/admin/pricing-plan" },
     { icon: Settings, label: "Settings", path: "/admin/settings" },
   ];
 

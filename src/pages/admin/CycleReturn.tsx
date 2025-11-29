@@ -286,7 +286,7 @@ const CycleReturnContent = () => {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Cycle Returns & Deposit Management</h1>
         <p className="text-muted-foreground">Process cycle returns and manage security deposits</p>
@@ -299,17 +299,17 @@ const CycleReturnContent = () => {
             Active Bookings Pending Return
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px]">Actions</TableHead>
                 <TableHead>Booking ID</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Cycle</TableHead>
                 <TableHead>Return Date</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Security Deposit</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -320,6 +320,40 @@ const CycleReturnContent = () => {
                   
                   return (
                     <TableRow key={booking.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setViewingBooking(booking);
+                              setViewDialogOpen(true);
+                            }}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              {!booking.cycle_returned_at && (
+                                <DropdownMenuItem onClick={() => openReturnDialog(booking)}>
+                                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                                  Mark Returned
+                                </DropdownMenuItem>
+                              )}
+                              {booking.cycle_returned_at && !booking.deposit_returned_at && (
+                                <DropdownMenuItem onClick={() => handleDepositReturn(booking)} disabled={processing}>
+                                  Return Deposit
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
                       <TableCell className="font-mono">{booking.booking_id}</TableCell>
                       <TableCell>
                         <div>
@@ -362,40 +396,6 @@ const CycleReturnContent = () => {
                         )}
                       </TableCell>
                       <TableCell className="font-semibold">₹{booking.security_deposit}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setViewingBooking(booking);
-                              setViewDialogOpen(true);
-                            }}
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {!booking.cycle_returned_at && (
-                                <DropdownMenuItem onClick={() => openReturnDialog(booking)}>
-                                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                                  Mark Returned
-                                </DropdownMenuItem>
-                              )}
-                              {booking.cycle_returned_at && !booking.deposit_returned_at && (
-                                <DropdownMenuItem onClick={() => handleDepositReturn(booking)} disabled={processing}>
-                                  Return Deposit
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </TableCell>
                     </TableRow>
                   );
                 })
@@ -472,18 +472,20 @@ const CycleReturnContent = () => {
                   <div className="flex flex-wrap gap-2 mt-2">
                     {returnPhotos.map((file, index) => (
                       <div key={index} className="relative">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={`Photo ${index + 1}`}
-                          className="w-20 h-20 object-cover rounded border"
-                        />
+                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center text-xs overflow-hidden">
+                          {file.type.startsWith('image/') ? (
+                            <img src={URL.createObjectURL(file)} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-muted-foreground">Video</span>
+                          )}
+                        </div>
                         <Button
                           variant="destructive"
                           size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6"
+                          className="absolute -top-2 -right-2 w-5 h-5"
                           onClick={() => removePhoto(index)}
                         >
-                          <X className="h-3 w-3" />
+                          <X className="w-3 h-3" />
                         </Button>
                       </div>
                     ))}
@@ -491,7 +493,7 @@ const CycleReturnContent = () => {
                 )}
               </div>
 
-              {(cycleCondition === "damaged" || cycleCondition === "fair") && (
+              {cycleCondition === 'damaged' && (
                 <>
                   <div className="space-y-2">
                     <Label>Damage Cost (₹)</Label>
@@ -503,101 +505,88 @@ const CycleReturnContent = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>Damage Description *</Label>
+                    <Label>Damage Description</Label>
                     <Textarea
                       value={damageDescription}
                       onChange={(e) => setDamageDescription(e.target.value)}
-                      placeholder="Describe the damage or wear..."
-                      rows={3}
+                      placeholder="Describe the damage..."
                     />
                   </div>
                 </>
               )}
 
-              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm">Security Deposit:</span>
-                  <span className="font-semibold">₹{selectedBooking.security_deposit}</span>
-                </div>
-                <div className="flex justify-between items-center mb-2 text-red-600">
-                  <span className="text-sm">Late Fee:</span>
-                  <span className="font-semibold">-₹{calculateLateFee(selectedBooking.return_date)}</span>
-                </div>
-                <div className="flex justify-between items-center mb-2 text-red-600">
-                  <span className="text-sm">Damage Cost:</span>
-                  <span className="font-semibold">-₹{damageCost}</span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-primary/20">
-                  <span className="font-semibold">Refund Amount:</span>
-                  <span className="text-lg font-bold text-primary">
-                    ₹{selectedBooking.security_deposit - calculateLateFee(selectedBooking.return_date) - parseFloat(damageCost || "0")}
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">Deposit Refund:</span>
+                  <span className="font-bold text-xl">
+                    ₹{selectedBooking.security_deposit - calculateLateFee(selectedBooking.return_date) - parseFloat(damageCost || '0')}
                   </span>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">
                   Cancel
                 </Button>
-                <Button onClick={handleCycleReturn} disabled={processing}>
-                  {processing ? "Processing..." : "Confirm Return"}
+                <Button onClick={handleCycleReturn} disabled={processing} className="flex-1">
+                  {processing ? "Processing..." : "Complete Return"}
                 </Button>
               </div>
             </div>
           )}
-          </DialogContent>
-        </Dialog>
+        </DialogContent>
+      </Dialog>
 
-        {/* View Details Dialog */}
-        <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Booking Details</DialogTitle>
-            </DialogHeader>
-            {viewingBooking && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Booking ID</Label>
-                    <p className="font-mono">{viewingBooking.booking_id}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Customer</Label>
-                    <p className="font-medium">{viewingBooking.profiles?.full_name}</p>
-                    <p className="text-xs text-muted-foreground">{viewingBooking.profiles?.phone_number}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Cycle</Label>
-                    <p>{viewingBooking.cycles?.name}</p>
-                    <p className="text-xs text-muted-foreground">{viewingBooking.cycles?.model}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Return Date</Label>
-                    <p>{format(new Date(viewingBooking.return_date), 'MMM dd, yyyy')}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Security Deposit</Label>
-                    <p className="font-semibold">₹{viewingBooking.security_deposit}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Late Fee</Label>
-                    <p className="font-semibold text-red-600">₹{calculateLateFee(viewingBooking.return_date)}</p>
-                  </div>
+      {/* View Details Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Booking Details</DialogTitle>
+          </DialogHeader>
+          {viewingBooking && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Booking ID</Label>
+                  <p className="font-mono">{viewingBooking.booking_id}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Customer</Label>
+                  <p className="font-medium">{viewingBooking.profiles?.full_name}</p>
+                  <p className="text-xs text-muted-foreground">{viewingBooking.profiles?.phone_number}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Cycle</Label>
+                  <p>{viewingBooking.cycles?.name}</p>
+                  <p className="text-xs text-muted-foreground">{viewingBooking.cycles?.model}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Return Date</Label>
+                  <p>{format(new Date(viewingBooking.return_date), 'MMM dd, yyyy')}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Security Deposit</Label>
+                  <p className="font-semibold">₹{viewingBooking.security_deposit}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Total Amount</Label>
+                  <p className="font-semibold">₹{viewingBooking.total_amount}</p>
                 </div>
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
-    );
-  };
-  
-  const CycleReturn = () => {
-    return (
-      <RoleGuard allowedRoles={['admin', 'manager']}>
-        <CycleReturnContent />
-      </RoleGuard>
-    );
-  };
-  
-  export default CycleReturn;
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+const CycleReturn = () => {
+  return (
+    <RoleGuard allowedRoles={['admin', 'manager']}>
+      <CycleReturnContent />
+    </RoleGuard>
+  );
+};
+
+export default CycleReturn;
