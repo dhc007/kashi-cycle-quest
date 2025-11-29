@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard } from "@/components/admin/RoleGuard";
-import { Wrench, Plus, CheckCircle2, Eye, MoreVertical } from "lucide-react";
+import { Wrench, Plus, CheckCircle2, Eye, MoreVertical, Edit } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,6 +54,8 @@ const MaintenanceContent = () => {
   const [processing, setProcessing] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingRecord, setViewingRecord] = useState<MaintenanceRecord | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<MaintenanceRecord | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -160,6 +162,62 @@ const MaintenanceContent = () => {
         description: "Maintenance completed. Cycle is now available.",
       });
 
+      loadData();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const openEditDialog = (record: MaintenanceRecord) => {
+    setEditingRecord(record);
+    setSelectedCycleId(record.cycle_id);
+    setMaintenanceType(record.maintenance_type);
+    setDescription(record.description || "");
+    setCost(record.cost?.toString() || "");
+    setEditDialogOpen(true);
+  };
+
+  const handleUpdateMaintenance = async () => {
+    if (!editingRecord || !selectedCycleId || !maintenanceType) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const { error } = await supabase
+        .from('cycle_maintenance')
+        .update({
+          cycle_id: selectedCycleId,
+          maintenance_type: maintenanceType,
+          description: description || null,
+          cost: cost ? parseFloat(cost) : 0,
+        })
+        .eq('id', editingRecord.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Maintenance record updated.",
+      });
+
+      setEditDialogOpen(false);
+      setEditingRecord(null);
+      setSelectedCycleId("");
+      setMaintenanceType("");
+      setDescription("");
+      setCost("");
       loadData();
     } catch (error: any) {
       toast({
@@ -315,6 +373,12 @@ const MaintenanceContent = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
+                              {record.status !== 'completed' && (
+                                <DropdownMenuItem onClick={() => openEditDialog(record)}>
+                                  <Edit className="w-4 h-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
                               {record.status === 'pending' && (
                                 <DropdownMenuItem onClick={() => handleCompleteMaintenance(record)} disabled={processing}>
                                   <CheckCircle2 className="w-4 h-4 mr-2" />
@@ -400,6 +464,88 @@ const MaintenanceContent = () => {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Maintenance Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={(open) => {
+        setEditDialogOpen(open);
+        if (!open) {
+          setEditingRecord(null);
+          setSelectedCycleId("");
+          setMaintenanceType("");
+          setDescription("");
+          setCost("");
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Maintenance Record</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select Cycle *</Label>
+              <Select value={selectedCycleId} onValueChange={setSelectedCycleId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a cycle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cycles.map((cycle) => (
+                    <SelectItem key={cycle.id} value={cycle.id}>
+                      {cycle.display_serial} - {cycle.name} ({cycle.model})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Maintenance Type *</Label>
+              <Select value={maintenanceType} onValueChange={setMaintenanceType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="routine">Routine Service</SelectItem>
+                  <SelectItem value="repair">Repair</SelectItem>
+                  <SelectItem value="brake_adjustment">Brake Adjustment</SelectItem>
+                  <SelectItem value="tire_replacement">Tire Replacement</SelectItem>
+                  <SelectItem value="battery_check">Battery Check</SelectItem>
+                  <SelectItem value="cleaning">Deep Cleaning</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe the maintenance work..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cost (₹)</Label>
+              <Input
+                type="number"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateMaintenance} disabled={processing}>
+                {processing ? "Updating..." : "Update Record"}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
