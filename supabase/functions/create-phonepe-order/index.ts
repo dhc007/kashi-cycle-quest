@@ -34,17 +34,20 @@ serve(async (req) => {
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
 
     // Step 1: Get OAuth Access Token
-    const authString = btoa(`${clientId}:${clientSecret}:${clientVersion}`);
-    
     console.log('Getting PhonePe OAuth token...');
+    
+    const tokenBody = new URLSearchParams();
+    tokenBody.append('client_id', clientId);
+    tokenBody.append('client_secret', clientSecret);
+    tokenBody.append('client_version', clientVersion);
+    tokenBody.append('grant_type', 'client_credentials');
     
     const tokenResponse = await fetch(`${baseUrl}/v1/oauth/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${authString}`,
       },
-      body: 'grant_type=client_credentials',
+      body: tokenBody.toString(),
     });
 
     const tokenData = await tokenResponse.json();
