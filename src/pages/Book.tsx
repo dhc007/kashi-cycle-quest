@@ -1261,11 +1261,6 @@ const Book = () => {
                                               <p className="text-xs text-muted-foreground">
                                                 {accessory.quantity} × {accessory.days}d
                                               </p>
-                                              {accessory.securityDeposit > 0 && (
-                                                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                                                  SD: ₹{accessory.securityDeposit * accessory.quantity}
-                                                </p>
-                                              )}
                                             </div>
                                           ) : (
                                             <span className="text-muted-foreground text-sm">Not added</span>
