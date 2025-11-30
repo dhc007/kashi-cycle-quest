@@ -57,6 +57,33 @@ interface Partner {
   logo_url: string | null;
 }
 
+// Expandable description component for long text
+const ExpandableDescription = ({ text, maxLength = 80 }: { text: string; maxLength?: number }) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  if (text.length <= maxLength) {
+    return <p className="text-xs text-muted-foreground mt-1 mb-3">{text}</p>;
+  }
+  
+  return (
+    <div className="mt-1 mb-3">
+      <p className="text-xs text-muted-foreground">
+        {expanded ? text : `${text.slice(0, maxLength)}...`}
+      </p>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setExpanded(!expanded);
+        }}
+        className="text-xs text-primary hover:underline mt-0.5"
+      >
+        {expanded ? "Show less" : "Read more"}
+      </button>
+    </div>
+  );
+};
+
 const Book = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -1150,7 +1177,7 @@ const Book = () => {
                                       <h4 className="font-semibold text-lg mb-1">{cycle.name}</h4>
                                       <p className="text-sm text-muted-foreground">{cycle.model}</p>
                                       {cycle.description && (
-                                        <p className="text-xs text-muted-foreground mt-1 mb-3 line-clamp-2">{cycle.description}</p>
+                                        <ExpandableDescription text={cycle.description} maxLength={80} />
                                       )}
                                       {!cycle.description && <div className="mb-3" />}
 
@@ -1824,10 +1851,10 @@ const Book = () => {
                         <div className="ml-6 space-y-3">
                           {selectedCycles.map((cycle, index) => (
                             <div key={index} className="space-y-1">
-                              {cycle.image_url && (
+                              {(cycle.image_url || (cycle.media_urls && cycle.media_urls.length > 0)) && (
                                 <div className="w-full h-32 bg-muted rounded-lg mb-2 flex items-center justify-center p-2">
                                   <img
-                                    src={cycle.image_url}
+                                    src={cycle.image_url || cycle.media_urls[0]}
                                     alt={cycle.name}
                                     className="max-w-full max-h-full object-contain rounded-lg"
                                   />
