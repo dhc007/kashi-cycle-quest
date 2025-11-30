@@ -174,7 +174,7 @@ export function AddAccessoriesDialog({
       // Store addon data in sessionStorage for callback
       sessionStorage.setItem('addonPaymentData', JSON.stringify({
         bookingId,
-        merchantOrderId: orderData.merchantOrderId,
+        merchantTransactionId: orderData.merchantTransactionId,
         selectedAccessories: selectedAccessories.map((selected) => {
           const accessory = accessories.find((a) => a.id === selected.id)!;
           return {
@@ -199,7 +199,7 @@ export function AddAccessoriesDialog({
             'verify-phonepe-payment',
             {
               body: {
-                merchantOrderId: orderData.merchantOrderId,
+                merchantTransactionId: orderData.merchantTransactionId,
                 booking_id: bookingId,
                 is_addon: true,
               },

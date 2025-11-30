@@ -6,6 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to generate SHA256 hash
+async function sha256(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -13,62 +21,46 @@ serve(async (req) => {
   }
 
   try {
-    const clientId = Deno.env.get('PHONEPE_CLIENT_ID');
-    const clientSecret = Deno.env.get('PHONEPE_CLIENT_SECRET');
-    const clientVersion = Deno.env.get('PHONEPE_CLIENT_VERSION') || '1';
+    const merchantId = Deno.env.get('PHONEPE_MERCHANT_ID');
+    const saltKey = Deno.env.get('PHONEPE_SALT_KEY');
+    const saltIndex = Deno.env.get('PHONEPE_SALT_INDEX') || '1';
     const env = Deno.env.get('PHONEPE_ENV') || 'sandbox';
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!clientId || !clientSecret) {
+    if (!merchantId || !saltKey) {
       throw new Error('PhonePe credentials not configured');
     }
 
-    const { merchantOrderId, booking_id, is_addon } = await req.json();
+    // Support both old field name (merchantOrderId) and new (merchantTransactionId)
+    const body = await req.json();
+    const merchantTransactionId = body.merchantTransactionId || body.merchantOrderId;
+    const { booking_id, is_addon } = body;
 
-    if (!merchantOrderId) {
-      throw new Error('Missing merchantOrderId');
+    if (!merchantTransactionId) {
+      throw new Error('Missing merchantTransactionId');
     }
 
     // Determine API base URL based on environment
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/pg'
+      ? 'https://api.phonepe.com/apis/hermes'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
 
-    // Step 1: Get OAuth Access Token
-    console.log('Getting PhonePe OAuth token for verification...');
-    
-    const tokenBody = new URLSearchParams();
-    tokenBody.append('client_id', clientId);
-    tokenBody.append('client_secret', clientSecret);
-    tokenBody.append('client_version', clientVersion);
-    tokenBody.append('grant_type', 'client_credentials');
-    
-    const tokenResponse = await fetch(`${baseUrl}/v1/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: tokenBody.toString(),
-    });
+    // Generate X-VERIFY checksum for status check
+    const statusEndpoint = `/pg/v1/status/${merchantId}/${merchantTransactionId}`;
+    const stringToHash = statusEndpoint + saltKey;
+    const sha256Hash = await sha256(stringToHash);
+    const xVerify = sha256Hash + '###' + saltIndex;
 
-    const tokenData = await tokenResponse.json();
-    
-    if (!tokenResponse.ok || !tokenData.access_token) {
-      console.error('Token error:', JSON.stringify(tokenData));
-      throw new Error(tokenData.message || 'Failed to get PhonePe access token');
-    }
+    console.log('Checking payment status for:', merchantTransactionId);
 
-    const accessToken = tokenData.access_token;
-    console.log('Got PhonePe access token for verification');
-
-    // Step 2: Check Order Status
-    console.log('Checking order status for:', merchantOrderId);
-    
-    const statusResponse = await fetch(`${baseUrl}/checkout/v2/order/${merchantOrderId}/status`, {
+    // Make status check request
+    const statusResponse = await fetch(`${baseUrl}${statusEndpoint}`, {
       method: 'GET',
       headers: {
-        'Authorization': `O-Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        'X-VERIFY': xVerify,
+        'X-MERCHANT-ID': merchantId,
       },
     });
 
@@ -81,18 +73,18 @@ serve(async (req) => {
       throw new Error(statusData.message || 'Failed to check payment status');
     }
 
-    // Determine payment state
-    const state = statusData.state || statusData.data?.state;
-    const transactionId = statusData.paymentDetails?.[0]?.transactionId || 
-                          statusData.data?.paymentDetails?.[0]?.transactionId ||
-                          statusData.orderId;
+    // Determine payment state from response
+    const responseCode = statusData.code;
+    const state = statusData.data?.state || statusData.data?.responseCode;
+    const transactionId = statusData.data?.transactionId || merchantTransactionId;
 
-    console.log('Payment state:', state, 'Transaction ID:', transactionId);
+    console.log('Payment response code:', responseCode, 'State:', state, 'Transaction ID:', transactionId);
 
     // Create Supabase client
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
-    if (state === 'COMPLETED') {
+    // Check if payment is successful
+    if (responseCode === 'PAYMENT_SUCCESS' || state === 'COMPLETED') {
       // Payment successful - update booking
       if (!is_addon && booking_id) {
         const { error: updateError } = await supabase
@@ -100,7 +92,7 @@ serve(async (req) => {
           .update({
             payment_status: 'completed',
             payment_method: 'phonepe',
-            phonepe_order_id: merchantOrderId,
+            phonepe_order_id: merchantTransactionId,
             phonepe_transaction_id: transactionId,
             booking_status: 'confirmed',
           })
@@ -136,20 +128,21 @@ serve(async (req) => {
         JSON.stringify({
           success: true,
           verified: true,
-          state,
+          state: 'COMPLETED',
           transactionId,
+          responseCode,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
-    } else if (state === 'FAILED') {
+    } else if (responseCode === 'PAYMENT_ERROR' || responseCode === 'PAYMENT_DECLINED' || state === 'FAILED') {
       // Payment failed
       if (!is_addon && booking_id) {
         await supabase
           .from('bookings')
           .update({
             payment_status: 'failed',
-            phonepe_order_id: merchantOrderId,
+            phonepe_order_id: merchantTransactionId,
           })
           .eq('booking_id', booking_id);
       }
@@ -158,8 +151,9 @@ serve(async (req) => {
         JSON.stringify({
           success: false,
           verified: false,
-          state,
-          message: 'Payment failed',
+          state: 'FAILED',
+          message: statusData.message || 'Payment failed',
+          responseCode,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -170,8 +164,9 @@ serve(async (req) => {
         JSON.stringify({
           success: false,
           verified: false,
-          state,
-          message: `Payment status: ${state}`,
+          state: state || responseCode,
+          message: `Payment status: ${statusData.message || responseCode}`,
+          responseCode,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
