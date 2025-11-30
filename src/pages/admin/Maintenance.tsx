@@ -244,15 +244,15 @@ const MaintenanceContent = () => {
   }
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Cycle Maintenance</h1>
-          <p className="text-muted-foreground">Track and manage cycle maintenance activities</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Cycle Maintenance</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Track and manage cycle maintenance activities</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               New Maintenance
             </Button>

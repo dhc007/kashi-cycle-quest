@@ -160,13 +160,13 @@ export default function PickupLocations() {
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Pickup Locations</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6">
+          <CardTitle className="text-xl sm:text-2xl">Pickup Locations</CardTitle>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openAddDialog}>
+              <Button onClick={openAddDialog} className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Location
               </Button>

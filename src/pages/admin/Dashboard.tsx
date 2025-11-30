@@ -377,27 +377,27 @@ const DashboardContent = () => {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Date Range Display - Top Center */}
-      <div className="text-center mb-6">
-        <p className="text-sm text-muted-foreground">
+      <div className="text-center mb-4 sm:mb-6">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           {format(new Date(), 'EEEE, MMMM d, yyyy • h:mm a')}
         </p>
-        <p className="text-base text-primary font-semibold mt-1">
+        <p className="text-sm sm:text-base text-primary font-semibold mt-1">
           Showing data: {getDateRangeLabel()}
         </p>
       </div>
 
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome to Bolt91 Admin Panel</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Welcome to Bolt91 Admin Panel</p>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
             <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-[180px] text-foreground">
+              <SelectTrigger className="w-full sm:w-[180px] text-foreground">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -414,7 +414,7 @@ const DashboardContent = () => {
             {timeFilter === "custom" && (
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="gap-2">
+                  <Button variant="outline" className="gap-2 w-full sm:w-auto justify-center">
                     <CalendarIcon className="h-4 w-4" />
                     {customStartDate && customEndDate
                       ? `${format(customStartDate, "MMM dd")} - ${format(customEndDate, "MMM dd")}`
@@ -448,21 +448,21 @@ const DashboardContent = () => {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
         {metricCards.map((metric) => (
           <Card 
             key={metric.title} 
             className="hover:shadow-warm transition-all cursor-pointer"
             onClick={() => navigate(metric.path)}
           >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-4 lg:p-6 lg:pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground line-clamp-1">
                 {metric.title}
               </CardTitle>
-              <metric.icon className={`w-5 h-5 ${metric.color}`} />
+              <metric.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${metric.color} flex-shrink-0`} />
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{metric.value}</div>
+            <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0 lg:p-6 lg:pt-0">
+              <div className="text-xl sm:text-2xl lg:text-3xl font-bold">{metric.value}</div>
             </CardContent>
           </Card>
         ))}
@@ -470,13 +470,13 @@ const DashboardContent = () => {
 
       {/* Charts */}
       {(dashboardSettings.showBookingTrends || dashboardSettings.showRevenueTrends) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {dashboardSettings.showBookingTrends && (
             <Card className="shadow-warm">
-              <CardHeader>
-                <CardTitle>Booking Trends</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Booking Trends</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-2 sm:p-6 pt-0">
                 <ChartContainer
                   config={{
                     bookings: {
@@ -484,22 +484,24 @@ const DashboardContent = () => {
                       color: "hsl(var(--primary))",
                     },
                   }}
-                  className="h-[300px] w-full"
+                  className="h-[200px] sm:h-[250px] lg:h-[300px] w-full"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={bookingTrends} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <BarChart data={bookingTrends} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis 
                         dataKey="date" 
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 10 }}
                         className="text-muted-foreground"
+                        interval="preserveStartEnd"
                       />
                       <YAxis 
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 10 }}
                         className="text-muted-foreground"
+                        width={35}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
-                      <Bar dataKey="bookings" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="bookings" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </ChartContainer>
@@ -509,10 +511,10 @@ const DashboardContent = () => {
 
           {dashboardSettings.showRevenueTrends && (
             <Card className="shadow-warm">
-              <CardHeader>
-                <CardTitle>Revenue Trends</CardTitle>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl">Revenue Trends</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-2 sm:p-6 pt-0">
                 <ChartContainer
                   config={{
                     revenue: {
@@ -520,19 +522,21 @@ const DashboardContent = () => {
                       color: "hsl(var(--green-600))",
                     },
                   }}
-                  className="h-[300px] w-full"
+                  className="h-[200px] sm:h-[250px] lg:h-[300px] w-full"
                 >
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={revenueTrends} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                    <LineChart data={revenueTrends} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis 
                         dataKey="date" 
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 10 }}
                         className="text-muted-foreground"
+                        interval="preserveStartEnd"
                       />
                       <YAxis 
-                        tick={{ fontSize: 12 }}
+                        tick={{ fontSize: 10 }}
                         className="text-muted-foreground"
+                        width={45}
                       />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Line 

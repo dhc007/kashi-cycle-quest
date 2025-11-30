@@ -498,18 +498,18 @@ const Cycles = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Bike className="w-8 h-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <Bike className="w-6 h-6 sm:w-8 sm:h-8" />
             Cycles Inventory
           </h1>
-          <p className="text-muted-foreground">Manage your electric bicycle fleet</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage your electric bicycle fleet</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-primary hover:opacity-90" onClick={resetForm}>
+            <Button className="bg-gradient-primary hover:opacity-90 w-full sm:w-auto" onClick={resetForm}>
               <Plus className="w-4 h-4 mr-2" />
               Add Cycle
             </Button>
@@ -1058,21 +1058,22 @@ const Cycles = () => {
       </div>
 
       <Card className="shadow-warm">
-        <CardHeader>
-          <CardTitle>All Cycles ({filteredCycles.length})</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">All Cycles ({filteredCycles.length})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Actions</TableHead>
-                <TableHead>Image</TableHead>
-                <TableHead>Serial</TableHead>
-                <TableHead>Name/Model</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[80px] sticky left-0 bg-background z-10">Actions</TableHead>
+                  <TableHead className="min-w-[60px]">Image</TableHead>
+                  <TableHead className="min-w-[80px]">Serial</TableHead>
+                  <TableHead className="min-w-[120px]">Name/Model</TableHead>
+                  <TableHead className="min-w-[70px]">Qty</TableHead>
+                  <TableHead className="min-w-[80px]">Status</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {filteredCycles.map((cycle) => {
                 return (
@@ -1155,6 +1156,7 @@ const Cycles = () => {
               })}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
