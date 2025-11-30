@@ -257,16 +257,16 @@ const AccessoriesContent = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Accessories Inventory</h1>
-          <p className="text-muted-foreground">Manage rental accessories</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Accessories Inventory</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage rental accessories</p>
         </div>
         {canEdit && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openAddDialog}>
+              <Button onClick={openAddDialog} className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Accessory
               </Button>
@@ -471,22 +471,23 @@ const AccessoriesContent = () => {
       </div>
 
       <Card className="shadow-warm">
-        <CardHeader>
-          <CardTitle>All Accessories</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">All Accessories</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[100px]">Actions</TableHead>
-                <TableHead>Serial</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Image</TableHead>
-                <TableHead>Quantity</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[80px] sticky left-0 bg-background z-10">Actions</TableHead>
+                  <TableHead className="min-w-[80px]">Serial</TableHead>
+                  <TableHead className="min-w-[100px]">Name</TableHead>
+                  <TableHead className="min-w-[80px]">Model</TableHead>
+                  <TableHead className="min-w-[60px]">Image</TableHead>
+                  <TableHead className="min-w-[70px]">Qty</TableHead>
+                  <TableHead className="min-w-[70px]">Status</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {accessories.map((accessory) => (
                 <TableRow key={accessory.id}>
@@ -697,6 +698,7 @@ const AccessoriesContent = () => {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -131,13 +131,43 @@ All colors MUST be HSL.
     max-width: 100%;
   }
   
-  /* Make tables responsive */
+  /* Make tables responsive with horizontal scroll */
   @media (max-width: 768px) {
     table {
       display: block;
       overflow-x: auto;
       white-space: nowrap;
       -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Stack table cells on very small screens */
+    @media (max-width: 480px) {
+      table thead {
+        display: none;
+      }
+      
+      table tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid hsl(var(--border));
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+      }
+      
+      table tbody td {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem;
+        border: none;
+        text-align: right;
+      }
+      
+      table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        text-align: left;
+        margin-right: 1rem;
+      }
     }
   }
   
@@ -157,6 +187,31 @@ All colors MUST be HSL.
     @apply break-words;
     overflow-wrap: break-word;
     word-wrap: break-word;
+  }
+  
+  /* Touch-friendly buttons and interactive elements */
+  @media (max-width: 768px) {
+    button, [role="button"], a {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Ensure dropdown menus are properly sized */
+    [role="menu"], [data-radix-popper-content-wrapper] {
+      max-width: calc(100vw - 2rem);
+    }
+  }
+  
+  /* Admin table mobile optimizations */
+  .admin-table-container {
+    @apply overflow-x-auto -mx-4 px-4;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  @media (min-width: 768px) {
+    .admin-table-container {
+      @apply mx-0 px-0;
+    }
   }
 }
 

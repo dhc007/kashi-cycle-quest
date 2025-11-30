@@ -220,14 +220,14 @@ const Coupons = () => {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Tag className="w-8 h-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <Tag className="w-6 h-6 sm:w-8 sm:h-8" />
             Coupon Management
           </h1>
-          <p className="text-muted-foreground mt-1">Create and manage discount coupons</p>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">Create and manage discount coupons</p>
         </div>
         
         <Dialog open={dialogOpen} onOpenChange={(open) => {

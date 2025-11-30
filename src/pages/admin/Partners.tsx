@@ -316,16 +316,16 @@ const PartnersContent = () => {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Partners Management</h1>
-          <p className="text-muted-foreground">Manage partner relationships and QR codes</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Partners Management</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Manage partner relationships and QR codes</p>
         </div>
         {canEdit && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={openAddDialog}>
+              <Button onClick={openAddDialog} className="w-full sm:w-auto">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Partner
               </Button>
