@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
 import { format, isBefore, isAfter, startOfDay } from "date-fns";
-import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown, MoreHorizontal, Pencil, AlertTriangle } from "lucide-react";
+import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown, MoreHorizontal, Pencil, AlertTriangle, IndianRupee } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -324,8 +324,17 @@ const BookingsContent = () => {
     b.cancellation_status === 'requested'
   );
 
-  const paymentIssueBookings = filteredBookings.filter(b => 
-    b.payment_status === 'pending' || b.payment_status === 'failed'
+  // Split payment status tabs
+  const pendingPaymentBookings = filteredBookings.filter(b => 
+    b.payment_status === 'pending'
+  );
+
+  const failedPaymentBookings = filteredBookings.filter(b => 
+    b.payment_status === 'failed'
+  );
+
+  const refundedBookings = filteredBookings.filter(b => 
+    b.payment_status === 'refunded'
   );
 
   const renderBookingCard = (booking: Booking) => (
@@ -615,13 +624,31 @@ const BookingsContent = () => {
                 <span className="ml-1 text-xs">({cancelledBookings.length})</span>
               </TabsTrigger>
               <TabsTrigger 
-                value="payment_issues"
+                value="pending_payment"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
+              >
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Pending Payment</span>
+                <span className="sm:hidden">Pend</span>
+                <span className="ml-1 text-xs">({pendingPaymentBookings.length})</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="payment_failed"
                 className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
               >
                 <AlertTriangle className="h-4 w-4" />
-                <span className="hidden sm:inline">Payment Issues</span>
-                <span className="sm:hidden">Pay</span>
-                <span className="ml-1 text-xs">({paymentIssueBookings.length})</span>
+                <span className="hidden sm:inline">Payment Failed</span>
+                <span className="sm:hidden">Fail</span>
+                <span className="ml-1 text-xs">({failedPaymentBookings.length})</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="refunded"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
+              >
+                <IndianRupee className="h-4 w-4" />
+                <span className="hidden sm:inline">Refunded</span>
+                <span className="sm:hidden">Ref</span>
+                <span className="ml-1 text-xs">({refundedBookings.length})</span>
               </TabsTrigger>
             </TabsList>
           </div>
@@ -716,17 +743,47 @@ const BookingsContent = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="payment_issues" className="p-4 md:p-6">
+          <TabsContent value="pending_payment" className="p-4 md:p-6">
             <div className="md:hidden space-y-3">
-              {paymentIssueBookings.map(renderBookingCard)}
-              {paymentIssueBookings.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No payment issues</p>
+              {pendingPaymentBookings.map(renderBookingCard)}
+              {pendingPaymentBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No pending payments</p>
               )}
             </div>
             <div className="hidden md:block">
-              {renderBookingTable(paymentIssueBookings)}
-              {paymentIssueBookings.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No payment issues</p>
+              {renderBookingTable(pendingPaymentBookings)}
+              {pendingPaymentBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No pending payments</p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payment_failed" className="p-4 md:p-6">
+            <div className="md:hidden space-y-3">
+              {failedPaymentBookings.map(renderBookingCard)}
+              {failedPaymentBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No failed payments</p>
+              )}
+            </div>
+            <div className="hidden md:block">
+              {renderBookingTable(failedPaymentBookings)}
+              {failedPaymentBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No failed payments</p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="refunded" className="p-4 md:p-6">
+            <div className="md:hidden space-y-3">
+              {refundedBookings.map(renderBookingCard)}
+              {refundedBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No refunded bookings</p>
+              )}
+            </div>
+            <div className="hidden md:block">
+              {renderBookingTable(refundedBookings)}
+              {refundedBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No refunded bookings</p>
               )}
             </div>
           </TabsContent>

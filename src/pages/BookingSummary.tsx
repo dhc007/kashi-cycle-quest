@@ -195,8 +195,9 @@ const BookingSummary = () => {
   };
 
   const handleEditBooking = () => {
-    // Navigate back to book page with data preserved
-    navigate("/book");
+    // Navigate back to book page with data preserved in sessionStorage
+    // The Book page will read from sessionStorage and pre-fill all fields
+    navigate("/book", { state: { editMode: true } });
   };
 
   const handleConfirmBooking = async () => {
@@ -471,7 +472,7 @@ const BookingSummary = () => {
                       <div className="flex justify-between items-center">
                         <span className="flex items-center gap-1 text-xs">
                           <span className="text-amber-600 dark:text-amber-400">🔒</span>
-                          <span className="font-semibold">Cycle Deposit</span>
+                          <span className="font-semibold">Cycle Security Deposit</span>
                           <span className="text-[10px] text-muted-foreground">(Refundable)</span>
                         </span>
                         <span className="font-bold text-amber-600 dark:text-amber-400">₹{securityDeposit.toFixed(2)}</span>
@@ -480,7 +481,7 @@ const BookingSummary = () => {
                         <div className="flex justify-between items-center">
                           <span className="flex items-center gap-1 text-xs">
                             <span className="text-amber-600 dark:text-amber-400">🔒</span>
-                            <span className="font-semibold">Accessories Deposit</span>
+                            <span className="font-semibold">Accessories Security Deposit</span>
                             <span className="text-[10px] text-muted-foreground">(Refundable)</span>
                           </span>
                           <span className="font-bold text-amber-600 dark:text-amber-400">₹{accessoriesDeposit.toFixed(2)}</span>
@@ -488,20 +489,22 @@ const BookingSummary = () => {
                       )}
                       {accessoriesDeposit > 0 && (
                         <div className="flex justify-between items-center pt-1 border-t border-amber-200 dark:border-amber-800">
-                          <span className="text-xs font-bold">Total Deposit</span>
+                          <span className="text-xs font-bold">Total Security Deposit</span>
                           <span className="font-bold text-amber-600 dark:text-amber-400">₹{totalDeposit.toFixed(2)}</span>
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px] text-amber-700 dark:text-amber-300">
-                      SD to be collected at handover
-                    </p>
                   </div>
 
                   {/* Total Amount */}
-                  <div className="border-t-2 border-primary pt-3 flex justify-between items-baseline">
-                    <span className="font-bold text-lg">Total Payable at Pickup</span>
-                    <span className="font-bold text-primary text-xl">₹{totalAmount.toFixed(2)}</span>
+                  <div className="border-t-2 border-primary pt-3 flex flex-col gap-1">
+                    <div className="flex justify-between items-baseline">
+                      <span className="font-bold text-lg">Total Payable at Pickup</span>
+                      <span className="font-bold text-primary text-xl">₹{totalAmount.toFixed(2)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-right">
+                      Including Refundable Security Deposit of ₹{totalDeposit.toFixed(2)}
+                    </p>
                   </div>
                 </div>
 
