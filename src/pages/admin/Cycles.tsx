@@ -336,9 +336,27 @@ const Cycles = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this cycle?")) return;
-
     try {
+      // Check if cycle has any bookings
+      const { data: bookings, error: bookingError } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("cycle_id", id)
+        .limit(1);
+
+      if (bookingError) throw bookingError;
+
+      if (bookings && bookings.length > 0) {
+        toast({
+          title: "Cannot Delete",
+          description: "This cycle has existing bookings. You can deactivate it instead.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!confirm("Are you sure you want to delete this cycle?")) return;
+
       const { error } = await supabase.from("cycles").delete().eq("id", id);
 
       if (error) throw error;

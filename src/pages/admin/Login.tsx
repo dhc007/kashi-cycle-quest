@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Navbar } from "@/components/Navbar";
+import bolt91Logo from "@/assets/bolt91-logo-new.png";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
@@ -72,11 +72,11 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      
-      <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[80vh]">
-        <Card className="w-full max-w-md shadow-warm">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
+      <div className="mb-8">
+        <img src={bolt91Logo} alt="Bolt91" className="h-12 md:h-16" />
+      </div>
+      <Card className="w-full max-w-md shadow-warm">
           <CardHeader>
             <CardTitle className="text-2xl">Admin Login</CardTitle>
             <CardDescription>
@@ -119,7 +119,6 @@ const AdminLogin = () => {
             </form>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 };

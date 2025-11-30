@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Calendar, Clock, MapPin, Phone, Download } from "lucide-react";
+import { CheckCircle, Calendar, Clock, MapPin, Phone, Download, QrCode, CreditCard } from "lucide-react";
 import { format } from "date-fns";
 import QRCode from "react-qr-code";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ const Confirmation = () => {
     phoneNumber,
     email,
     totalAmount,
-    onlinePaymentAmount,
+    totalPayableAtPickup,
     securityDeposit,
     paymentId,
     accessories = [],
@@ -29,6 +29,9 @@ const Confirmation = () => {
     partnerData,
     appliedCoupon,
     discount,
+    basePrice,
+    accessoriesTotal,
+    gst,
   } = bookingData;
 
   useEffect(() => {
@@ -54,32 +57,55 @@ const Confirmation = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="max-w-3xl mx-auto">
           {/* Success Header */}
-          <div className="text-center mb-8 animate-fade-in">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
-              <CheckCircle className="w-12 h-12 text-green-600" />
+          <div className="text-center mb-6 md:mb-8 animate-fade-in">
+            <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-green-100 rounded-full mb-4">
+              <CheckCircle className="w-10 h-10 md:w-12 md:h-12 text-green-600" />
             </div>
-            <h1 className="text-3xl font-bold mb-2">Booking Confirmed!</h1>
-            <p className="text-muted-foreground">
-              Your electric bicycle is reserved and ready for your Kashi adventure
+            <h1 className="text-2xl md:text-3xl font-bold mb-2">Booking Confirmed!</h1>
+            <p className="text-muted-foreground text-sm md:text-base">
+              Your electric bicycle is reserved for your Kashi adventure
             </p>
           </div>
+
+          {/* Important Payment Notice */}
+          <Card className="mb-6 border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="flex items-center gap-2">
+                  <QrCode className="w-6 h-6 text-amber-600" />
+                  <CreditCard className="w-6 h-6 text-amber-600" />
+                </div>
+                <h3 className="font-bold text-amber-800 dark:text-amber-300 text-lg">
+                  Payment at Pickup Point
+                </h3>
+                <p className="text-amber-700 dark:text-amber-400 text-sm">
+                  Scan the QR code at the pickup location to complete your payment and collect your cycle.
+                  Show your booking confirmation to the staff.
+                </p>
+                <div className="bg-white dark:bg-background rounded-lg px-4 py-2 border border-amber-300">
+                  <p className="text-xs text-muted-foreground">Total Amount to Pay</p>
+                  <p className="text-2xl font-bold text-primary">₹{totalPayableAtPickup || totalAmount}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Booking Details */}
           <Card className="mb-6 shadow-warm">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                 <span>Booking Details</span>
-                <span className="text-lg font-mono text-primary">{bookingId}</span>
+                <span className="text-base md:text-lg font-mono text-primary">{bookingId}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-primary mt-0.5" />
+                    <Calendar className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="font-medium">Pickup Date & Time</p>
                       <p className="text-sm text-muted-foreground">
@@ -90,7 +116,7 @@ const Confirmation = () => {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-primary mt-0.5" />
+                    <Clock className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="font-medium">Duration</p>
                       <p className="text-sm text-muted-foreground">{selectedDuration}</p>
@@ -98,7 +124,7 @@ const Confirmation = () => {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <Phone className="w-5 h-5 text-primary mt-0.5" />
+                    <Phone className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="font-medium">Contact</p>
                       <p className="text-sm text-muted-foreground">{phoneNumber}</p>
@@ -107,7 +133,7 @@ const Confirmation = () => {
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 text-primary mt-0.5" />
+                    <MapPin className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="font-medium">Pickup Location</p>
                       {pickupLocation ? (
@@ -129,14 +155,14 @@ const Confirmation = () => {
                           )}
                         </>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Live Free Hostel Varanasi</p>
+                        <p className="text-sm text-muted-foreground">Bolt 91 Base, Varanasi</p>
                       )}
                     </div>
                   </div>
 
                   {partnerData && (
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 mt-0.5 flex items-center justify-center">
+                      <div className="w-5 h-5 mt-0.5 flex items-center justify-center flex-shrink-0">
                         {partnerData.logo_url ? (
                           <img 
                             src={partnerData.logo_url} 
@@ -160,10 +186,10 @@ const Confirmation = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col items-center justify-center border-l pl-6">
+                <div className="flex flex-col items-center justify-center border-t md:border-t-0 md:border-l pt-6 md:pt-0 md:pl-6">
                   <p className="text-sm font-medium mb-4">Booking QR Code</p>
-                  <div className="bg-white p-4 rounded-lg">
-                    <QRCode value={bookingId} size={150} />
+                  <div className="bg-white p-4 rounded-lg shadow">
+                    <QRCode value={bookingId || "BOLT91"} size={140} />
                   </div>
                   <p className="text-xs text-muted-foreground mt-2 text-center">
                     Show this at pickup
@@ -177,10 +203,8 @@ const Confirmation = () => {
                 <div className="space-y-2 text-sm">
                   {/* Cycle Rental */}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Cycle Rental ({selectedDuration})
-                    </span>
-                    <span>₹{bookingData.basePrice || 0}</span>
+                    <span className="text-muted-foreground">Cycle Rental ({selectedDuration})</span>
+                    <span>₹{basePrice || 0}</span>
                   </div>
 
                   {/* Accessories */}
@@ -190,14 +214,14 @@ const Confirmation = () => {
                       {accessories.map((acc: any) => (
                         <div key={acc.id} className="flex justify-between text-xs pl-4">
                           <span className="text-muted-foreground">
-                            {acc.name} × {acc.days} {acc.days > 1 ? 'days' : 'day'} @ ₹{acc.pricePerDay}/day
+                            {acc.name} × {acc.quantity || 1} × {acc.days} day{acc.days > 1 ? 's' : ''} @ ₹{acc.pricePerDay}/day
                           </span>
-                          <span>₹{acc.pricePerDay * acc.days}</span>
+                          <span>₹{(acc.pricePerDay || 0) * (acc.days || 0) * (acc.quantity || 1)}</span>
                         </div>
                       ))}
                       <div className="flex justify-between text-xs font-medium pl-4 pt-1">
                         <span>Accessories Total</span>
-                        <span>₹{bookingData.accessoriesTotal || 0}</span>
+                        <span>₹{accessoriesTotal || 0}</span>
                       </div>
                     </div>
                   )}
@@ -205,16 +229,16 @@ const Confirmation = () => {
                   {/* Subtotal */}
                   <div className="flex justify-between text-sm border-t pt-2">
                     <span className="font-medium">Subtotal</span>
-                    <span className="font-medium">₹{(bookingData.basePrice || 0) + (bookingData.accessoriesTotal || 0)}</span>
+                    <span className="font-medium">₹{(basePrice || 0) + (accessoriesTotal || 0)}</span>
                   </div>
 
                   {/* GST */}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">GST (18%)</span>
-                    <span>₹{bookingData.gst || Math.round((bookingData.basePrice + (bookingData.accessoriesTotal || 0)) * 0.18)}</span>
+                    <span>₹{gst || Math.round(((basePrice || 0) + (accessoriesTotal || 0)) * 0.18)}</span>
                   </div>
 
-                  {/* Discount with details */}
+                  {/* Discount */}
                   {appliedCoupon && discount > 0 && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
@@ -225,47 +249,32 @@ const Confirmation = () => {
                         </span>
                         <span>-₹{discount}</span>
                       </div>
-                      {appliedCoupon.description && (
-                        <p className="text-xs text-muted-foreground italic pl-0">
-                          {appliedCoupon.description}
-                        </p>
-                      )}
                     </div>
                   )}
 
-                  {/* Online Payment Amount */}
-                  <div className="flex justify-between font-semibold border-t pt-2 bg-primary/5 -mx-4 px-4 py-2 rounded">
-                    <span>Amount Paid Online</span>
-                    <span className="text-primary">₹{onlinePaymentAmount || totalAmount}</span>
-                  </div>
-
-                  {/* Security Deposit - To be collected */}
+                  {/* Security Deposit */}
                   <div className="border-t pt-2 mt-2 space-y-1">
                     <div className="flex justify-between items-center bg-amber-50 dark:bg-amber-950 -mx-4 px-4 py-2 rounded">
                       <span className="flex items-center gap-1 font-medium">
-                        <span className="text-amber-600 dark:text-amber-400">💰</span>
-                        <span className="text-amber-600 dark:text-amber-400">To Be Collected at Pickup</span>
+                        <span className="text-amber-600 dark:text-amber-400">🔒</span>
+                        <span className="text-amber-600 dark:text-amber-400">Security Deposit (Refundable)</span>
                       </span>
-                      <span className="font-semibold text-amber-600 dark:text-amber-400">₹{securityDeposit || bookingData.securityDeposit || 0}</span>
+                      <span className="font-semibold text-amber-600 dark:text-amber-400">₹{securityDeposit || 0}</span>
                     </div>
                     <p className="text-xs text-muted-foreground pl-4 pt-1">
-                      Security deposit is fully refundable upon return of the cycle in good condition
+                      Deposit is fully refundable upon return of the cycle in good condition
                     </p>
                   </div>
 
                   {/* Total Amount */}
                   <div className="flex justify-between border-t-2 border-primary pt-3 mt-3">
-                    <span className="font-bold text-lg">Total Booking Amount</span>
-                    <span className="font-bold text-primary text-xl">₹{totalAmount}</span>
+                    <span className="font-bold text-lg">Total to Pay at Pickup</span>
+                    <span className="font-bold text-primary text-xl">₹{totalPayableAtPickup || totalAmount}</span>
                   </div>
-                  
-                  <p className="text-xs text-muted-foreground italic pt-2">
-                    = Online Payment (₹{onlinePaymentAmount || totalAmount}) + Security Deposit (₹{securityDeposit || bookingData.securityDeposit || 0})
-                  </p>
                 </div>
                 <div className="mt-4 pt-3 border-t">
-                  <p className="text-xs text-muted-foreground">Payment ID: <span className="font-mono">{paymentId}</span></p>
                   <p className="text-xs text-muted-foreground">Booking ID: <span className="font-mono">{bookingId}</span></p>
+                  {paymentId && <p className="text-xs text-muted-foreground">Payment ID: <span className="font-mono">{paymentId}</span></p>}
                 </div>
               </div>
             </CardContent>
@@ -301,12 +310,12 @@ const Confirmation = () => {
             </CardContent>
           </Card>
 
-          <div className="flex justify-center gap-4 mt-6 print:hidden">
-            <Button variant="outline" onClick={handleDownloadConfirmation}>
+          <div className="flex flex-col sm:flex-row justify-center gap-4 mt-6 print:hidden">
+            <Button variant="outline" onClick={handleDownloadConfirmation} className="w-full sm:w-auto">
               <Download className="w-4 h-4 mr-2" />
               Download Confirmation
             </Button>
-            <Button onClick={() => navigate("/bookings")}>
+            <Button onClick={() => navigate("/bookings")} className="w-full sm:w-auto">
               View My Bookings
             </Button>
           </div>
