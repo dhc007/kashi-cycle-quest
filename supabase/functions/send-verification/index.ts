@@ -94,7 +94,7 @@ serve(async (req) => {
     
     const aiSensyPayload = {
       apiKey: AISENSY_API_KEY,
-      campaignName: "otp_verification_code",
+      campaignName: "user_otp_verification",
       destination: `91${phoneNumber}`,
       userName: "Bolt91",
       templateParams: [otpCode],
