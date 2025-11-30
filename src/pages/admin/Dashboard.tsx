@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, IndianRupee, Bike, Users, TrendingUp, Package, Clock } from "lucide-react";
+import { Calendar, IndianRupee, Bike, Users, TrendingUp, Package, Clock, ExternalLink } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -18,7 +19,6 @@ import { format, subDays, startOfDay, endOfDay, startOfWeek, endOfWeek, startOfM
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 
 interface DashboardMetrics {
@@ -33,13 +33,21 @@ interface DashboardMetrics {
   upcomingBookings: number;
 }
 
+interface CycleBookingInfo {
+  id: string;
+  booking_id: string;
+}
+
 interface CycleUsage {
   id: string;
   name: string;
   model: string;
   total: number;
   inUse: number;
+  upcoming: number;
   available: number;
+  inUseBookings: CycleBookingInfo[];
+  upcomingBookings: CycleBookingInfo[];
 }
 
 interface Booking {
@@ -223,17 +231,27 @@ const DashboardContent = () => {
 
       setActiveBookings(bookingsWithProfiles);
 
-      // Calculate per-cycle usage (only count current/future bookings)
+      // Calculate per-cycle usage with booking details
       const cycleUsage = await Promise.all((cycles || []).map(async (cycle) => {
-        const { count } = await supabase
+        // Fetch active bookings (in use)
+        const { data: activeBookingsForCycle } = await supabase
           .from('bookings')
-          .select('*', { count: 'exact', head: true })
+          .select('id, booking_id')
           .eq('cycle_id', cycle.id)
-          .in('booking_status', ['confirmed', 'active'])
+          .eq('booking_status', 'active')
           .gte('return_date', today);
         
+        // Fetch upcoming bookings (confirmed with future pickup)
+        const { data: upcomingBookingsForCycle } = await supabase
+          .from('bookings')
+          .select('id, booking_id')
+          .eq('cycle_id', cycle.id)
+          .eq('booking_status', 'confirmed')
+          .gt('pickup_date', today);
+        
         const totalUnits = cycle.quantity || 1;
-        const inUseCount = count || 0;
+        const inUseCount = activeBookingsForCycle?.length || 0;
+        const upcomingCount = upcomingBookingsForCycle?.length || 0;
         
         return {
           id: cycle.id,
@@ -241,7 +259,10 @@ const DashboardContent = () => {
           model: cycle.model,
           total: totalUnits,
           inUse: inUseCount,
-          available: Math.max(0, totalUnits - inUseCount)
+          upcoming: upcomingCount,
+          available: Math.max(0, totalUnits - inUseCount),
+          inUseBookings: activeBookingsForCycle || [],
+          upcomingBookings: upcomingBookingsForCycle || []
         };
       }));
       setCycleUsageData(cycleUsage);
@@ -540,9 +561,10 @@ const DashboardContent = () => {
                 <TableRow>
                   <TableHead>Cycle</TableHead>
                   <TableHead>Model</TableHead>
-                  <TableHead>Total Units</TableHead>
-                  <TableHead>In Use</TableHead>
-                  <TableHead>Available</TableHead>
+                  <TableHead className="text-center">Total</TableHead>
+                  <TableHead className="text-center">In Use</TableHead>
+                  <TableHead className="text-center">Upcoming</TableHead>
+                  <TableHead className="text-center">Available</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -551,15 +573,73 @@ const DashboardContent = () => {
                     <TableRow key={cycle.id}>
                       <TableCell className="font-semibold">{cycle.name}</TableCell>
                       <TableCell className="text-muted-foreground">{cycle.model}</TableCell>
-                      <TableCell>{cycle.total}</TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center gap-1">
-                          <span className="inline-block w-2 h-2 bg-orange-600 rounded-full"></span>
-                          {cycle.inUse}
-                        </span>
+                      <TableCell className="text-center font-medium">{cycle.total}</TableCell>
+                      <TableCell className="text-center">
+                        {cycle.inUse > 0 ? (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors cursor-pointer font-medium">
+                                <span className="inline-block w-2 h-2 bg-orange-600 rounded-full"></span>
+                                {cycle.inUse}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-3" align="center">
+                              <p className="text-sm font-semibold mb-2">Active Bookings</p>
+                              <div className="flex flex-col gap-1">
+                                {cycle.inUseBookings.map((booking) => (
+                                  <button
+                                    key={booking.id}
+                                    onClick={() => navigate(`/admin/bookings?search=${booking.booking_id}`)}
+                                    className="text-sm text-primary hover:underline flex items-center gap-1 font-mono"
+                                  >
+                                    {booking.booking_id}
+                                    <ExternalLink className="w-3 h-3" />
+                                  </button>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <span className="inline-block w-2 h-2 bg-muted rounded-full"></span>
+                            0
+                          </span>
+                        )}
                       </TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center gap-1">
+                      <TableCell className="text-center">
+                        {cycle.upcoming > 0 ? (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors cursor-pointer font-medium">
+                                <span className="inline-block w-2 h-2 bg-blue-600 rounded-full"></span>
+                                {cycle.upcoming}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-3" align="center">
+                              <p className="text-sm font-semibold mb-2">Upcoming Bookings</p>
+                              <div className="flex flex-col gap-1">
+                                {cycle.upcomingBookings.map((booking) => (
+                                  <button
+                                    key={booking.id}
+                                    onClick={() => navigate(`/admin/bookings?search=${booking.booking_id}`)}
+                                    className="text-sm text-primary hover:underline flex items-center gap-1 font-mono"
+                                  >
+                                    {booking.booking_id}
+                                    <ExternalLink className="w-3 h-3" />
+                                  </button>
+                                ))}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
+                            <span className="inline-block w-2 h-2 bg-muted rounded-full"></span>
+                            0
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center gap-1 text-green-700 font-medium">
                           <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
                           {cycle.available}
                         </span>
@@ -568,7 +648,7 @@ const DashboardContent = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
                       No cycles found
                     </TableCell>
                   </TableRow>
