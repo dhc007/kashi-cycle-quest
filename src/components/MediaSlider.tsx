@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 
@@ -6,29 +6,58 @@ interface MediaSliderProps {
   mediaUrls: string[];
   alt?: string;
   className?: string;
+  autoPlay?: boolean;
+  autoPlayInterval?: number;
 }
 
-export const MediaSlider = ({ mediaUrls, alt = "Media", className = "" }: MediaSliderProps) => {
+export const MediaSlider = ({ 
+  mediaUrls, 
+  alt = "Media", 
+  className = "",
+  autoPlay = true,
+  autoPlayInterval = 3000
+}: MediaSliderProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  const goToPrevious = useCallback(() => {
+    setCurrentIndex((prev) => (prev === 0 ? mediaUrls.length - 1 : prev - 1));
+  }, [mediaUrls.length]);
+
+  const goToNext = useCallback(() => {
+    setCurrentIndex((prev) => (prev === mediaUrls.length - 1 ? 0 : prev + 1));
+  }, [mediaUrls.length]);
+
+  // Autoplay functionality
+  useEffect(() => {
+    if (!autoPlay || isPaused || mediaUrls.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      goToNext();
+    }, autoPlayInterval);
+
+    return () => clearInterval(interval);
+  }, [autoPlay, isPaused, autoPlayInterval, goToNext, mediaUrls.length]);
+
+  // Reset index when mediaUrls change
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [mediaUrls]);
 
   if (!mediaUrls || mediaUrls.length === 0) {
     return null;
   }
-
-  const goToPrevious = () => {
-    setCurrentIndex((prev) => (prev === 0 ? mediaUrls.length - 1 : prev - 1));
-  };
-
-  const goToNext = () => {
-    setCurrentIndex((prev) => (prev === mediaUrls.length - 1 ? 0 : prev + 1));
-  };
 
   const isVideo = (url: string) => {
     return url.match(/\.(mp4|webm|ogg|mov)$/i) !== null;
   };
 
   return (
-    <div className={`relative w-full ${className}`}>
+    <div 
+      className={`relative w-full ${className}`}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
       <div className="aspect-video relative overflow-hidden rounded-lg bg-muted">
         {isVideo(mediaUrls[currentIndex]) ? (
           <video
@@ -42,7 +71,7 @@ export const MediaSlider = ({ mediaUrls, alt = "Media", className = "" }: MediaS
           <img
             src={mediaUrls[currentIndex]}
             alt={`${alt} ${currentIndex + 1}`}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-opacity duration-200"
           />
         )}
       </div>
@@ -52,16 +81,22 @@ export const MediaSlider = ({ mediaUrls, alt = "Media", className = "" }: MediaS
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
-            onClick={goToPrevious}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background transition-transform active:scale-95"
+            onClick={(e) => {
+              e.stopPropagation();
+              goToPrevious();
+            }}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
-            onClick={goToNext}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background transition-transform active:scale-95"
+            onClick={(e) => {
+              e.stopPropagation();
+              goToNext();
+            }}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -70,8 +105,11 @@ export const MediaSlider = ({ mediaUrls, alt = "Media", className = "" }: MediaS
             {mediaUrls.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all ${
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(index);
+                }}
+                className={`w-2 h-2 rounded-full transition-all duration-200 ${
                   index === currentIndex
                     ? "bg-primary w-4"
                     : "bg-background/60 hover:bg-background/80"
