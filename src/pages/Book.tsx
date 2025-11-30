@@ -1148,7 +1148,11 @@ const Book = () => {
                                       ) : null}
 
                                       <h4 className="font-semibold text-lg mb-1">{cycle.name}</h4>
-                                      <p className="text-sm text-muted-foreground mb-3">{cycle.model}</p>
+                                      <p className="text-sm text-muted-foreground">{cycle.model}</p>
+                                      {cycle.description && (
+                                        <p className="text-xs text-muted-foreground mt-1 mb-3 line-clamp-2">{cycle.description}</p>
+                                      )}
+                                      {!cycle.description && <div className="mb-3" />}
 
                                       <div className="grid grid-cols-2 gap-3 text-xs">
                                         {/* Inclusions */}
