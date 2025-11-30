@@ -20,9 +20,10 @@ const PaymentCallback = () => {
 
   const verifyPayment = async () => {
     try {
-      const merchantOrderId = searchParams.get('merchantOrderId');
+      // Support both old (merchantOrderId) and new (merchantTransactionId) query params
+      const merchantTransactionId = searchParams.get('merchantTransactionId') || searchParams.get('merchantOrderId');
       
-      if (!merchantOrderId) {
+      if (!merchantTransactionId) {
         setStatus('failed');
         setError('Missing payment reference');
         return;
@@ -41,7 +42,7 @@ const PaymentCallback = () => {
       // Verify payment with PhonePe
       const { data, error: verifyError } = await supabase.functions.invoke('verify-phonepe-payment', {
         body: {
-          merchantOrderId,
+          merchantTransactionId,
           booking_id: pendingBookingId,
           is_addon: false,
         },

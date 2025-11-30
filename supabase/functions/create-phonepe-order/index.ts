@@ -1,10 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Helper function to generate SHA256 hash
+async function sha256(message: string): Promise<string> {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 serve(async (req) => {
   // Handle CORS preflight
@@ -13,16 +20,16 @@ serve(async (req) => {
   }
 
   try {
-    const clientId = Deno.env.get('PHONEPE_CLIENT_ID');
-    const clientSecret = Deno.env.get('PHONEPE_CLIENT_SECRET');
-    const clientVersion = Deno.env.get('PHONEPE_CLIENT_VERSION') || '1';
+    const merchantId = Deno.env.get('PHONEPE_MERCHANT_ID');
+    const saltKey = Deno.env.get('PHONEPE_SALT_KEY');
+    const saltIndex = Deno.env.get('PHONEPE_SALT_INDEX') || '1';
     const env = Deno.env.get('PHONEPE_ENV') || 'sandbox';
 
-    if (!clientId || !clientSecret) {
+    if (!merchantId || !saltKey) {
       throw new Error('PhonePe credentials not configured');
     }
 
-    const { amount, currency, receipt, booking_id } = await req.json();
+    const { amount, receipt, booking_id, user_id } = await req.json();
 
     if (!amount || amount <= 0) {
       throw new Error('Invalid amount');
@@ -30,38 +37,14 @@ serve(async (req) => {
 
     // Determine API base URL based on environment
     const baseUrl = env === 'production' 
-      ? 'https://api.phonepe.com/apis/pg'
+      ? 'https://api.phonepe.com/apis/hermes'
       : 'https://api-preprod.phonepe.com/apis/pg-sandbox';
 
-    // Step 1: Get OAuth Access Token
-    console.log('Getting PhonePe OAuth token...');
-    
-    const tokenBody = new URLSearchParams();
-    tokenBody.append('client_id', clientId);
-    tokenBody.append('client_secret', clientSecret);
-    tokenBody.append('client_version', clientVersion);
-    tokenBody.append('grant_type', 'client_credentials');
-    
-    const tokenResponse = await fetch(`${baseUrl}/v1/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: tokenBody.toString(),
-    });
+    // Generate unique transaction ID
+    const merchantTransactionId = receipt || `TXN_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const merchantUserId = user_id || `USER_${Date.now()}`;
 
-    const tokenData = await tokenResponse.json();
-    
-    if (!tokenResponse.ok || !tokenData.access_token) {
-      console.error('Token error:', JSON.stringify(tokenData));
-      throw new Error(tokenData.message || 'Failed to get PhonePe access token');
-    }
-
-    const accessToken = tokenData.access_token;
-    console.log('Got PhonePe access token');
-
-    // Step 2: Create Payment Order
-    const merchantOrderId = receipt || `order_${Date.now()}`;
+    // Amount in paise
     const amountInPaise = Math.round(amount * 100);
 
     // Get the app URL for redirect
@@ -70,55 +53,73 @@ serve(async (req) => {
       ? supabaseUrl.replace('.supabase.co', '.lovableproject.com').replace('https://', 'https://') 
       : 'https://lyhpskhheiamtskkbfes.lovableproject.com';
     
-    const redirectUrl = `${appUrl}/payment-callback`;
+    const redirectUrl = `${appUrl}/payment-callback?merchantTransactionId=${merchantTransactionId}`;
+    const callbackUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/phonepe-callback`;
 
-    const orderPayload = {
-      merchantOrderId,
+    // Create payload
+    const payload = {
+      merchantId,
+      merchantTransactionId,
+      merchantUserId,
       amount: amountInPaise,
-      expireAfter: 1200, // 20 minutes
-      paymentFlow: {
-        type: 'PG_CHECKOUT',
-        message: 'Payment for Bolt91 Cycle Rental',
-        merchantUrls: {
-          redirectUrl: `${redirectUrl}?merchantOrderId=${merchantOrderId}`,
-        },
+      redirectUrl,
+      redirectMode: 'POST',
+      callbackUrl,
+      paymentInstrument: {
+        type: 'PAY_PAGE',
       },
     };
 
-    console.log('Creating PhonePe order with payload:', JSON.stringify(orderPayload));
+    console.log('Creating PhonePe order with payload:', JSON.stringify({
+      ...payload,
+      merchantId: '***HIDDEN***',
+    }));
 
-    const orderResponse = await fetch(`${baseUrl}/checkout/v2/pay`, {
+    // Base64 encode the payload
+    const payloadBase64 = btoa(JSON.stringify(payload));
+
+    // Generate X-VERIFY checksum
+    const stringToHash = payloadBase64 + '/pg/v1/pay' + saltKey;
+    const sha256Hash = await sha256(stringToHash);
+    const xVerify = sha256Hash + '###' + saltIndex;
+
+    console.log('Making request to PhonePe API...');
+
+    // Make API request
+    const response = await fetch(`${baseUrl}/pg/v1/pay`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `O-Bearer ${accessToken}`,
+        'X-VERIFY': xVerify,
       },
-      body: JSON.stringify(orderPayload),
+      body: JSON.stringify({ request: payloadBase64 }),
     });
 
-    const orderData = await orderResponse.json();
+    const responseData = await response.json();
     
-    console.log('PhonePe order response:', JSON.stringify(orderData));
+    console.log('PhonePe API response:', JSON.stringify(responseData));
 
-    if (!orderResponse.ok) {
-      console.error('Order creation error:', JSON.stringify(orderData));
-      throw new Error(orderData.message || 'Failed to create PhonePe order');
+    if (!response.ok || !responseData.success) {
+      console.error('PhonePe order creation failed:', JSON.stringify(responseData));
+      throw new Error(responseData.message || responseData.data?.message || 'Failed to create PhonePe order');
     }
 
     // Extract redirect URL from response
-    const redirectUrlFromResponse = orderData.redirectUrl || orderData.data?.redirectUrl;
+    const paymentUrl = responseData.data?.instrumentResponse?.redirectInfo?.url;
     
-    if (!redirectUrlFromResponse) {
-      console.error('No redirect URL in response:', JSON.stringify(orderData));
-      throw new Error('No redirect URL received from PhonePe');
+    if (!paymentUrl) {
+      console.error('No payment URL in response:', JSON.stringify(responseData));
+      throw new Error('No payment URL received from PhonePe');
     }
+
+    console.log('PhonePe order created successfully');
 
     return new Response(
       JSON.stringify({
         success: true,
-        merchantOrderId,
-        redirectUrl: redirectUrlFromResponse,
-        orderId: orderData.orderId || merchantOrderId,
+        merchantTransactionId,
+        redirectUrl: paymentUrl,
+        orderId: merchantTransactionId,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
