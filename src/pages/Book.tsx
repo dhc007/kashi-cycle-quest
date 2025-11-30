@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { format, addDays, addWeeks, addMonths } from "date-fns";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,7 @@ interface Partner {
 
 const Book = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const [step, setStep] = useState(1);
@@ -79,13 +80,17 @@ const Book = () => {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [operationHours, setOperationHours] = useState({ start_display: "9:00 AM", end_display: "7:00 PM" });
   const [allowUnavailableBookings, setAllowUnavailableBookings] = useState(false);
+  const [editModeInitialized, setEditModeInitialized] = useState(false);
 
   // Get partner ID from URL and persist it
   const partnerParam = searchParams.get("partner");
+  const isEditMode = location.state?.editMode === true;
 
   useEffect(() => {
-    // Clear any stale booking data on mount
-    sessionStorage.removeItem("bookingData");
+    // Only clear booking data if NOT in edit mode
+    if (!isEditMode) {
+      sessionStorage.removeItem("bookingData");
+    }
 
     if (partnerParam) {
       localStorage.setItem("activePartner", partnerParam);
@@ -95,7 +100,7 @@ const Book = () => {
       localStorage.removeItem("activePartner");
       setPartnerId(null);
     }
-  }, [partnerParam]);
+  }, [partnerParam, isEditMode]);
 
   // Authentication state
   const [user, setUser] = useState<any>(null);
@@ -352,6 +357,88 @@ const Book = () => {
 
     loadData();
   }, [toast]);
+
+  // Restore booking data when in edit mode
+  useEffect(() => {
+    if (!isEditMode || loading || editModeInitialized) return;
+    
+    const storedData = sessionStorage.getItem("bookingData");
+    if (!storedData) return;
+    
+    try {
+      const bookingData = JSON.parse(storedData);
+      
+      // Restore date and time
+      if (bookingData.selectedDate) {
+        setSelectedDate(new Date(bookingData.selectedDate));
+      }
+      if (bookingData.selectedTime) {
+        setSelectedTime(bookingData.selectedTime);
+      }
+      if (bookingData.selectedDuration) {
+        setSelectedDuration(bookingData.selectedDuration);
+      }
+      
+      // Restore pickup location
+      if (bookingData.pickupLocationId && pickupLocations.length > 0) {
+        const location = pickupLocations.find(loc => loc.id === bookingData.pickupLocationId);
+        if (location) {
+          setSelectedPickupLocation(location);
+          setPickupLocationConfirmed(true);
+        }
+      }
+      
+      // Restore selected cycle
+      if (bookingData.cycleId && cyclesData.length > 0) {
+        const cycle = cyclesData.find(c => c.id === bookingData.cycleId);
+        if (cycle) {
+          setSelectedCycles([cycle]);
+          setNumberOfCycles(1);
+        }
+      }
+      
+      // Restore accessories
+      if (bookingData.accessories && bookingData.accessories.length > 0 && accessories.length > 0) {
+        setAccessories(prev => prev.map(acc => {
+          const savedAcc = bookingData.accessories.find((a: any) => a.id === acc.id);
+          if (savedAcc) {
+            return {
+              ...acc,
+              quantity: savedAcc.quantity || 0,
+              days: savedAcc.days || 0,
+            };
+          }
+          return acc;
+        }));
+      }
+      
+      // Restore contact info
+      if (bookingData.firstName) setFirstName(bookingData.firstName);
+      if (bookingData.lastName) setLastName(bookingData.lastName);
+      if (bookingData.phoneNumber) setPhoneNumber(bookingData.phoneNumber);
+      if (bookingData.email) setEmail(bookingData.email);
+      if (bookingData.emergencyName) setEmergencyName(bookingData.emergencyName);
+      if (bookingData.emergencyPhone) setEmergencyPhone(bookingData.emergencyPhone);
+      
+      // Restore terms acceptance
+      if (bookingData.termsAcceptedAt) {
+        setTermsAccepted(true);
+      }
+      
+      // Set phone as verified since we're editing
+      setPhoneVerified(true);
+      
+      // Mark edit mode as initialized
+      setEditModeInitialized(true);
+      
+      toast({
+        title: "Edit Mode",
+        description: "You can now modify your booking details",
+      });
+    } catch (error) {
+      console.error("Error restoring booking data:", error);
+    }
+  }, [isEditMode, loading, cyclesData, accessories, pickupLocations, editModeInitialized, toast]);
 
   // Generate time slots based on operation hours in 30-minute intervals
   const generateTimeSlots = () => {
