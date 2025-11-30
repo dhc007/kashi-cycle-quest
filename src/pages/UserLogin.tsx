@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Navbar } from "@/components/Navbar";
 import { Loader2 } from "lucide-react";
+import bolt91Logo from "@/assets/bolt91-logo-new.png";
+import exploreKashiBanner from "@/assets/explore-kashi-banner.jpg";
 
 export default function UserLogin() {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -157,12 +158,26 @@ export default function UserLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8 mt-20">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Login with Phone</CardTitle>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Simple Header with Logo Only */}
+      <header className="w-full py-4 px-4 flex justify-center border-b border-border bg-card">
+        <img src={bolt91Logo} alt="Bolt91" className="h-10 md:h-12" />
+      </header>
+
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
+        {/* Banner Image */}
+        <div className="w-full max-w-md mb-6">
+          <img 
+            src={exploreKashiBanner} 
+            alt="Explore Kashi - Rent an Electric Cycle" 
+            className="w-full h-auto rounded-xl shadow-lg object-cover"
+          />
+        </div>
+
+        {/* Login Card */}
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl md:text-2xl">Login with Phone</CardTitle>
             <CardDescription>Enter your phone number to receive a verification code</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -176,6 +191,7 @@ export default function UserLogin() {
                 onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
                 disabled={otpSent}
                 maxLength={10}
+                className="text-base"
               />
             </div>
 
@@ -201,6 +217,7 @@ export default function UserLogin() {
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     maxLength={6}
+                    className="text-base text-center tracking-widest"
                   />
                   <p className="text-xs text-muted-foreground">OTP valid for 5 minutes</p>
                 </div>

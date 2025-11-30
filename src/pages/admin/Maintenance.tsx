@@ -373,6 +373,13 @@ const MaintenanceContent = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
+                              <DropdownMenuItem onClick={() => {
+                                setViewingRecord(record);
+                                setViewDialogOpen(true);
+                              }}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
                               {record.status !== 'completed' && (
                                 <DropdownMenuItem onClick={() => openEditDialog(record)}>
                                   <Edit className="w-4 h-4 mr-2" />

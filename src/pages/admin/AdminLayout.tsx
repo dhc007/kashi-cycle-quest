@@ -25,10 +25,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
 
 const AdminLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [adminTheme, setAdminTheme] = useState<'light' | 'dark'>('light');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -99,6 +101,23 @@ const AdminLayout = () => {
     return () => window.removeEventListener('admin-theme-change', handleThemeChange);
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out",
+      });
+      navigate('/admin/login');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
     { icon: Calendar, label: "Bookings", path: "/admin/bookings" },
@@ -146,7 +165,7 @@ const AdminLayout = () => {
             <SheetHeader className="p-6 border-b border-border">
               <SheetTitle>Admin Menu</SheetTitle>
             </SheetHeader>
-            <nav className="p-4 space-y-2">
+            <nav className="p-4 space-y-2 flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
               {menuItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (
@@ -170,13 +189,20 @@ const AdminLayout = () => {
                   </Button>
                 );
               })}
-              <Button variant="outline" className="w-full justify-start text-foreground hover:bg-accent mt-4" asChild onClick={() => setMobileMenuOpen(false)}>
-                <Link to="/">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Back to Site
-                </Link>
-              </Button>
             </nav>
+            <div className="p-4 border-t border-border">
+              <Button 
+                variant="destructive" 
+                className="w-full justify-start" 
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLogout();
+                }}
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </SheetContent>
         </Sheet>
       </header>
@@ -214,11 +240,13 @@ const AdminLayout = () => {
         </nav>
 
         <div className="p-4 border-t border-border">
-          <Button variant="outline" className="w-full justify-start text-foreground hover:bg-accent" asChild>
-            <Link to="/">
-              <LogOut className="w-4 h-4 mr-2" />
-              Back to Site
-            </Link>
+          <Button 
+            variant="destructive" 
+            className="w-full justify-start" 
+            onClick={handleLogout}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
           </Button>
         </div>
       </aside>

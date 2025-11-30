@@ -165,7 +165,9 @@ const DashboardContent = () => {
       const nonCancelledBookings = bookings?.filter(b => b.booking_status !== 'cancelled') || [];
       const cancelledBookings = bookings?.filter(b => b.booking_status === 'cancelled') || [];
       const totalRevenue = nonCancelledBookings.reduce((sum, b) => sum + Number(b.total_amount), 0);
-      const netRevenue = totalRevenue;
+      // Net revenue only includes bookings with payment_status === 'completed'
+      const completedPaymentBookings = bookings?.filter(b => b.payment_status === 'completed' && b.booking_status !== 'cancelled') || [];
+      const netRevenue = completedPaymentBookings.reduce((sum, b) => sum + Number(b.total_amount), 0);
       const totalPartners = partners?.length || 0;
       
       // Calculate active bookings (only bookings with status 'active')
