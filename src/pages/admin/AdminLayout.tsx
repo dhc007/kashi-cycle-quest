@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +15,8 @@ import {
   Tag,
   IndianRupee,
   Menu,
-  X,
 } from "lucide-react";
-import bolt91Logo from "@/assets/bolt91-logo.png";
+import bolt91Logo from "@/assets/bolt91-logo-new.png";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Sheet,
@@ -29,8 +28,57 @@ import {
 
 const AdminLayout = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [adminTheme, setAdminTheme] = useState<'light' | 'dark'>('light');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication and admin role
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          navigate('/admin/login');
+          return;
+        }
+
+        // Check if user has admin role
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (roleError || !roleData) {
+          await supabase.auth.signOut();
+          navigate('/admin/login');
+          return;
+        }
+
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        navigate('/admin/login');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        navigate('/admin/login');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   useEffect(() => {
     // Load admin theme from localStorage
@@ -65,6 +113,23 @@ const AdminLayout = () => {
     { icon: IndianRupee, label: "Pricing Plan", path: "/admin/pricing-plan" },
     { icon: Settings, label: "Settings", path: "/admin/settings" },
   ];
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className={`min-h-screen flex flex-col lg:flex-row ${adminTheme}`}>

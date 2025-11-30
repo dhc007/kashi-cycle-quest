@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -8,14 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike } from "lucide-react";
+import { Bike, Pencil, Calendar, Clock, MapPin, Phone, User } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-const Payment = () => {
-  const location = useLocation();
+const BookingSummary = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [processingPayment, setProcessingPayment] = useState(false);
+  const [processingBooking, setProcessingBooking] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   
   // Coupon state
   const [couponCode, setCouponCode] = useState("");
@@ -48,12 +54,13 @@ const Payment = () => {
     }
   };
 
-  const bookingData = getBookingData();
+  const [bookingData, setBookingData] = useState<any>(getBookingData());
 
   // If no booking data, don't render anything (will redirect)
   if (!bookingData) {
     return null;
   }
+
   const {
     selectedDate,
     selectedTime,
@@ -72,6 +79,8 @@ const Payment = () => {
     cycleId,
     partnerId,
     pickupLocationId,
+    pickupLocation,
+    partnerData,
     basePrice = 0,
     accessoriesTotal = 0,
     securityDeposit = 0,
@@ -81,17 +90,16 @@ const Payment = () => {
     termsVersion = "v1.0",
   } = bookingData;
 
-  // Calculate accessories security deposit (quantity * security deposit per accessory)
+  // Calculate accessories security deposit
   const accessoriesDeposit = accessories.reduce((sum: number, acc: any) => {
     return sum + ((acc.quantity || 0) * (acc.securityDeposit || 0));
   }, 0);
   
   const subtotal = basePrice + accessoriesTotal;
-  const gst = Math.round(subtotal * 0.18); // 18% GST
+  const gst = Math.round(subtotal * 0.18);
   const totalBeforeDeposit = subtotal + gst - discount;
-  const onlinePaymentAmount = totalBeforeDeposit; // Amount to be paid online (excludes deposit)
-  const totalDeposit = securityDeposit + accessoriesDeposit; // Total deposit including cycle and accessories
-  const totalAmount = totalBeforeDeposit + totalDeposit; // Total including deposit for record-keeping
+  const totalDeposit = securityDeposit + accessoriesDeposit;
+  const totalAmount = totalBeforeDeposit + totalDeposit;
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -122,7 +130,6 @@ const Payment = () => {
         return;
       }
 
-      // Check if coupon is expired
       if (coupon.valid_until && new Date(coupon.valid_until) < new Date()) {
         toast({
           title: "Expired Coupon",
@@ -133,7 +140,6 @@ const Payment = () => {
         return;
       }
 
-      // Check min order amount
       if (coupon.min_order_amount && subtotal < coupon.min_order_amount) {
         toast({
           title: "Minimum Order Not Met",
@@ -144,7 +150,6 @@ const Payment = () => {
         return;
       }
 
-      // Check max uses
       if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
         toast({
           title: "Coupon Limit Reached",
@@ -155,7 +160,6 @@ const Payment = () => {
         return;
       }
 
-      // Calculate discount
       let discountAmount = 0;
       if (coupon.discount_type === 'percentage') {
         discountAmount = Math.round(subtotal * (coupon.discount_value / 100));
@@ -190,12 +194,17 @@ const Payment = () => {
     });
   };
 
-  const handlePayment = async () => {
+  const handleEditBooking = () => {
+    // Navigate back to book page with data preserved
+    navigate("/book");
+  };
+
+  const handleConfirmBooking = async () => {
     setLoading(true);
-    setProcessingPayment(true);
+    setProcessingBooking(true);
 
     try {
-      // Create booking in database
+      // Create booking in database (payment_status will be 'pending')
       const { data, error: functionError } = await supabase.functions.invoke('create-booking', {
         body: {
           cycle_id: cycleId,
@@ -218,11 +227,14 @@ const Payment = () => {
           discount_amount: discount,
           terms_accepted_at: termsAcceptedAt,
           terms_version: termsVersion,
+          payment_status: 'pending', // Payment will be collected at pickup
           accessories: accessories.map((acc: any) => ({
             id: acc.id,
             name: acc.name,
             days: acc.days,
             pricePerDay: acc.pricePerDay,
+            quantity: acc.quantity || 1,
+            securityDeposit: acc.securityDeposit || 0,
           })),
           profile: {
             first_name: firstName,
@@ -241,45 +253,37 @@ const Payment = () => {
 
       const booking = data.booking;
 
-      // Store booking ID for callback verification
-      sessionStorage.setItem('pendingBookingId', booking.booking_id);
+      // Clear booking data from session storage
+      sessionStorage.removeItem('bookingData');
 
-      // Create PhonePe order
-      const { data: orderData, error: orderError } = await supabase.functions.invoke('create-phonepe-order', {
-        body: {
-          amount: onlinePaymentAmount,
-          currency: 'INR',
-          receipt: booking.booking_id,
-          booking_id: booking.booking_id,
-        },
+      // Navigate to confirmation page
+      navigate("/confirmation", {
+        state: {
+          bookingId: booking.booking_id,
+          selectedDate,
+          selectedTime,
+          selectedDuration,
+          phoneNumber,
+          email,
+          totalAmount,
+          totalPayableAtPickup: totalAmount, // Full amount to be paid at pickup
+          securityDeposit: totalDeposit,
+          basePrice,
+          accessoriesTotal,
+          gst,
+          accessories,
+          pickupLocation,
+          partnerData,
+          appliedCoupon,
+          discount,
+        }
       });
-
-      if (orderError) throw orderError;
-
-      if (!orderData.redirectUrl) {
-        throw new Error('Failed to get payment URL');
-      }
-
-      // Update booking data in session storage for confirmation page
-      sessionStorage.setItem('bookingData', JSON.stringify({
-        ...bookingData,
-        totalAmount,
-        onlinePaymentAmount,
-        securityDeposit: totalDeposit,
-        bookingId: booking.booking_id,
-        appliedCoupon,
-        discount,
-        gst,
-      }));
-
-      // Redirect to PhonePe payment page
-      window.location.href = orderData.redirectUrl;
 
     } catch (error: any) {
       setLoading(false);
-      setProcessingPayment(false);
+      setProcessingBooking(false);
       toast({
-        title: "Payment Failed",
+        title: "Booking Failed",
         description: error.message || "Something went wrong",
         variant: "destructive",
       });
@@ -290,14 +294,14 @@ const Payment = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      {/* Payment Processing Overlay */}
-      {processingPayment && (
+      {/* Processing Overlay */}
+      {processingBooking && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
           <div className="text-center text-white space-y-4 px-4">
             <div className="animate-spin">
               <Bike className="w-12 h-12 md:w-16 md:h-16 mx-auto" />
             </div>
-            <p className="text-lg md:text-xl font-semibold">Redirecting to Payment...</p>
+            <p className="text-lg md:text-xl font-semibold">Confirming Your Booking...</p>
             <p className="text-xs md:text-sm text-muted-foreground">Please wait</p>
           </div>
         </div>
@@ -305,88 +309,121 @@ const Payment = () => {
       
       <div className="container mx-auto px-4 py-6 md:py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8">Payment</h1>
+          <div className="flex items-center justify-between mb-6 md:mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold">Booking Summary</h1>
+            <Button variant="outline" size="sm" onClick={handleEditBooking}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit Booking
+            </Button>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            {/* Booking Summary */}
+            {/* Booking Details */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Booking Summary</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Rental Details</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 md:space-y-4">
-                <div className="space-y-2 text-xs md:text-sm">
-                  {cycleName && cycleModel && (
+              <CardContent className="space-y-4 text-sm">
+                {/* Cycle Info */}
+                {cycleName && cycleModel && (
+                  <div className="flex items-start gap-3">
+                    <Bike className="w-5 h-5 text-primary mt-0.5" />
                     <div>
-                      <p className="font-medium flex items-center gap-2">
-                        <Bike className="w-4 h-4 text-primary" />
-                        Cycle
-                      </p>
-                      <p className="text-muted-foreground ml-6">{cycleName}</p>
-                      <p className="text-xs text-muted-foreground ml-6">{cycleModel}</p>
+                      <p className="font-medium">Cycle</p>
+                      <p className="text-muted-foreground">{cycleName}</p>
+                      <p className="text-xs text-muted-foreground">{cycleModel}</p>
                     </div>
-                  )}
+                  </div>
+                )}
+
+                {/* Pickup Date/Time */}
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-5 h-5 text-primary mt-0.5" />
                   <div>
                     <p className="font-medium">Pickup</p>
                     <p className="text-muted-foreground">
-                      {selectedDate && format(new Date(selectedDate), "PPP")} at {selectedTime}
+                      {selectedDate && format(new Date(selectedDate), "PPP")}
                     </p>
+                    <p className="text-muted-foreground">{selectedTime}</p>
                   </div>
+                </div>
+
+                {/* Return Date/Time */}
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-primary mt-0.5" />
                   <div>
                     <p className="font-medium">Return</p>
                     <p className="text-muted-foreground">
-                      {returnDate && format(new Date(returnDate), "PPP")} at {returnTime || selectedTime}
+                      {returnDate && format(new Date(returnDate), "PPP")}
                     </p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Duration</p>
-                    <p className="text-muted-foreground">{selectedDuration}</p>
-                  </div>
-                  {accessories.length > 0 && (
-                    <div>
-                      <p className="font-medium">Accessories</p>
-                      {accessories.map((acc: any) => (
-                        <p key={acc.id} className="text-muted-foreground text-xs">
-                          {acc.name} ({acc.days} day{acc.days > 1 ? 's' : ''})
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                  <div>
-                    <p className="font-medium">Contact</p>
-                    <p className="text-muted-foreground">{phoneNumber}</p>
-                    {email && <p className="text-muted-foreground text-xs">{email}</p>}
+                    <p className="text-muted-foreground">{returnTime || selectedTime}</p>
+                    <p className="text-xs text-muted-foreground">Duration: {selectedDuration}</p>
                   </div>
                 </div>
+
+                {/* Pickup Location */}
+                {pickupLocation && (
+                  <div className="flex items-start gap-3">
+                    <MapPin className="w-5 h-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-medium">Pickup Location</p>
+                      <p className="text-muted-foreground font-medium">{pickupLocation.name}</p>
+                      <p className="text-xs text-muted-foreground">{pickupLocation.address}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {pickupLocation.city}, {pickupLocation.state} - {pickupLocation.pincode}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact Info */}
+                <div className="flex items-start gap-3">
+                  <User className="w-5 h-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium">Contact</p>
+                    <p className="text-muted-foreground">{firstName} {lastName}</p>
+                    <p className="text-xs text-muted-foreground">{phoneNumber}</p>
+                    {email && <p className="text-xs text-muted-foreground">{email}</p>}
+                  </div>
+                </div>
+
+                {/* Accessories */}
+                {accessories.length > 0 && (
+                  <div className="border-t pt-4">
+                    <p className="font-medium mb-2">Accessories</p>
+                    {accessories.map((acc: any) => (
+                      <p key={acc.id} className="text-muted-foreground text-xs">
+                        {acc.name} × {acc.quantity || 1} ({acc.days} day{acc.days > 1 ? 's' : ''})
+                      </p>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* Payment Breakdown */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg md:text-xl">Payment Breakdown</CardTitle>
+                <CardTitle className="text-lg md:text-xl">Payment Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 md:space-y-4">
-                <div className="space-y-2 md:space-y-3 text-xs md:text-sm">
-                  {/* Cycle Rental Breakdown */}
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Cycle Rental ({selectedDuration})
-                      </span>
-                      <span className="font-semibold">₹{basePrice.toFixed(2)}</span>
-                    </div>
+                <div className="space-y-2 md:space-y-3 text-sm">
+                  {/* Cycle Rental */}
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Cycle Rental ({selectedDuration})</span>
+                    <span className="font-semibold">₹{basePrice.toFixed(2)}</span>
                   </div>
                   
-                  {/* Accessories Breakdown */}
+                  {/* Accessories */}
                   {accessories && accessories.length > 0 && (
                     <div className="space-y-1 pt-2 border-t">
                       <p className="text-xs font-medium text-muted-foreground mb-1">Accessories:</p>
                       {accessories.map((acc: any) => (
                         <div key={acc.id} className="flex justify-between text-xs">
                           <span className="text-muted-foreground">
-                            {acc.name} × {acc.days} {acc.days > 1 ? 'days' : 'day'} @ ₹{acc.pricePerDay}/day
+                            {acc.name} × {acc.quantity || 1} × {acc.days} day{acc.days > 1 ? 's' : ''} @ ₹{acc.pricePerDay}/day
                           </span>
-                          <span>₹{(acc.pricePerDay * acc.days).toFixed(2)}</span>
+                          <span>₹{((acc.pricePerDay || 0) * (acc.days || 0) * (acc.quantity || 1)).toFixed(2)}</span>
                         </div>
                       ))}
                       <div className="flex justify-between text-xs font-medium pt-1">
@@ -397,16 +434,18 @@ const Payment = () => {
                   )}
                   
                   {/* Subtotal */}
-                  <div className="flex justify-between text-xs pt-2 border-t">
+                  <div className="flex justify-between text-sm pt-2 border-t">
                     <span className="font-medium">Subtotal</span>
                     <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                   </div>
 
+                  {/* GST */}
                   <div className="flex justify-between text-xs">
                     <span>GST (18%)</span>
                     <span>₹{gst.toFixed(2)}</span>
                   </div>
 
+                  {/* Discount */}
                   {discount > 0 && appliedCoupon && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
@@ -417,21 +456,16 @@ const Payment = () => {
                         </span>
                         <span>-₹{discount.toFixed(2)}</span>
                       </div>
-                      {appliedCoupon.description && (
-                        <p className="text-xs text-muted-foreground italic pl-0">
-                          {appliedCoupon.description}
-                        </p>
-                      )}
                     </div>
                   )}
 
-                  {/* Online Payment Amount */}
+                  {/* Rental Total */}
                   <div className="border-t pt-3 flex justify-between items-baseline">
-                    <span className="font-bold text-base md:text-lg">Pay Online Now</span>
-                    <span className="font-bold text-primary text-lg md:text-xl">₹{onlinePaymentAmount.toFixed(2)}</span>
+                    <span className="font-bold text-base">Rental Amount</span>
+                    <span className="font-bold text-primary text-lg">₹{totalBeforeDeposit.toFixed(2)}</span>
                   </div>
                   
-                  {/* Security Deposit - Payable at Pickup */}
+                  {/* Security Deposit */}
                   <div className="flex flex-col gap-2 pt-2 border-t bg-amber-50 dark:bg-amber-950/30 -mx-4 md:-mx-6 px-4 md:px-6 py-3 rounded">
                     <div className="space-y-1">
                       <div className="flex justify-between items-center">
@@ -459,67 +493,74 @@ const Payment = () => {
                         </div>
                       )}
                     </div>
-                    <div className="text-[10px] md:text-xs text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/30 px-2 py-1.5 rounded">
-                      💳 <span className="font-medium">Payable during handover</span> - This refundable deposit will be collected at the time of cycle handover and refunded after safe return.
-                    </div>
+                    <p className="text-[10px] text-amber-700 dark:text-amber-300">
+                      SD to be collected at handover
+                    </p>
                   </div>
-                  
-                  {/* Total Amount Summary */}
-                  <div className="text-[10px] md:text-xs text-center text-muted-foreground bg-muted/50 -mx-4 md:-mx-6 px-4 md:px-6 py-2 rounded">
-                    Total Booking Value: ₹{totalAmount.toFixed(2)} (₹{onlinePaymentAmount.toFixed(2)} online + ₹{totalDeposit.toFixed(2)} at handover)
+
+                  {/* Total Amount */}
+                  <div className="border-t-2 border-primary pt-3 flex justify-between items-baseline">
+                    <span className="font-bold text-lg">Total Payable at Pickup</span>
+                    <span className="font-bold text-primary text-xl">₹{totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
 
-                {/* Coupon Code Input */}
+                {/* Coupon Code */}
                 <div className="border-t pt-4 space-y-3">
-                  <Label htmlFor="couponCode">Have a Coupon Code?</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="couponCode"
-                      placeholder="Enter coupon code"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      disabled={appliedCoupon !== null}
-                      className="uppercase"
-                    />
-                    {appliedCoupon ? (
-                      <Button
-                        type="button"
-                        variant="outline"
+                  {!appliedCoupon ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="coupon" className="text-sm">Have a coupon code?</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="coupon"
+                          placeholder="Enter coupon code"
+                          value={couponCode}
+                          onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                          className="flex-1"
+                        />
+                        <Button 
+                          onClick={applyCoupon} 
+                          disabled={couponLoading}
+                          size="sm"
+                        >
+                          {couponLoading ? "..." : "Apply"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between bg-green-50 dark:bg-green-950 p-3 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                          {appliedCoupon.code} applied
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-500">
+                          You save ₹{discount}
+                        </p>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
                         onClick={removeCoupon}
+                        className="text-red-500 hover:text-red-700"
                       >
                         Remove
                       </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={applyCoupon}
-                        disabled={couponLoading || !couponCode.trim()}
-                      >
-                        {couponLoading ? "Checking..." : "Apply"}
-                      </Button>
-                    )}
-                  </div>
-                  {appliedCoupon && (
-                    <p className="text-sm text-green-600 dark:text-green-400">
-                      ✓ Coupon applied: {appliedCoupon.description}
-                    </p>
+                    </div>
                   )}
                 </div>
 
+                {/* Confirm Button */}
                 <Button
-                  onClick={handlePayment}
+                  className="w-full bg-gradient-primary hover:opacity-90 text-lg py-6"
+                  onClick={handleConfirmBooking}
                   disabled={loading}
-                  className="w-full bg-gradient-primary hover:opacity-90"
-                  size="lg"
                 >
-                  {loading ? "Processing..." : `Pay ₹${onlinePaymentAmount.toFixed(2)} Now`}
+                  {loading ? "Processing..." : "Confirm Booking"}
                 </Button>
 
-                <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
-                  <span>🔒 Secure payment powered by PhonePe</span>
-                  <span className="text-[10px]">Deposit of ₹{securityDeposit.toFixed(2)} payable at pickup</span>
-                </div>
+                <p className="text-xs text-center text-muted-foreground">
+                  Payment will be collected at the pickup location via QR code scan
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -529,4 +570,4 @@ const Payment = () => {
   );
 };
 
-export default Payment;
+export default BookingSummary;

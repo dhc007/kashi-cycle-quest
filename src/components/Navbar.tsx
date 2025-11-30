@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import bolt91Logo from "@/assets/bolt91-logo.png";
+import bolt91Logo from "@/assets/bolt91-logo-new.png";
 import { User } from "@supabase/supabase-js";
 
 export const Navbar = () => {

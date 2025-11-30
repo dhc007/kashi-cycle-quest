@@ -753,7 +753,7 @@ const Book = () => {
       };
 
       sessionStorage.setItem("bookingData", JSON.stringify(bookingData));
-      navigate("/payment");
+      navigate("/booking-summary");
     } catch (error) {
       console.error("Error uploading files:", error);
       toast({
@@ -1697,7 +1697,7 @@ const Book = () => {
                             disabled={!canProceedToPayment()}
                             className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50"
                           >
-                            Proceed to Payment
+                            Proceed to Book
                           </Button>
                           {!canProceedToPayment() && (
                             <p className="text-xs text-destructive text-center">
@@ -1919,7 +1919,7 @@ const Book = () => {
 
                         <div className="pt-3 border-t">
                           <div className="flex justify-between text-lg font-bold">
-                            <span>Pay Online Now</span>
+                            <span>Total Rental</span>
                             <span className="text-primary">₹{getBasePrice() + accessoriesTotal}</span>
                           </div>
                         </div>
