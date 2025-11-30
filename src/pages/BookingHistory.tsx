@@ -218,137 +218,138 @@ const BookingHistory = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="container mx-auto px-4 pt-24 pb-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">My Bookings</h1>
-          <p className="text-muted-foreground">View all your past and upcoming bookings</p>
+      <div className="container mx-auto px-3 sm:px-4 pt-20 sm:pt-24 pb-8 sm:pb-12">
+        <div className="mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2">My Bookings</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">View all your past and upcoming bookings</p>
         </div>
 
         {bookings.length === 0 ? (
           <Card className="shadow-warm">
-            <CardContent className="py-12 text-center">
-              <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-xl font-semibold mb-2">No bookings yet</h3>
-              <p className="text-muted-foreground mb-6">Start your cycling adventure today!</p>
+            <CardContent className="py-8 sm:py-12 text-center">
+              <Package className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+              <h3 className="text-lg sm:text-xl font-semibold mb-2">No bookings yet</h3>
+              <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">Start your cycling adventure today!</p>
               <button
                 onClick={() => navigate("/book")}
-                className="px-6 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90"
+                className="px-5 sm:px-6 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 text-sm sm:text-base"
               >
                 Book Now
               </button>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid gap-4 sm:gap-6">
             {bookings.map((booking) => (
-              <Card key={booking.id} className="shadow-warm">
-                <CardHeader>
-                  <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                    <div className="flex gap-4 flex-1">
+              <Card key={booking.id} className="shadow-warm overflow-hidden">
+                <CardHeader className="p-3 sm:p-6">
+                  <div className="flex flex-col gap-3 sm:gap-4">
+                    {/* Mobile: Stack vertically, Desktop: Row */}
+                    <div className="flex gap-3 sm:gap-4">
                       {booking.cycles?.image_url && (
-                        <div className="w-24 h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 flex-shrink-0 bg-muted rounded-lg overflow-hidden">
                           <img 
                             src={booking.cycles.image_url} 
                             alt={booking.cycles.name}
-                            className="w-full h-full object-contain p-2"
+                            className="w-full h-full object-contain p-1 sm:p-2"
                           />
                         </div>
                       )}
-                      <div className="flex-1">
-                        <CardTitle className="text-xl mb-2">
-                          {booking.cycles?.name} - {booking.cycles?.model}
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-base sm:text-lg md:text-xl mb-1 sm:mb-2 leading-tight truncate">
+                          {booking.cycles?.name}
                         </CardTitle>
-                        <div className="flex gap-2 flex-wrap">
-                          <Badge className={getStatusColor(booking.booking_status)}>
-                            <span className="text-xs mr-1 opacity-75">Booking:</span>
-                            {booking.booking_status}
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-2">{booking.cycles?.model}</p>
+                        <div className="flex gap-1.5 sm:gap-2 flex-wrap">
+                          <Badge className={`${getStatusColor(booking.booking_status)} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5`}>
+                            Booking: {booking.booking_status}
                           </Badge>
-                          <Badge className={getPaymentStatusColor(booking.payment_status)}>
-                            <span className="text-xs mr-1 opacity-75">Payment:</span>
-                            {booking.payment_status}
+                          <Badge className={`${getPaymentStatusColor(booking.payment_status)} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5`}>
+                            Payment: {booking.payment_status}
                           </Badge>
                           {booking.cancellation_status !== 'none' && (
-                            <Badge className={getCancellationStatusColor(booking.cancellation_status)}>
-                              Cancellation: {booking.cancellation_status}
+                            <Badge className={`${getCancellationStatusColor(booking.cancellation_status)} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5`}>
+                              Cancel: {booking.cancellation_status}
                             </Badge>
                           )}
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Booking ID</p>
-                      <p className="font-mono text-sm">{booking.booking_id}</p>
+                    {/* Booking ID - full width on mobile */}
+                    <div className="flex justify-between items-center bg-muted/50 rounded px-2 py-1.5 sm:px-3 sm:py-2">
+                      <span className="text-xs sm:text-sm text-muted-foreground">Booking ID</span>
+                      <span className="font-mono text-xs sm:text-sm">{booking.booking_id}</span>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-3">
-                        <Calendar className="w-5 h-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Pickup Date</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(booking.pickup_date), 'PPP')}
+                <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-medium">Pickup</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                            {format(new Date(booking.pickup_date), 'PP')}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-start gap-3">
-                        <Calendar className="w-5 h-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Return Date</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(booking.return_date), 'PPP')}
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-medium">Return</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                            {format(new Date(booking.return_date), 'PP')}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-start gap-3">
-                        <Clock className="w-5 h-5 text-primary mt-0.5" />
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium">Pickup Time</p>
-                          <p className="text-sm text-muted-foreground">{booking.pickup_time}</p>
+                          <p className="text-xs sm:text-sm font-medium">Time</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">{booking.pickup_time}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-3">
-                       <div className="flex items-start gap-3">
-                        <MapPin className="w-5 h-5 text-primary mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium">Pickup Location</p>
-                          <p className="text-sm text-muted-foreground">
-                            {booking.partners?.name || booking.pickup_locations?.name || 'N/A'}, {booking.partners?.city || booking.pickup_locations?.city || ''}
+                    <div className="space-y-2 sm:space-y-3">
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs sm:text-sm font-medium">Location</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
+                            {booking.partners?.name || booking.pickup_locations?.name || 'N/A'}
                           </p>
                           {(booking.partners?.google_maps_link || booking.pickup_locations?.google_maps_link) && (
                             <a
                               href={booking.partners?.google_maps_link || booking.pickup_locations?.google_maps_link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs text-primary hover:underline flex items-center gap-1 mt-1"
+                              className="text-[10px] sm:text-xs text-primary hover:underline inline-flex items-center gap-1 mt-0.5"
                             >
-                              <MapPin className="w-3 h-3" />
-                              View on Google Maps
+                              <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                              Maps
                             </a>
                           )}
                         </div>
                       </div>
 
-                      <div className="flex items-start gap-3">
-                        <CreditCard className="w-5 h-5 text-primary mt-0.5" />
+                      <div className="flex items-start gap-2 sm:gap-3">
+                        <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium">Total Amount</p>
-                          <p className="text-lg font-bold">₹{booking.total_amount.toLocaleString()}</p>
+                          <p className="text-xs sm:text-sm font-medium">Total</p>
+                          <p className="text-sm sm:text-lg font-bold">₹{booking.total_amount.toLocaleString()}</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t">
-                    <div className="space-y-2 text-sm">
+                  <div className="pt-3 sm:pt-4 border-t">
+                    <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Cycle Rental ({booking.duration_type})</span>
+                        <span className="text-muted-foreground">Cycle ({booking.duration_type})</span>
                         <span className="font-medium">₹{booking.cycle_rental_cost.toLocaleString()}</span>
                       </div>
                       {booking.accessories_cost > 0 && (
@@ -363,36 +364,36 @@ const BookingHistory = () => {
                       </div>
                       {booking.coupon_code && booking.discount_amount > 0 && (
                         <div className="flex justify-between text-green-600">
-                          <span>Discount ({booking.coupon_code})</span>
-                          <span className="font-medium">-₹{booking.discount_amount.toLocaleString()}</span>
+                          <span className="truncate mr-2">Discount ({booking.coupon_code})</span>
+                          <span className="font-medium flex-shrink-0">-₹{booking.discount_amount.toLocaleString()}</span>
                         </div>
                       )}
-                      <div className="flex justify-between pt-2 border-t">
+                      <div className="flex justify-between pt-1.5 sm:pt-2 border-t">
                         <span className="font-semibold">Subtotal</span>
                         <span className="font-semibold">₹{(booking.cycle_rental_cost + booking.accessories_cost + booking.gst - (booking.discount_amount || 0)).toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Security Deposit (Refundable)</span>
+                      <div className="flex justify-between text-xs sm:text-sm">
+                        <span className="text-muted-foreground">Security Deposit</span>
                         <span className="font-medium text-green-600">₹{booking.security_deposit.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between pt-2 border-t-2">
-                        <span className="text-lg font-bold">Total Paid</span>
-                        <span className="text-lg font-bold">₹{booking.total_amount.toLocaleString()}</span>
+                      <div className="flex justify-between pt-1.5 sm:pt-2 border-t-2">
+                        <span className="text-sm sm:text-lg font-bold">Total</span>
+                        <span className="text-sm sm:text-lg font-bold">₹{booking.total_amount.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
 
                   {booking.booking_accessories && booking.booking_accessories.length > 0 && (
-                    <div className="pt-4 border-t">
-                      <p className="text-sm font-medium mb-3">Accessories</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="pt-3 sm:pt-4 border-t">
+                      <p className="text-xs sm:text-sm font-medium mb-2 sm:mb-3">Accessories</p>
+                      <div className="grid grid-cols-1 gap-2 sm:gap-3">
                         {booking.booking_accessories
                           .filter((acc) => acc.accessories)
                           .map((acc, idx) => (
-                          <div key={idx} className="bg-muted/50 p-3 rounded-md">
-                            <p className="font-medium text-sm">{acc.accessories?.name || 'Unknown Accessory'}</p>
-                            <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                              <span>Qty: {acc.quantity} × {acc.days} days</span>
+                          <div key={idx} className="bg-muted/50 p-2 sm:p-3 rounded-md">
+                            <p className="font-medium text-xs sm:text-sm">{acc.accessories?.name || 'Unknown'}</p>
+                            <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground mt-1">
+                              <span>Qty: {acc.quantity} × {acc.days}d</span>
                               <span className="font-medium">₹{acc.total_cost.toLocaleString()}</span>
                             </div>
                           </div>
@@ -402,34 +403,35 @@ const BookingHistory = () => {
                   )}
 
                   {booking.has_insurance && (
-                    <div className="bg-green-50 dark:bg-green-950 p-3 rounded-md">
-                      <p className="text-sm text-green-700 dark:text-green-300">✓ Insurance Included</p>
+                    <div className="bg-green-50 dark:bg-green-950 p-2 sm:p-3 rounded-md">
+                      <p className="text-xs sm:text-sm text-green-700 dark:text-green-300">✓ Insurance Included</p>
                     </div>
                   )}
 
                   {booking.cancellation_status === 'requested' && booking.cancellation_reason && (
-                    <div className="bg-yellow-50 dark:bg-yellow-950 p-3 rounded-md">
-                      <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
-                        Cancellation Pending Approval
+                    <div className="bg-yellow-50 dark:bg-yellow-950 p-2 sm:p-3 rounded-md">
+                      <p className="text-xs sm:text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-1">
+                        Cancellation Pending
                       </p>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                        Reason: {booking.cancellation_reason}
+                      <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300">
+                        {booking.cancellation_reason}
                       </p>
-                      <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                        Refund Amount: ₹{booking.refund_amount?.toLocaleString() || 0}
+                      <p className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                        Refund: ₹{booking.refund_amount?.toLocaleString() || 0}
                       </p>
                     </div>
                   )}
 
                   {(canEditBooking(booking) || canCancelBooking(booking)) && (
-                    <div className="pt-4 border-t flex justify-end gap-2">
+                    <div className="pt-3 sm:pt-4 border-t flex flex-col sm:flex-row justify-end gap-2">
                       {canEditBooking(booking) && (
                         <Button
                           variant="outline"
                           size="sm"
+                          className="text-xs sm:text-sm w-full sm:w-auto"
                           onClick={() => handleEditClick(booking)}
                         >
-                          <Edit className="w-4 h-4 mr-2" />
+                          <Edit className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
                           Edit Accessories
                         </Button>
                       )}
@@ -437,10 +439,11 @@ const BookingHistory = () => {
                         <Button
                           variant="destructive"
                           size="sm"
+                          className="text-xs sm:text-sm w-full sm:w-auto"
                           onClick={() => handleCancelClick(booking)}
                         >
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Request Cancellation
+                          <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 sm:mr-2" />
+                          Cancel Booking
                         </Button>
                       )}
                     </div>
