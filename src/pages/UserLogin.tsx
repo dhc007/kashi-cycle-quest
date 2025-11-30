@@ -20,12 +20,12 @@ export default function UserLogin() {
   // Preserve partner parameter from URL only when user lands on login page
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const partnerId = params.get('partner');
+    const partnerId = params.get("partner");
     if (partnerId) {
-      localStorage.setItem('pendingPartner', partnerId);
+      localStorage.setItem("pendingPartner", partnerId);
     } else {
       // Clear any old partner if no partner in current URL
-      localStorage.removeItem('pendingPartner');
+      localStorage.removeItem("pendingPartner");
     }
   }, []);
 
@@ -40,17 +40,17 @@ export default function UserLogin() {
     }
 
     setLoading(true);
-    
+
     try {
-      const { data, error } = await supabase.functions.invoke('send-verification', {
-        body: { phoneNumber }
+      const { data, error } = await supabase.functions.invoke("send-verification", {
+        body: { phoneNumber },
       });
 
       if (error) throw error;
-      if (!data?.success) throw new Error(data?.error || 'Failed to send OTP');
+      if (!data?.success) throw new Error(data?.error || "Failed to send OTP");
 
       setOtpSent(true);
-      
+
       toast({
         title: "OTP Sent",
         description: "A 6-digit code has been sent to your phone",
@@ -80,8 +80,8 @@ export default function UserLogin() {
 
     try {
       // Verify OTP via Twilio
-      const { data, error } = await supabase.functions.invoke('verify-otp', {
-        body: { phoneNumber, code: otp }
+      const { data, error } = await supabase.functions.invoke("verify-otp", {
+        body: { phoneNumber, code: otp },
       });
 
       if (error) throw error;
@@ -120,11 +120,11 @@ export default function UserLogin() {
       });
 
       // Check if there's a pending partner
-      const pendingPartner = localStorage.getItem('pendingPartner');
-      
+      const pendingPartner = localStorage.getItem("pendingPartner");
+
       // Clear pending partner after using it
       if (pendingPartner) {
-        localStorage.removeItem('pendingPartner');
+        localStorage.removeItem("pendingPartner");
       }
 
       // If partner exists, ALWAYS go to book page with partner (even for existing users)
@@ -133,16 +133,16 @@ export default function UserLogin() {
       } else {
         // No partner - check if user has bookings to decide where to navigate
         const { data: bookingsData } = await supabase
-          .from('bookings')
-          .select('id')
-          .eq('user_id', data.user.id)
+          .from("bookings")
+          .select("id")
+          .eq("user_id", data.user.id)
           .limit(1);
 
         // If user has bookings, navigate to bookings page, otherwise to book page
         if (bookingsData && bookingsData.length > 0) {
-          navigate('/bookings');
+          navigate("/bookings");
         } else {
-          navigate('/book');
+          navigate("/book");
         }
       }
     } catch (error: any) {
@@ -163,9 +163,7 @@ export default function UserLogin() {
         <Card className="max-w-md mx-auto">
           <CardHeader>
             <CardTitle>Login with Phone</CardTitle>
-            <CardDescription>
-              Enter your phone number to receive a verification code
-            </CardDescription>
+            <CardDescription>Enter your phone number to receive a verification code</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -182,11 +180,7 @@ export default function UserLogin() {
             </div>
 
             {!otpSent ? (
-              <Button 
-                onClick={sendOTP} 
-                disabled={loading || phoneNumber.length !== 10}
-                className="w-full"
-              >
+              <Button onClick={sendOTP} disabled={loading || phoneNumber.length !== 10} className="w-full">
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -208,11 +202,9 @@ export default function UserLogin() {
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     maxLength={6}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    OTP valid for 10 minutes
-                  </p>
+                  <p className="text-xs text-muted-foreground">OTP valid for 5 minutes</p>
                 </div>
-                
+
                 <Button onClick={verifyOTP} disabled={loading} className="w-full">
                   {loading ? (
                     <>
@@ -223,9 +215,9 @@ export default function UserLogin() {
                     "Verify & Login"
                   )}
                 </Button>
-                
-                <Button 
-                  variant="ghost" 
+
+                <Button
+                  variant="ghost"
                   onClick={() => {
                     setOtpSent(false);
                     setOtp("");
