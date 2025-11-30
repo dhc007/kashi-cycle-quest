@@ -76,7 +76,7 @@ export type Database = {
       }
       booking_accessories: {
         Row: {
-          accessory_id: string
+          accessory_id: string | null
           booking_id: string
           created_at: string
           days: number
@@ -86,7 +86,7 @@ export type Database = {
           total_cost: number
         }
         Insert: {
-          accessory_id: string
+          accessory_id?: string | null
           booking_id: string
           created_at?: string
           days: number
@@ -96,7 +96,7 @@ export type Database = {
           total_cost: number
         }
         Update: {
-          accessory_id?: string
+          accessory_id?: string | null
           booking_id?: string
           created_at?: string
           days?: number
@@ -187,7 +187,7 @@ export type Database = {
           coupon_id: string | null
           created_at: string
           cycle_condition: string | null
-          cycle_id: string
+          cycle_id: string | null
           cycle_inspected_at: string | null
           cycle_rental_cost: number
           cycle_returned_at: string | null
@@ -242,7 +242,7 @@ export type Database = {
           coupon_id?: string | null
           created_at?: string
           cycle_condition?: string | null
-          cycle_id: string
+          cycle_id?: string | null
           cycle_inspected_at?: string | null
           cycle_rental_cost: number
           cycle_returned_at?: string | null
@@ -297,7 +297,7 @@ export type Database = {
           coupon_id?: string | null
           created_at?: string
           cycle_condition?: string | null
-          cycle_id?: string
+          cycle_id?: string | null
           cycle_inspected_at?: string | null
           cycle_rental_cost?: number
           cycle_returned_at?: string | null
