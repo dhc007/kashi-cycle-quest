@@ -174,6 +174,21 @@ export default function UserLogin() {
           />
         </div>
 
+        {/* Instructions Card */}
+        <Card className="w-full max-w-md mb-4 bg-primary/5 border-primary/20">
+          <CardContent className="pt-4 pb-4">
+            <p className="font-semibold text-foreground mb-2">To book a cycle:</p>
+            <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
+              <li>Create your account with your phone number.</li>
+              <li>Pick your cycle and confirm your booking.</li>
+              <li>Confirm a quick ID verification.</li>
+            </ol>
+            <p className="text-sm text-muted-foreground mt-3">
+              Once done, show your booking and make the payment at pickup point to get the cycle.
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Login Card */}
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
