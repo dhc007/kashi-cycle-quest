@@ -188,61 +188,61 @@ const PricingPlanContent = () => {
   }
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <IndianRupee className="w-8 h-8" />
-          Pricing Management
+    <div className="p-3 sm:p-4 md:p-6 lg:p-8">
+      <div className="mb-4 sm:mb-6 md:mb-8">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
+          <IndianRupee className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 flex-shrink-0" />
+          <span className="truncate">Pricing Management</span>
         </h1>
-        <p className="text-muted-foreground">Manage pricing for cycles and accessories</p>
+        <p className="text-xs sm:text-sm md:text-base text-muted-foreground mt-1">Manage pricing for cycles and accessories</p>
       </div>
 
       {/* Search Bar */}
-      <div className="mb-4">
+      <div className="mb-3 sm:mb-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             placeholder="Search by name or model..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 text-sm"
           />
         </div>
       </div>
 
       {/* Cycles Pricing Section */}
-      <Card className="shadow-warm mb-6">
-        <CardHeader>
-          <CardTitle>Cycles Pricing ({filteredPlans.filter(p => p.item_type === "cycle").length})</CardTitle>
+      <Card className="shadow-warm mb-4 sm:mb-6">
+        <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+          <CardTitle className="text-base sm:text-lg">Cycles Pricing ({filteredPlans.filter(p => p.item_type === "cycle").length})</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="px-0 sm:px-6 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Actions</TableHead>
-                <TableHead>Cycle Name</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Price/Day</TableHead>
+                <TableHead className="w-[80px] sm:w-[100px] sticky left-0 bg-background z-10">Actions</TableHead>
+                <TableHead className="min-w-[100px]">Cycle Name</TableHead>
+                <TableHead className="hidden sm:table-cell min-w-[80px]">Model</TableHead>
+                <TableHead className="min-w-[70px]">Price/Day</TableHead>
                 <TableHead className="hidden md:table-cell">Price/Week</TableHead>
-                <TableHead className="hidden md:table-cell">Price/Month</TableHead>
-                <TableHead className="hidden lg:table-cell">Deposits</TableHead>
+                <TableHead className="hidden lg:table-cell">Price/Month</TableHead>
+                <TableHead className="hidden xl:table-cell">Deposits</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPlans.filter(p => p.item_type === "cycle").map((plan) => (
                 <TableRow key={plan.id}>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleView(plan)}>
+                  <TableCell className="sticky left-0 bg-background z-10">
+                    <div className="flex gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(plan)}>
                         <Eye className="w-4 h-4" />
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
+                        <DropdownMenuContent align="start" className="z-50">
                           <DropdownMenuItem onClick={() => handleEdit(plan)}>
                             <Edit className="w-4 h-4 mr-2" />
                             Edit Pricing
@@ -251,13 +251,13 @@ const PricingPlanContent = () => {
                       </DropdownMenu>
                     </div>
                   </TableCell>
-                  <TableCell className="font-semibold">{plan.item_name}</TableCell>
-                  <TableCell className="text-muted-foreground">{plan.item_model}</TableCell>
-                  <TableCell className="font-semibold">₹{plan.price_per_day}</TableCell>
-                  <TableCell className="hidden md:table-cell">₹{plan.price_per_week || "-"}</TableCell>
-                  <TableCell className="hidden md:table-cell">₹{plan.price_per_month || "-"}</TableCell>
-                  <TableCell className="hidden lg:table-cell">
-                    <div className="text-sm">
+                  <TableCell className="font-semibold text-xs sm:text-sm">{plan.item_name}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs sm:text-sm hidden sm:table-cell">{plan.item_model}</TableCell>
+                  <TableCell className="font-semibold text-xs sm:text-sm">₹{plan.price_per_day}</TableCell>
+                  <TableCell className="hidden md:table-cell text-xs sm:text-sm">₹{plan.price_per_week || "-"}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-xs sm:text-sm">₹{plan.price_per_month || "-"}</TableCell>
+                  <TableCell className="hidden xl:table-cell">
+                    <div className="text-xs sm:text-sm">
                       <p>Day: ₹{plan.security_deposit_day}</p>
                       <p>Week: ₹{plan.security_deposit_week}</p>
                       <p>Month: ₹{plan.security_deposit_month}</p>
@@ -272,35 +272,35 @@ const PricingPlanContent = () => {
 
       {/* Accessories Pricing Section */}
       <Card className="shadow-warm">
-        <CardHeader>
-          <CardTitle>Accessories Pricing ({filteredPlans.filter(p => p.item_type === "accessory").length})</CardTitle>
+        <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+          <CardTitle className="text-base sm:text-lg">Accessories Pricing ({filteredPlans.filter(p => p.item_type === "accessory").length})</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="px-0 sm:px-6 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Actions</TableHead>
-                <TableHead>Accessory Name</TableHead>
-                <TableHead>Model</TableHead>
-                <TableHead>Price/Day</TableHead>
-                <TableHead>Security Deposit</TableHead>
+                <TableHead className="w-[80px] sm:w-[100px] sticky left-0 bg-background z-10">Actions</TableHead>
+                <TableHead className="min-w-[100px]">Accessory Name</TableHead>
+                <TableHead className="hidden sm:table-cell min-w-[80px]">Model</TableHead>
+                <TableHead className="min-w-[70px]">Price/Day</TableHead>
+                <TableHead className="min-w-[80px]">Security Deposit</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPlans.filter(p => p.item_type === "accessory").map((plan) => (
                 <TableRow key={plan.id}>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleView(plan)}>
+                  <TableCell className="sticky left-0 bg-background z-10">
+                    <div className="flex gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(plan)}>
                         <Eye className="w-4 h-4" />
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreVertical className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
+                        <DropdownMenuContent align="start" className="z-50">
                           <DropdownMenuItem onClick={() => handleEdit(plan)}>
                             <Edit className="w-4 h-4 mr-2" />
                             Edit Pricing
@@ -309,10 +309,10 @@ const PricingPlanContent = () => {
                       </DropdownMenu>
                     </div>
                   </TableCell>
-                  <TableCell className="font-semibold">{plan.item_name}</TableCell>
-                  <TableCell className="text-muted-foreground">{plan.item_model}</TableCell>
-                  <TableCell className="font-semibold">₹{plan.price_per_day}</TableCell>
-                  <TableCell className="font-semibold">₹{plan.security_deposit_day}</TableCell>
+                  <TableCell className="font-semibold text-xs sm:text-sm">{plan.item_name}</TableCell>
+                  <TableCell className="text-muted-foreground text-xs sm:text-sm hidden sm:table-cell">{plan.item_model}</TableCell>
+                  <TableCell className="font-semibold text-xs sm:text-sm">₹{plan.price_per_day}</TableCell>
+                  <TableCell className="font-semibold text-xs sm:text-sm">₹{plan.security_deposit_day}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

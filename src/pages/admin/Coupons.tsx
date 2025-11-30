@@ -220,14 +220,14 @@ const Coupons = () => {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-            <Tag className="w-6 h-6 sm:w-8 sm:h-8" />
-            Coupon Management
+    <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
+            <Tag className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 flex-shrink-0" />
+            <span className="truncate">Coupon Management</span>
           </h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">Create and manage discount coupons</p>
+          <p className="text-xs sm:text-sm md:text-base text-muted-foreground mt-1">Create and manage discount coupons</p>
         </div>
         
         <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -235,9 +235,9 @@ const Coupons = () => {
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
-              Create Coupon
+              <span className="sm:inline">Create Coupon</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -372,20 +372,20 @@ const Coupons = () => {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>All Coupons</CardTitle>
+        <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+          <CardTitle className="text-base sm:text-lg">All Coupons</CardTitle>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="px-0 sm:px-6 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Actions</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead className="hidden md:table-cell">Description</TableHead>
-                <TableHead>Discount</TableHead>
-                <TableHead className="hidden md:table-cell">Usage</TableHead>
+                <TableHead className="w-[80px] sm:w-[100px] sticky left-0 bg-background z-10">Actions</TableHead>
+                <TableHead className="min-w-[80px]">Code</TableHead>
+                <TableHead className="hidden lg:table-cell">Description</TableHead>
+                <TableHead className="min-w-[80px]">Discount</TableHead>
+                <TableHead className="hidden sm:table-cell">Usage</TableHead>
                 <TableHead className="hidden md:table-cell">Valid Until</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="min-w-[70px]">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -398,22 +398,23 @@ const Coupons = () => {
               ) : (
                 coupons.map((coupon) => (
                   <TableRow key={coupon.id}>
-                    <TableCell>
-                      <div className="flex gap-1">
+                    <TableCell className="sticky left-0 bg-background z-10">
+                      <div className="flex gap-0.5">
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
+                          className="h-8 w-8"
                           onClick={() => handleEdit(coupon)}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start">
+                          <DropdownMenuContent align="start" className="z-50">
                             <DropdownMenuItem onClick={() => handleEdit(coupon)}>
                               <Pencil className="w-4 h-4 mr-2" />
                               Edit
@@ -432,23 +433,23 @@ const Coupons = () => {
                         </DropdownMenu>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono font-bold">{coupon.code}</TableCell>
-                    <TableCell className="max-w-xs truncate hidden md:table-cell">{coupon.description || '-'}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-mono font-bold text-xs sm:text-sm">{coupon.code}</TableCell>
+                    <TableCell className="max-w-xs truncate hidden lg:table-cell">{coupon.description || '-'}</TableCell>
+                    <TableCell className="text-xs sm:text-sm">
                       {coupon.discount_type === 'percentage' 
                         ? `${coupon.discount_value}%` 
                         : `₹${coupon.discount_value}`}
                       {coupon.min_order_amount > 0 && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-[10px] sm:text-xs text-muted-foreground">
                           Min: ₹{coupon.min_order_amount}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell className="hidden sm:table-cell text-xs sm:text-sm">
                       {coupon.used_count}
                       {coupon.max_uses && ` / ${coupon.max_uses}`}
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
+                    <TableCell className="hidden md:table-cell text-xs sm:text-sm">
                       {coupon.valid_until 
                         ? format(new Date(coupon.valid_until), 'PP')
                         : 'No expiry'}
@@ -456,7 +457,7 @@ const Coupons = () => {
                     <TableCell>
                       <Badge 
                         variant={coupon.is_active ? "default" : "secondary"}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-[10px] sm:text-xs"
                         onClick={() => toggleActive(coupon)}
                       >
                         {coupon.is_active ? 'Active' : 'Inactive'}

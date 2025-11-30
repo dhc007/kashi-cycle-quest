@@ -493,31 +493,32 @@ const PartnersContent = () => {
       </div>
 
       <Card className="shadow-warm">
-        <CardHeader>
-          <CardTitle>All Partners</CardTitle>
+        <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+          <CardTitle className="text-base sm:text-lg">All Partners</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0 sm:px-6 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[100px]">Actions</TableHead>
-                <TableHead>Code</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Bookings</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead className="w-[80px] sm:w-[100px] sticky left-0 bg-background z-10">Actions</TableHead>
+                <TableHead className="min-w-[70px]">Code</TableHead>
+                <TableHead className="min-w-[100px]">Name</TableHead>
+                <TableHead className="hidden sm:table-cell">Type</TableHead>
+                <TableHead className="hidden md:table-cell">Location</TableHead>
+                <TableHead className="hidden lg:table-cell">Contact</TableHead>
+                <TableHead className="hidden sm:table-cell">Bookings</TableHead>
+                <TableHead className="min-w-[60px]">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {partners.map((partner) => (
                 <TableRow key={partner.id}>
-                  <TableCell>
-                    <div className="flex gap-2">
+                  <TableCell className="sticky left-0 bg-background z-10">
+                    <div className="flex gap-0.5">
                       <Button
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={() => showQRCode(partner.id)}
                       >
                         <QrCode className="h-4 w-4" />
@@ -525,11 +526,11 @@ const PartnersContent = () => {
                       {canEdit && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
                               <MoreVertical className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start">
+                          <DropdownMenuContent align="start" className="z-50">
                             <DropdownMenuItem onClick={() => {
                               setSelectedPartner(partner);
                               setViewDialogOpen(true);
@@ -554,46 +555,47 @@ const PartnersContent = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary" className="font-mono">
+                    <Badge variant="secondary" className="font-mono text-[10px] sm:text-xs">
                       {partner.partner_code}
                     </Badge>
                   </TableCell>
-                  <TableCell className="font-medium">{partner.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={partner.partner_type === 'guest_house' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}>
+                  <TableCell className="font-medium text-xs sm:text-sm">{partner.name}</TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    <Badge variant="outline" className={`text-[10px] sm:text-xs ${partner.partner_type === 'guest_house' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
                       {partner.partner_type === 'guest_house' ? 'Guest House' : 'Cafe/Retail'}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
+                  <TableCell className="hidden md:table-cell">
+                    <div className="text-xs sm:text-sm">
                       {partner.city}, {partner.state}
-                      <div className="text-xs text-muted-foreground">{partner.pincode}</div>
+                      <div className="text-[10px] sm:text-xs text-muted-foreground">{partner.pincode}</div>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
+                  <TableCell className="hidden lg:table-cell">
+                    <div className="text-xs sm:text-sm">
                       {partner.phone_number}
-                      {partner.email && <div className="text-xs text-muted-foreground">{partner.email}</div>}
+                      {partner.email && <div className="text-[10px] sm:text-xs text-muted-foreground">{partner.email}</div>}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-primary text-lg">
+                  <TableCell className="hidden sm:table-cell">
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-primary text-sm sm:text-lg">
                         {partnerStats[partner.id] || 0}
                       </span>
                       {partnerStats[partner.id] > 0 && (
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
+                          className="h-7 w-7"
                           onClick={() => navigate(`/admin/bookings?partner=${partner.id}`)}
                         >
-                          <BarChart3 className="h-4 w-4" />
+                          <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${partner.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs ${partner.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                       {partner.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </TableCell>
