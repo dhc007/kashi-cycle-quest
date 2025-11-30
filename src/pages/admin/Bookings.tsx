@@ -11,7 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
 import { format, isBefore, isAfter, startOfDay } from "date-fns";
-import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown } from "lucide-react";
+import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown, MoreHorizontal, Pencil } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AdminEditBookingDialog } from "@/components/admin/AdminEditBookingDialog";
 
 interface Booking {
   id: string;
@@ -100,8 +107,15 @@ const BookingsContent = () => {
   const [sortField, setSortField] = useState<'created_at' | 'pickup_date'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [activeTab, setActiveTab] = useState(tabParam || "all");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [bookingToEdit, setBookingToEdit] = useState<Booking | null>(null);
   const { toast } = useToast();
   const { canEdit } = useUserRoles();
+
+  const handleEditBooking = (booking: Booking) => {
+    setBookingToEdit(booking);
+    setEditDialogOpen(true);
+  };
 
   useEffect(() => {
     loadBookings();
@@ -313,9 +327,25 @@ const BookingsContent = () => {
   const renderBookingCard = (booking: Booking) => (
     <div key={booking.id} className="border rounded-lg p-4 space-y-3 hover:bg-accent/50 transition-colors">
       <div className="flex items-start gap-2">
-        <Button variant="ghost" size="sm" onClick={() => viewDetails(booking)} className="flex-shrink-0">
-          <Eye className="h-4 w-4" />
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="flex-shrink-0">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem onClick={() => viewDetails(booking)}>
+              <Eye className="h-4 w-4 mr-2" />
+              View Details
+            </DropdownMenuItem>
+            {canEdit && (
+              <DropdownMenuItem onClick={() => handleEditBooking(booking)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Booking
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <div className="flex-1 min-w-0">
           <p className="font-mono text-sm font-semibold truncate">{booking.booking_id}</p>
           <p className="font-medium truncate">
@@ -392,9 +422,25 @@ const BookingsContent = () => {
           {bookings.map((booking) => (
             <TableRow key={booking.id}>
               <TableCell>
-                <Button variant="ghost" size="icon" onClick={() => viewDetails(booking)}>
-                  <Eye className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => viewDetails(booking)}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      View Details
+                    </DropdownMenuItem>
+                    {canEdit && (
+                      <DropdownMenuItem onClick={() => handleEditBooking(booking)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit Booking
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </TableCell>
               <TableCell className="font-mono text-sm">{booking.booking_id}</TableCell>
               <TableCell className="text-sm">
@@ -1018,6 +1064,14 @@ const BookingsContent = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Admin Edit Booking Dialog */}
+      <AdminEditBookingDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        booking={bookingToEdit}
+        onSuccess={loadBookings}
+      />
     </div>
   );
 };
