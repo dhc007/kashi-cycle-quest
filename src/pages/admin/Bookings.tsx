@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { RoleGuard, useUserRoles } from "@/components/admin/RoleGuard";
 import { format, isBefore, isAfter, startOfDay } from "date-fns";
-import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown, MoreHorizontal, Pencil } from "lucide-react";
+import { Eye, Search, Calendar, CheckCircle, XCircle, Clock, ArrowUpDown, MoreHorizontal, Pencil, AlertTriangle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -324,6 +324,10 @@ const BookingsContent = () => {
     b.cancellation_status === 'requested'
   );
 
+  const paymentIssueBookings = filteredBookings.filter(b => 
+    b.payment_status === 'pending' || b.payment_status === 'failed'
+  );
+
   const renderBookingCard = (booking: Booking) => (
     <div key={booking.id} className="border rounded-lg p-4 space-y-3 hover:bg-accent/50 transition-colors">
       <div className="flex items-start gap-2">
@@ -610,6 +614,15 @@ const BookingsContent = () => {
                 <span className="sm:hidden">Can</span>
                 <span className="ml-1 text-xs">({cancelledBookings.length})</span>
               </TabsTrigger>
+              <TabsTrigger 
+                value="payment_issues"
+                className="flex items-center gap-2 data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none pb-3"
+              >
+                <AlertTriangle className="h-4 w-4" />
+                <span className="hidden sm:inline">Payment Issues</span>
+                <span className="sm:hidden">Pay</span>
+                <span className="ml-1 text-xs">({paymentIssueBookings.length})</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -699,6 +712,21 @@ const BookingsContent = () => {
               {renderBookingTable(cancelledBookings)}
               {cancelledBookings.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">No cancelled bookings</p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payment_issues" className="p-4 md:p-6">
+            <div className="md:hidden space-y-3">
+              {paymentIssueBookings.map(renderBookingCard)}
+              {paymentIssueBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No payment issues</p>
+              )}
+            </div>
+            <div className="hidden md:block">
+              {renderBookingTable(paymentIssueBookings)}
+              {paymentIssueBookings.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">No payment issues</p>
               )}
             </div>
           </TabsContent>
