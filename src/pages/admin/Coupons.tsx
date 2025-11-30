@@ -220,14 +220,14 @@ const Coupons = () => {
   }
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold flex items-center gap-2">
-            <Tag className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 flex-shrink-0" />
-            <span className="truncate">Coupon Management</span>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <Tag className="w-6 h-6 sm:w-8 sm:h-8" />
+            Coupon Management
           </h1>
-          <p className="text-xs sm:text-sm md:text-base text-muted-foreground mt-1">Create and manage discount coupons</p>
+          <p className="text-muted-foreground mt-1">Create and manage discount coupons</p>
         </div>
         
         <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -237,7 +237,7 @@ const Coupons = () => {
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" />
-              <span className="sm:inline">Create Coupon</span>
+              Create Coupon
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -371,103 +371,113 @@ const Coupons = () => {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
-          <CardTitle className="text-base sm:text-lg">All Coupons</CardTitle>
+      <Card className="shadow-warm">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-lg sm:text-xl">All Coupons ({coupons.length})</CardTitle>
         </CardHeader>
-        <CardContent className="px-0 sm:px-6 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px] sm:w-[100px] sticky left-0 bg-background z-10">Actions</TableHead>
-                <TableHead className="min-w-[80px]">Code</TableHead>
-                <TableHead className="hidden lg:table-cell">Description</TableHead>
-                <TableHead className="min-w-[80px]">Discount</TableHead>
-                <TableHead className="hidden sm:table-cell">Usage</TableHead>
-                <TableHead className="hidden md:table-cell">Valid Until</TableHead>
-                <TableHead className="min-w-[70px]">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {coupons.length === 0 ? (
+        <CardContent className="p-0 sm:p-6 sm:pt-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    No coupons found. Create your first coupon!
-                  </TableCell>
+                  <TableHead className="w-[80px] sticky left-0 bg-background z-10">Actions</TableHead>
+                  <TableHead className="min-w-[80px]">Code</TableHead>
+                  <TableHead className="min-w-[80px]">Discount</TableHead>
+                  <TableHead className="min-w-[60px]">Usage</TableHead>
+                  <TableHead className="min-w-[80px]">Valid Until</TableHead>
+                  <TableHead className="min-w-[70px]">Status</TableHead>
                 </TableRow>
-              ) : (
-                coupons.map((coupon) => (
-                  <TableRow key={coupon.id}>
-                    <TableCell className="sticky left-0 bg-background z-10">
-                      <div className="flex gap-0.5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => handleEdit(coupon)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="z-50">
-                            <DropdownMenuItem onClick={() => handleEdit(coupon)}>
-                              <Pencil className="w-4 h-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => toggleActive(coupon)}>
-                              {coupon.is_active ? 'Deactivate' : 'Activate'}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(coupon.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono font-bold text-xs sm:text-sm">{coupon.code}</TableCell>
-                    <TableCell className="max-w-xs truncate hidden lg:table-cell">{coupon.description || '-'}</TableCell>
-                    <TableCell className="text-xs sm:text-sm">
-                      {coupon.discount_type === 'percentage' 
-                        ? `${coupon.discount_value}%` 
-                        : `₹${coupon.discount_value}`}
-                      {coupon.min_order_amount > 0 && (
-                        <div className="text-[10px] sm:text-xs text-muted-foreground">
-                          Min: ₹{coupon.min_order_amount}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell text-xs sm:text-sm">
-                      {coupon.used_count}
-                      {coupon.max_uses && ` / ${coupon.max_uses}`}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-xs sm:text-sm">
-                      {coupon.valid_until 
-                        ? format(new Date(coupon.valid_until), 'PP')
-                        : 'No expiry'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={coupon.is_active ? "default" : "secondary"}
-                        className="cursor-pointer text-[10px] sm:text-xs"
-                        onClick={() => toggleActive(coupon)}
-                      >
-                        {coupon.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
+              </TableHeader>
+              <TableBody>
+                {coupons.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                      No coupons found. Create your first coupon!
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  coupons.map((coupon) => (
+                    <TableRow key={coupon.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(coupon)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem onClick={() => handleEdit(coupon)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toggleActive(coupon)}>
+                                {coupon.is_active ? 'Deactivate' : 'Activate'}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(coupon.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <span className="font-mono font-bold">{coupon.code}</span>
+                          {coupon.description && (
+                            <p className="text-sm text-muted-foreground">{coupon.description}</p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <span className="font-semibold">
+                            {coupon.discount_type === 'percentage' 
+                              ? `${coupon.discount_value}%` 
+                              : `₹${coupon.discount_value}`}
+                          </span>
+                          {coupon.min_order_amount > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              Min: ₹{coupon.min_order_amount}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {coupon.used_count}
+                        {coupon.max_uses && ` / ${coupon.max_uses}`}
+                      </TableCell>
+                      <TableCell>
+                        {coupon.valid_until 
+                          ? format(new Date(coupon.valid_until), 'PP')
+                          : 'No expiry'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={coupon.is_active ? "default" : "secondary"}
+                          className="cursor-pointer"
+                          onClick={() => toggleActive(coupon)}
+                        >
+                          {coupon.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
