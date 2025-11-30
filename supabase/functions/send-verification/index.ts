@@ -9,6 +9,11 @@ const corsHeaders = {
 // Phone number validation regex
 const PHONE_REGEX = /^[0-9]{10}$/;
 
+// Generate 6-digit OTP
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -25,7 +30,7 @@ serve(async (req) => {
       );
     }
     
-    // Initialize Supabase client for rate limiting
+    // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -54,30 +59,81 @@ serve(async (req) => {
       );
     }
     
-    const ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const VERIFY_SID = Deno.env.get('TWILIO_VERIFY_SERVICE_SID');
+    // Generate OTP
+    const otpCode = generateOTP();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString(); // 5 minutes expiry
     
-    // Call Twilio Verify API to send OTP
+    // Delete any existing OTPs for this phone number
+    await supabase
+      .from('phone_otps')
+      .delete()
+      .eq('phone_number', phoneNumber);
+    
+    // Store OTP in database
+    const { error: otpInsertError } = await supabase
+      .from('phone_otps')
+      .insert({
+        phone_number: phoneNumber,
+        otp_code: otpCode,
+        expires_at: expiresAt,
+        verified: false
+      });
+    
+    if (otpInsertError) {
+      console.error('Failed to store OTP:', otpInsertError.message);
+      throw new Error('Failed to generate OTP');
+    }
+    
+    // Send OTP via AiSensy WhatsApp
+    const AISENSY_API_KEY = Deno.env.get('AISENSY_API_KEY');
+    
+    if (!AISENSY_API_KEY) {
+      console.error('AISENSY_API_KEY not configured');
+      throw new Error('WhatsApp service not configured');
+    }
+    
+    const aiSensyPayload = {
+      apiKey: AISENSY_API_KEY,
+      campaignName: "da36e719_6ae7_44ef_9b0d_af3ab171f49d",
+      destination: `91${phoneNumber}`,
+      userName: "Bolt91",
+      templateParams: [otpCode],
+      source: "OTP Login",
+      buttons: [{
+        type: "button",
+        sub_type: "url",
+        index: 0,
+        parameters: [{
+          type: "text",
+          text: otpCode
+        }]
+      }]
+    };
+    
+    console.log('Sending OTP via AiSensy to:', `91${phoneNumber.slice(-2)}`);
+    
     const response = await fetch(
-      `https://verify.twilio.com/v2/Services/${VERIFY_SID}/Verifications`,
+      'https://backend.aisensy.com/campaign/t1/api/v2',
       {
         method: 'POST',
         headers: {
-          'Authorization': `Basic ${btoa(`${ACCOUNT_SID}:${AUTH_TOKEN}`)}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: new URLSearchParams({
-          To: `+91${phoneNumber}`,
-          Channel: 'sms',
-        }),
+        body: JSON.stringify(aiSensyPayload),
       }
     );
     
-    const data = await response.json();
+    const responseData = await response.json();
+    console.log('AiSensy response status:', response.status);
     
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to send verification');
+      console.error('AiSensy API error:', responseData);
+      // Delete the OTP if sending failed
+      await supabase
+        .from('phone_otps')
+        .delete()
+        .eq('phone_number', phoneNumber);
+      throw new Error(responseData.message || 'Failed to send WhatsApp OTP');
     }
     
     // Update rate limit
@@ -101,14 +157,15 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        status: data.status,
-        message: 'OTP sent successfully',
+        status: 'pending',
+        message: 'OTP sent successfully via WhatsApp',
         remainingAttempts: remainingAttempts - 1
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('send-verification error:', errorMessage);
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
       { 

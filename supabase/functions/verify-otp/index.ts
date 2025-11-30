@@ -36,46 +36,70 @@ serve(async (req) => {
       );
     }
     
-    const ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
-    const AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
-    const VERIFY_SID = Deno.env.get('TWILIO_VERIFY_SERVICE_SID');
-    
-    // Call Twilio Verify API to check OTP
-    const response = await fetch(
-      `https://verify.twilio.com/v2/Services/${VERIFY_SID}/VerificationCheck`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${btoa(`${ACCOUNT_SID}:${AUTH_TOKEN}`)}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          To: `+91${phoneNumber}`,
-          Code: code,
-        }),
-      }
-    );
-    
-    const data = await response.json();
-    
-    // If OTP verification failed, return early
-    if (data.status !== 'approved') {
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          status: data.status,
-          valid: data.valid
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // OTP verified! Now handle authentication
+    // Initialize Supabase admin client
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+    
+    // Verify OTP from database
+    const { data: otpRecord, error: otpError } = await supabaseAdmin
+      .from('phone_otps')
+      .select('*')
+      .eq('phone_number', phoneNumber)
+      .eq('otp_code', code)
+      .eq('verified', false)
+      .maybeSingle();
+    
+    if (otpError) {
+      console.error('Database error:', otpError.message);
+      throw new Error('Failed to verify OTP');
+    }
+    
+    // Check if OTP exists
+    if (!otpRecord) {
+      console.log('OTP verification failed: Invalid or already used OTP');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          status: 'failed',
+          valid: false,
+          error: 'Invalid or expired OTP code'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Check if OTP has expired (5 minutes)
+    const expiresAt = new Date(otpRecord.expires_at);
+    if (expiresAt < new Date()) {
+      console.log('OTP verification failed: OTP expired');
+      // Delete expired OTP
+      await supabaseAdmin
+        .from('phone_otps')
+        .delete()
+        .eq('id', otpRecord.id);
+      
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          status: 'expired',
+          valid: false,
+          error: 'OTP has expired. Please request a new one.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Mark OTP as verified and delete it
+    await supabaseAdmin
+      .from('phone_otps')
+      .delete()
+      .eq('id', otpRecord.id);
+    
+    console.log('OTP verified successfully for phone:', `****${phoneNumber.slice(-2)}`);
 
+    // OTP verified! Now handle authentication
     const email = `${phoneNumber}@bolt91.app`;
     // Generate a fresh random password for this login session
     const newPassword = crypto.randomUUID() + crypto.randomUUID();
@@ -142,6 +166,7 @@ serve(async (req) => {
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.error('verify-otp error:', errorMessage);
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
       { 
