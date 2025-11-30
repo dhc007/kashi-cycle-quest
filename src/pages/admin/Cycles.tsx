@@ -371,25 +371,26 @@ const Cycles = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      // Check if cycle has any bookings
-      const { data: bookings, error: bookingError } = await supabase
+      // Check if cycle has any active or upcoming bookings (not cancelled or completed)
+      const { data: activeBookings, error: bookingError } = await supabase
         .from("bookings")
-        .select("id")
+        .select("id, booking_status")
         .eq("cycle_id", id)
+        .in("booking_status", ["confirmed", "active"])
         .limit(1);
 
       if (bookingError) throw bookingError;
 
-      if (bookings && bookings.length > 0) {
+      if (activeBookings && activeBookings.length > 0) {
         toast({
           title: "Cannot Delete",
-          description: "This cycle has existing bookings. You can deactivate it instead.",
+          description: "This cycle has active or upcoming bookings. You can deactivate it instead.",
           variant: "destructive",
         });
         return;
       }
 
-      if (!confirm("Are you sure you want to delete this cycle?")) return;
+      if (!confirm("Are you sure you want to delete this cycle? This will also remove booking history references.")) return;
 
       const { error } = await supabase.from("cycles").delete().eq("id", id);
 

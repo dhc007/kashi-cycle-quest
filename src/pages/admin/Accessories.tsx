@@ -193,25 +193,26 @@ const AccessoriesContent = () => {
 
   const handleDelete = async (id: string) => {
     try {
-      // Check if accessory is referenced in booking_accessories
-      const { data: bookingAccessories, error: checkError } = await supabase
+      // Check if accessory is referenced in active or upcoming bookings (not cancelled or completed)
+      const { data: activeBookingAccessories, error: checkError } = await supabase
         .from('booking_accessories')
-        .select('id')
+        .select('id, booking:bookings!inner(id, booking_status)')
         .eq('accessory_id', id)
+        .in('booking.booking_status', ['confirmed', 'active'])
         .limit(1);
 
       if (checkError) throw checkError;
 
-      if (bookingAccessories && bookingAccessories.length > 0) {
+      if (activeBookingAccessories && activeBookingAccessories.length > 0) {
         toast({
           title: "Cannot Delete Accessory",
-          description: "This accessory has been used in bookings. You can deactivate it instead.",
+          description: "This accessory has active or upcoming bookings. You can deactivate it instead.",
           variant: "destructive",
         });
         return;
       }
 
-      if (!confirm("Are you sure you want to delete this accessory?")) return;
+      if (!confirm("Are you sure you want to delete this accessory? This will also remove booking history references.")) return;
 
       const { error } = await supabase
         .from('accessories')
