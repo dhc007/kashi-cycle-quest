@@ -60,6 +60,7 @@ const Cycles = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<Cycle | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [warrantyFile, setWarrantyFile] = useState<File | null>(null);
@@ -72,6 +73,8 @@ const Cycles = () => {
   const [showSpecSuggestions, setShowSpecSuggestions] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingCycle, setViewingCycle] = useState<Cycle | null>(null);
+  // Track existing media URLs that should be kept
+  const [existingMediaUrls, setExistingMediaUrls] = useState<string[]>([]);
   const [allSpecifications] = useState([
     "36v 250 watt ultra standard kit",
     "10.4 ah hard pack Lithium ion Detachable battery",
@@ -109,6 +112,11 @@ const Cycles = () => {
       purchase_amount: 0,
     },
   });
+
+  const isVideoUrl = (url: string): boolean => {
+    const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
+    return videoExtensions.some(ext => url.toLowerCase().includes(ext));
+  };
 
   useEffect(() => {
     Promise.all([loadCycles(), loadAccessories()]);
@@ -173,32 +181,47 @@ const Cycles = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setUploadingImage(true);
+    setUploadStatus("Preparing to save...");
 
     try {
       let imageUrl = formData.image_url;
-      let mediaUrls = formData.media_urls || [];
+      // Start with existing media URLs that weren't removed
+      let mediaUrls = [...existingMediaUrls];
       let warrantyFileUrl = formData.internal_details?.warranty_file_url || "";
       let invoiceFileUrl = formData.internal_details?.invoice_file_url || "";
+      let userManualUrl = formData.user_manual_url || "";
 
       if (imageFile) {
+        setUploadStatus("Uploading main image...");
         imageUrl = await uploadFile(imageFile);
       }
 
-      // Upload media files
+      // Upload new media files and append to existing
       if (mediaFiles.length > 0) {
+        setUploadStatus(`Uploading ${mediaFiles.length} media file(s)...`);
         const uploadedMediaUrls = await Promise.all(mediaFiles.map((file) => uploadFile(file)));
-        mediaUrls = uploadedMediaUrls;
+        mediaUrls = [...mediaUrls, ...uploadedMediaUrls];
       }
 
       // Upload warranty file
       if (warrantyFile) {
+        setUploadStatus("Uploading warranty document...");
         warrantyFileUrl = await uploadFile(warrantyFile, "documents");
       }
 
       // Upload invoice file
       if (invoiceFile) {
+        setUploadStatus("Uploading invoice document...");
         invoiceFileUrl = await uploadFile(invoiceFile, "documents");
       }
+
+      // Upload user manual file
+      if (userManualFile) {
+        setUploadStatus("Uploading user manual...");
+        userManualUrl = await uploadFile(userManualFile, "documents");
+      }
+
+      setUploadStatus("Saving cycle data...");
 
       if (editingCycle) {
         const { error } = await supabase
@@ -217,7 +240,7 @@ const Cycles = () => {
             serial_number: formData.serial_number,
             model_number: formData.model_number,
             internal_tracking_id: formData.internal_tracking_id,
-            user_manual_url: formData.user_manual_url,
+            user_manual_url: userManualUrl,
             internal_details: {
               ...(formData.internal_details || {}),
               warranty_file_url: warrantyFileUrl,
@@ -278,6 +301,7 @@ const Cycles = () => {
       });
     } finally {
       setUploadingImage(false);
+      setUploadStatus("");
     }
   };
 
@@ -314,7 +338,9 @@ const Cycles = () => {
     });
     setImageFile(null);
     setMediaFiles([]);
+    setExistingMediaUrls([]);
     setWarrantyFile(null);
+    setUploadStatus("");
     setInvoiceFile(null);
     setUserManualFile(null);
   };
@@ -322,6 +348,12 @@ const Cycles = () => {
   const handleEdit = (cycle: Cycle) => {
     setEditingCycle(cycle);
     setFormData(cycle);
+    setExistingMediaUrls(cycle.media_urls || []);
+    setMediaFiles([]);
+    setImageFile(null);
+    setWarrantyFile(null);
+    setInvoiceFile(null);
+    setUserManualFile(null);
     setDialogOpen(true);
   };
 
@@ -332,6 +364,8 @@ const Cycles = () => {
       id: undefined,
       name: `${cycle.name} (Copy)`,
     });
+    setExistingMediaUrls(cycle.media_urls || []);
+    setMediaFiles([]);
     setDialogOpen(true);
   };
 
@@ -545,23 +579,80 @@ const Cycles = () => {
                 />
               </div>
 
+              {/* Existing Primary Image */}
+              {editingCycle && formData.image_url && !imageFile && (
+                <div className="space-y-2">
+                  <Label>Current Primary Image</Label>
+                  <div className="relative inline-block">
+                    <img 
+                      src={formData.image_url} 
+                      alt="Current cycle" 
+                      className="w-40 h-40 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-2 -right-2 h-7 w-7 rounded-full shadow-lg"
+                      onClick={() => setFormData({ ...formData, image_url: "" })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <FileUpload
-                label="Upload Cycle Image"
+                label={formData.image_url && !imageFile ? "Replace Primary Image" : "Upload Cycle Image"}
                 accept="image/*"
                 onFileSelect={(file) => setImageFile(file)}
                 maxSize={5}
                 description="Upload a cycle image (max 5MB)"
               />
+              {imageFile && <p className="text-xs text-primary -mt-2">New image ready to upload</p>}
 
               <div className="space-y-2">
-                <Label>Media Gallery (Images & Videos - Max 6 files)</Label>
+                <Label>Media Gallery (Images & Videos - Max 6 total)</Label>
+                {/* Existing Media URLs */}
+                {existingMediaUrls.length > 0 && (
+                  <div className="mb-2">
+                    <p className="text-xs text-muted-foreground mb-2">Existing media ({existingMediaUrls.length})</p>
+                    <div className="flex gap-3 overflow-x-auto pb-2">
+                      {existingMediaUrls.map((url, index) => (
+                        <div
+                          key={`existing-${index}`}
+                          className="relative flex-shrink-0 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 border-2 rounded-lg overflow-hidden group"
+                        >
+                          {isVideoUrl(url) ? (
+                            <video src={url} className="w-full h-full object-cover" muted playsInline />
+                          ) : (
+                            <img src={url} alt={`Media ${index + 1}`} className="w-full h-full object-cover" />
+                          )}
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-7 w-7 rounded-full shadow-lg hover:scale-110 transition-transform"
+                            onClick={() => {
+                              setExistingMediaUrls(existingMediaUrls.filter((_, i) => i !== index));
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* New files to upload */}
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-rounded scrollbar-thumb-muted">
                   {mediaFiles.map((file, index) => (
                     <div
-                      key={index}
-                      className="relative flex-shrink-0 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 border-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-all animate-fade-in"
+                      key={`new-${index}`}
+                      className="relative flex-shrink-0 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 border-2 border-primary/50 rounded-lg bg-muted/30 hover:bg-muted/50 transition-all animate-fade-in"
                     >
-                      <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
+                      <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-primary text-primary-foreground text-[10px] rounded">NEW</div>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-2 pt-6">
                         <div className="text-xs font-medium text-center mb-1 line-clamp-2">{file.name}</div>
                         <div className="text-[10px] text-muted-foreground">
                           {(file.size / 1024 / 1024).toFixed(2)} MB
@@ -582,7 +673,7 @@ const Cycles = () => {
                       </Button>
                     </div>
                   ))}
-                  {mediaFiles.length < 6 && (
+                  {(existingMediaUrls.length + mediaFiles.length) < 6 && (
                     <div className="flex-shrink-0 w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-accent hover:border-primary transition-all group">
                       <label
                         htmlFor="media-upload"
@@ -618,7 +709,7 @@ const Cycles = () => {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Click + to add images or videos (max 20MB each, up to 6 files)
+                  Click + to add images or videos (max 20MB each, up to 6 files total)
                 </p>
               </div>
 
@@ -806,30 +897,116 @@ const Cycles = () => {
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-4">
-                  <FileUpload
-                    label="Warranty Document"
-                    accept="application/pdf,image/*"
-                    onFileSelect={(file) => setWarrantyFile(file)}
-                    maxSize={10}
-                    description="PDF or Image"
-                  />
+                <div className="space-y-4">
+                  <Label className="text-sm font-medium">Documents</Label>
+                  
+                  {/* Existing Documents Display */}
+                  {(formData.internal_details?.warranty_file_url || formData.internal_details?.invoice_file_url || formData.user_manual_url) && (
+                    <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+                      <p className="text-xs text-muted-foreground font-medium">Existing Documents</p>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.internal_details?.warranty_file_url && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-md">
+                            <a href={formData.internal_details.warranty_file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                              Warranty Doc
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={() => setFormData({
+                                ...formData,
+                                internal_details: {
+                                  ...(formData.internal_details || {}),
+                                  warranty_file_url: "",
+                                },
+                              })}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                        {formData.internal_details?.invoice_file_url && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-md">
+                            <a href={formData.internal_details.invoice_file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                              Invoice Doc
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={() => setFormData({
+                                ...formData,
+                                internal_details: {
+                                  ...(formData.internal_details || {}),
+                                  invoice_file_url: "",
+                                },
+                              })}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                        {formData.user_manual_url && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-md">
+                            <a href={formData.user_manual_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
+                              User Manual
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={() => setFormData({
+                                ...formData,
+                                user_manual_url: "",
+                              })}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-                  <FileUpload
-                    label="Invoice Document"
-                    accept="application/pdf,image/*"
-                    onFileSelect={(file) => setInvoiceFile(file)}
-                    maxSize={10}
-                    description="PDF or Image"
-                  />
+                  {/* Upload New Documents */}
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <FileUpload
+                        label={formData.internal_details?.warranty_file_url ? "Replace Warranty" : "Warranty Document"}
+                        accept="application/pdf,image/*"
+                        onFileSelect={(file) => setWarrantyFile(file)}
+                        maxSize={10}
+                        description="PDF or Image"
+                      />
+                      {warrantyFile && <p className="text-xs text-primary">New file ready to upload</p>}
+                    </div>
 
-                  <FileUpload
-                    label="User Manual"
-                    accept="application/pdf,image/*"
-                    onFileSelect={(file) => setUserManualFile(file)}
-                    maxSize={10}
-                    description="PDF or Image"
-                  />
+                    <div className="space-y-1">
+                      <FileUpload
+                        label={formData.internal_details?.invoice_file_url ? "Replace Invoice" : "Invoice Document"}
+                        accept="application/pdf,image/*"
+                        onFileSelect={(file) => setInvoiceFile(file)}
+                        maxSize={10}
+                        description="PDF or Image"
+                      />
+                      {invoiceFile && <p className="text-xs text-primary">New file ready to upload</p>}
+                    </div>
+
+                    <div className="space-y-1">
+                      <FileUpload
+                        label={formData.user_manual_url ? "Replace User Manual" : "User Manual"}
+                        accept="application/pdf,image/*"
+                        onFileSelect={(file) => setUserManualFile(file)}
+                        maxSize={10}
+                        description="PDF or Image"
+                      />
+                      {userManualFile && <p className="text-xs text-primary">New file ready to upload</p>}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -851,9 +1028,16 @@ const Cycles = () => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90" disabled={uploadingImage}>
-                {uploadingImage ? "Saving..." : editingCycle ? "Update Cycle" : "Create Cycle"}
-              </Button>
+              <div className="space-y-2">
+                <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90" disabled={uploadingImage}>
+                  {uploadingImage ? uploadStatus || "Saving..." : editingCycle ? "Update Cycle" : "Create Cycle"}
+                </Button>
+                {uploadingImage && (
+                  <p className="text-xs text-center text-muted-foreground animate-pulse">
+                    {uploadStatus || "Processing..."}
+                  </p>
+                )}
+              </div>
             </form>
           </DialogContent>
         </Dialog>

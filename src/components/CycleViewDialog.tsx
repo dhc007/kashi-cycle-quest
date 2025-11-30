@@ -2,6 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { ExternalLink, FileText, Image, Video } from "lucide-react";
 
 interface Cycle {
   id: string;
@@ -24,6 +26,7 @@ interface Cycle {
   serial_number?: string | null;
   model_number?: string | null;
   display_serial?: string | null;
+  user_manual_url?: string | null;
   quantity?: number;
 }
 
@@ -33,8 +36,18 @@ interface CycleViewDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const isVideoUrl = (url: string): boolean => {
+  const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
+  return videoExtensions.some(ext => url.toLowerCase().includes(ext));
+};
+
 export const CycleViewDialog = ({ cycle, open, onOpenChange }: CycleViewDialogProps) => {
   if (!cycle) return null;
+
+  const allMedia = cycle.media_urls || [];
+  const hasDocuments = cycle.internal_details?.warranty_file_url || 
+                       cycle.internal_details?.invoice_file_url || 
+                       cycle.user_manual_url;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -44,7 +57,7 @@ export const CycleViewDialog = ({ cycle, open, onOpenChange }: CycleViewDialogPr
         </DialogHeader>
         
         <div className="space-y-6">
-          {/* Image */}
+          {/* Primary Image */}
           {cycle.image_url && (
             <div className="flex justify-center">
               <img
@@ -52,6 +65,46 @@ export const CycleViewDialog = ({ cycle, open, onOpenChange }: CycleViewDialogPr
                 alt={cycle.name}
                 className="w-full max-w-md h-64 object-cover rounded-lg"
               />
+            </div>
+          )}
+
+          {/* Media Gallery */}
+          {allMedia.length > 0 && (
+            <div>
+              <Label className="text-muted-foreground mb-2 block">Media Gallery ({allMedia.length} items)</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {allMedia.map((url, index) => (
+                  <div key={index} className="relative group">
+                    {isVideoUrl(url) ? (
+                      <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                        <video 
+                          src={url} 
+                          className="w-full h-full object-cover"
+                          muted
+                          playsInline
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <Video className="w-8 h-8 text-white" />
+                        </div>
+                      </div>
+                    ) : (
+                      <img
+                        src={url}
+                        alt={`Media ${index + 1}`}
+                        className="aspect-square w-full object-cover rounded-lg"
+                      />
+                    )}
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="absolute bottom-1 right-1 h-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => window.open(url, '_blank')}
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -101,6 +154,53 @@ export const CycleViewDialog = ({ cycle, open, onOpenChange }: CycleViewDialogPr
                 {cycle.specifications.split('\n').filter(s => s.trim()).map((spec, index) => (
                   <Badge key={index} variant="secondary">{spec}</Badge>
                 ))}
+              </div>
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Documents Section */}
+          {hasDocuments && (
+            <div>
+              <Label className="text-lg font-semibold mb-3 block">Documents</Label>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {cycle.internal_details?.warranty_file_url && (
+                  <a 
+                    href={cycle.internal_details.warranty_file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
+                  >
+                    <FileText className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium">Warranty Document</span>
+                    <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
+                  </a>
+                )}
+                {cycle.internal_details?.invoice_file_url && (
+                  <a 
+                    href={cycle.internal_details.invoice_file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
+                  >
+                    <FileText className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium">Invoice Document</span>
+                    <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
+                  </a>
+                )}
+                {cycle.user_manual_url && (
+                  <a 
+                    href={cycle.user_manual_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-3 rounded-lg border hover:bg-accent transition-colors"
+                  >
+                    <FileText className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-medium">User Manual</span>
+                    <ExternalLink className="w-3 h-3 ml-auto text-muted-foreground" />
+                  </a>
+                )}
               </div>
             </div>
           )}
