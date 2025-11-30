@@ -149,9 +149,11 @@ const BookingHistory = () => {
     const pickupDateTime = new Date(`${booking.pickup_date}T${booking.pickup_time}`);
     const twoHoursBefore = new Date(pickupDateTime.getTime() - 2 * 60 * 60 * 1000);
     
+    // Allow editing for both completed and pending payments
     return (
       (booking.booking_status === 'confirmed' || booking.booking_status === 'active') &&
-      booking.payment_status === 'completed' &&
+      (booking.payment_status === 'completed' || booking.payment_status === 'pending') &&
+      booking.cancellation_status === 'none' &&
       now < twoHoursBefore
     );
   };
@@ -258,9 +260,11 @@ const BookingHistory = () => {
                         </CardTitle>
                         <div className="flex gap-2 flex-wrap">
                           <Badge className={getStatusColor(booking.booking_status)}>
+                            <span className="text-xs mr-1 opacity-75">Booking:</span>
                             {booking.booking_status}
                           </Badge>
                           <Badge className={getPaymentStatusColor(booking.payment_status)}>
+                            <span className="text-xs mr-1 opacity-75">Payment:</span>
                             {booking.payment_status}
                           </Badge>
                           {booking.cancellation_status !== 'none' && (
