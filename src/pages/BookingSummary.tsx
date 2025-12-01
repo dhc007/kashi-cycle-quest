@@ -265,6 +265,9 @@ const BookingSummary = () => {
             paymentLines.push(`${acc.name} × ${acc.days} day${acc.days > 1 ? 's' : ''} - ₹${accTotal}`);
           });
         }
+        if (discount > 0 && appliedCoupon) {
+          paymentLines.push(`Discount (${appliedCoupon.code}) - -₹${discount}`);
+        }
         paymentLines.push(`GST (18%) - ₹${gst}`);
         paymentLines.push(`Subtotal - ₹${totalBeforeDeposit}`);
         
