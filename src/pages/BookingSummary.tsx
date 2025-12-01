@@ -96,8 +96,9 @@ const BookingSummary = () => {
   }, 0);
   
   const subtotal = basePrice + accessoriesTotal;
-  const gst = Math.round(subtotal * 0.18);
-  const totalBeforeDeposit = subtotal + gst - discount;
+  const discountedSubtotal = subtotal - discount; // Apply discount first
+  const gst = Math.round(discountedSubtotal * 0.18); // GST on discounted amount
+  const totalBeforeDeposit = discountedSubtotal + gst;
   const totalDeposit = securityDeposit + accessoriesDeposit;
   const totalAmount = totalBeforeDeposit + totalDeposit;
 
@@ -440,13 +441,7 @@ const BookingSummary = () => {
                     <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                   </div>
 
-                  {/* GST */}
-                  <div className="flex justify-between text-xs">
-                    <span>GST (18%)</span>
-                    <span>₹{gst.toFixed(2)}</span>
-                  </div>
-
-                  {/* Discount */}
+                  {/* Discount - Applied before GST */}
                   {discount > 0 && appliedCoupon && (
                     <div className="space-y-1">
                       <div className="flex justify-between text-xs text-green-600 dark:text-green-400">
@@ -459,6 +454,12 @@ const BookingSummary = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* GST - Calculated on discounted amount */}
+                  <div className="flex justify-between text-xs">
+                    <span>GST (18%){discount > 0 && <span className="text-muted-foreground ml-1">(on ₹{discountedSubtotal.toFixed(0)})</span>}</span>
+                    <span>₹{gst.toFixed(2)}</span>
+                  </div>
 
                   {/* Rental Total */}
                   <div className="border-t pt-3 flex justify-between items-baseline">
