@@ -467,19 +467,75 @@ const Book = () => {
     }
   }, [isEditMode, loading, cyclesData, accessories, pickupLocations, editModeInitialized, toast]);
 
-  // Generate time slots based on operation hours in 30-minute intervals
-  const generateTimeSlots = () => {
-    const slots = [];
+  // Clear selected time if it becomes invalid when date changes to today
+  useEffect(() => {
+    if (selectedDate && selectedTime) {
+      const now = new Date();
+      const isToday = selectedDate.getDate() === now.getDate() &&
+                      selectedDate.getMonth() === now.getMonth() &&
+                      selectedDate.getFullYear() === now.getFullYear();
+      
+      if (isToday) {
+        const [hours, minutes] = selectedTime.split(':').map(Number);
+        const slotTime = new Date(selectedDate);
+        slotTime.setHours(hours, minutes, 0, 0);
+        
+        // Clear time if it's now in the past
+        if (slotTime <= now) {
+          setSelectedTime(undefined);
+        }
+      }
+    }
+  }, [selectedDate]);
 
-    // Parse operation hours (format: "9:00 AM" to "7:00 PM")
-    const parseTime = (timeStr: string) => {
-      const [time, period] = timeStr.split(" ");
-      const [hours, minutes] = time.split(":").map(Number);
-      let hour24 = hours;
-      if (period === "PM" && hours !== 12) hour24 = hours + 12;
-      if (period === "AM" && hours === 12) hour24 = 0;
-      return { hour: hour24, minute: minutes };
-    };
+  // Parse time string (format: "9:00 AM" to "7:00 PM") to 24-hour format
+  const parseTime = (timeStr: string) => {
+    const [time, period] = timeStr.split(" ");
+    const [hours, minutes] = time.split(":").map(Number);
+    let hour24 = hours;
+    if (period === "PM" && hours !== 12) hour24 = hours + 12;
+    if (period === "AM" && hours === 12) hour24 = 0;
+    return { hour: hour24, minute: minutes };
+  };
+
+  // Calculate minimum date - skip today if past closing time
+  const calculateMinDate = () => {
+    const now = new Date();
+    const endTime = parseTime(operationHours.end_display);
+    
+    // Create today's closing time
+    const todayClosing = new Date(now);
+    todayClosing.setHours(endTime.hour, endTime.minute, 0, 0);
+    
+    // If current time is past closing time, minimum date is tomorrow
+    if (now >= todayClosing) {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      return tomorrow;
+    }
+    
+    // Otherwise, today is still valid
+    return now;
+  };
+
+  const minDate = calculateMinDate();
+
+  // Calculate maximum date (1 year from now)
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
+
+  // Generate time slots based on operation hours in 30-minute intervals
+  // Filters out past times when booking for today
+  const generateTimeSlots = (forDate: Date | undefined) => {
+    const slots = [];
+    const now = new Date();
+    
+    // Check if selected date is today
+    const isToday = forDate && 
+      forDate.getDate() === now.getDate() &&
+      forDate.getMonth() === now.getMonth() &&
+      forDate.getFullYear() === now.getFullYear();
 
     const startTime = parseTime(operationHours.start_display);
     const endTime = parseTime(operationHours.end_display);
@@ -488,6 +544,22 @@ const Book = () => {
     let currentMinute = startTime.minute;
 
     while (currentHour < endTime.hour || (currentHour === endTime.hour && currentMinute <= endTime.minute)) {
+      // If today, skip time slots that have already passed
+      if (isToday) {
+        const slotTime = new Date(forDate);
+        slotTime.setHours(currentHour, currentMinute, 0, 0);
+        
+        // Skip if this slot is in the past or current
+        if (slotTime <= now) {
+          currentMinute += 30;
+          if (currentMinute >= 60) {
+            currentMinute = 0;
+            currentHour++;
+          }
+          continue;
+        }
+      }
+
       const time = `${currentHour.toString().padStart(2, "0")}:${currentMinute.toString().padStart(2, "0")}`;
       const period = currentHour >= 12 ? "PM" : "AM";
       const displayHour = currentHour > 12 ? currentHour - 12 : currentHour === 0 ? 12 : currentHour;
@@ -504,15 +576,8 @@ const Book = () => {
     return slots;
   };
 
-  const timeSlots = generateTimeSlots();
-
-  // Calculate minimum date (2 hours from now)
-  const minDate = new Date();
-  minDate.setHours(minDate.getHours() + 2);
-
-  // Calculate maximum date (1 year from now)
-  const maxDate = new Date();
-  maxDate.setFullYear(maxDate.getFullYear() + 1);
+  // Make time slots reactive to selected date
+  const timeSlots = generateTimeSlots(selectedDate);
 
   const canContinue = selectedDate && selectedTime;
 
