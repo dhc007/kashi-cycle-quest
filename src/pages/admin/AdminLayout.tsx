@@ -252,8 +252,10 @@ const AdminLayout = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-background pt-14 lg:pt-0">
-        <Outlet />
+      <main className="flex-1 overflow-x-hidden overflow-y-auto bg-background pt-14 lg:pt-0 max-w-full">
+        <div className="w-full max-w-full overflow-x-hidden">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
