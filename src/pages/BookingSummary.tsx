@@ -301,7 +301,7 @@ const BookingSummary = () => {
             customerPhone: phoneNumber,
             cycleName: cycleName,
             pickupLocation: pickupLocation?.name || 'Bolt91 Pickup Point',
-            duration: `${format(new Date(selectedDate), 'dd MMM')}, ${formatTimeWithPeriod(selectedTime)} - ${format(new Date(returnDate), 'dd MMM')}, ${formatTimeWithPeriod(returnTime || selectedTime)}`
+            duration: selectedDuration // Simple duration type like "1 Day", "3 Days", etc.
           }
         });
       } catch (notificationError) {
