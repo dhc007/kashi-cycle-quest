@@ -255,6 +255,21 @@ const BookingSummary = () => {
 
       const booking = data.booking;
 
+      // Send WhatsApp booking confirmation (fire and forget - don't block on failure)
+      try {
+        await supabase.functions.invoke('send-whatsapp-confirmation', {
+          body: {
+            phoneNumber: phoneNumber,
+            bookingId: booking.booking_id,
+            cycleName: cycleName,
+            pickupLocation: pickupLocation?.name || 'Bolt91 Pickup Point'
+          }
+        });
+      } catch (notificationError) {
+        // Don't fail the booking if WhatsApp notification fails
+        console.error('WhatsApp notification failed (non-critical)');
+      }
+
       // Clear booking data from session storage
       sessionStorage.removeItem('bookingData');
 
