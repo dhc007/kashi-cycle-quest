@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.send-admin-notification]
 verify_jwt = false
 
+[functions.send-whatsapp-confirmation]
+verify_jwt = false
+
 [functions.create-phonepe-order]
 verify_jwt = false
 
