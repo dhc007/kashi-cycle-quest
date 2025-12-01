@@ -1067,7 +1067,7 @@ const Book = () => {
                                   {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0 max-w-[calc(100vw-2rem)]" align="center">
+                              <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar
                                   mode="single"
                                   selected={selectedDate}
@@ -1100,7 +1100,7 @@ const Book = () => {
                                     return date < earliestDate || date > maxDate;
                                   }}
                                   initialFocus
-                                  className={cn("p-2 sm:p-3 pointer-events-auto")}
+                                  className="pointer-events-auto"
                                 />
                               </PopoverContent>
                             </Popover>
@@ -1865,33 +1865,34 @@ const Book = () => {
                       </div>
 
                       {/* Terms and Conditions */}
-                      <Card className="border-2 border-primary/20">
-                        <CardContent className="pt-6">
-                          <div className="flex items-start space-x-3">
+                      <Card className="border border-primary/20">
+                        <CardContent className="p-4">
+                          <label htmlFor="terms" className="flex items-start gap-3 cursor-pointer">
                             <Checkbox
                               id="terms"
                               checked={termsAccepted}
                               onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                              className="mt-0.5"
                             />
-                            <div className="flex-1 space-y-1">
-                              <label
-                                htmlFor="terms"
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium leading-tight">
                                 I accept the terms and conditions
-                              </label>
-                              <p className="text-xs text-muted-foreground">
-                                By checking this box, you agree to our{" "}
+                              </span>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                By checking this, you agree to our{" "}
                                 <button
                                   type="button"
-                                  onClick={() => setShowTermsDialog(true)}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setShowTermsDialog(true);
+                                  }}
                                   className="text-primary underline hover:no-underline"
                                 >
-                                  Rental Agreement and Terms & Conditions
+                                  Terms & Conditions
                                 </button>
                               </p>
                             </div>
-                          </div>
+                          </label>
                         </CardContent>
                       </Card>
 
