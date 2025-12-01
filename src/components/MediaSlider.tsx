@@ -110,7 +110,7 @@ export const MediaSlider = ({
             <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
 
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 md:gap-1.5 lg:gap-2">
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
             {mediaUrls.map((_, index) => (
               <button
                 key={index}
@@ -119,10 +119,10 @@ export const MediaSlider = ({
                   setCurrentIndex(index);
                 }}
                 className={cn(
-                  "rounded-full transition-all duration-200",
+                  "rounded-full transition-all duration-200 h-2",
                   index === currentIndex
-                    ? "bg-primary w-2 md:w-3 lg:w-4 h-1 md:h-1.5 lg:h-2"
-                    : "bg-background/60 hover:bg-background/80 w-1 md:w-1.5 lg:w-2 h-1 md:h-1.5 lg:h-2"
+                    ? "bg-primary w-6"
+                    : "bg-background/60 hover:bg-background/80 w-2"
                 )}
                 aria-label={`Go to slide ${index + 1}`}
               />
