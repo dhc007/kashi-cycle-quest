@@ -1398,9 +1398,9 @@ const Book = () => {
                         <Button
                           onClick={() => setStep(4)}
                           disabled={!selectedDuration}
-                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
+                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-[10px] sm:text-xs md:text-sm px-2 sm:px-4"
                         >
-                          <span className="hidden sm:inline">Continue to Accessories</span>
+                          <span className="whitespace-nowrap">Continue to Accessories</span>
                         </Button>
                       </div>
                     </div>

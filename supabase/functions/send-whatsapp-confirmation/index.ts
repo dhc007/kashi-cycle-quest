@@ -49,7 +49,7 @@ serve(async (req) => {
 
     const aiSensyPayload = {
       apiKey: AISENSY_API_KEY,
-      campaignName: "booking_confirmation_cycle",
+      campaignName: "user_booking_confirmation",
       destination: `91${cleanPhone}`,
       userName: "Blue Bolt Electric Pvt Ltd",
       templateParams: [
@@ -65,7 +65,7 @@ serve(async (req) => {
       source: "Booking Confirmation"
     };
 
-    console.log('Sending to AiSensy with campaign: booking_confirmation_cycle');
+    console.log('Sending to AiSensy with campaign: user_booking_confirmation');
 
     const response = await fetch(
       'https://backend.aisensy.com/campaign/t1/api/v2',
