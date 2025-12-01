@@ -257,7 +257,7 @@ const BookingSummary = () => {
 
       // Send WhatsApp booking confirmation (fire and forget - don't block on failure)
       try {
-        // Build payment summary string for WhatsApp template
+        // Build payment summary string for WhatsApp template (no newlines allowed by AiSensy)
         const paymentLines = [`Cycle × ${selectedDuration} - ₹${basePrice}`];
         if (accessories && accessories.length > 0) {
           accessories.forEach((acc: any) => {
@@ -284,7 +284,7 @@ const BookingSummary = () => {
             pickupLocation: pickupLocation?.name || 'Bolt91 Pickup Point',
             pickupTime: `${format(new Date(selectedDate), 'dd MMM')}, ${formatTimeWithPeriod(selectedTime)}`,
             returnTime: `${format(new Date(returnDate), 'dd MMM')}, ${formatTimeWithPeriod(returnTime || selectedTime)}`,
-            paymentSummary: paymentLines.join('\n'),
+            paymentSummary: paymentLines.join(' | '),
             securityDeposit: String(totalDeposit),
             totalAmount: String(totalAmount)
           }
