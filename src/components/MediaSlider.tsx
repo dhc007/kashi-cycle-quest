@@ -119,10 +119,10 @@ export const MediaSlider = ({
                   setCurrentIndex(index);
                 }}
                 className={cn(
-                  "rounded-full transition-all duration-200 h-2",
+                  "rounded-full transition-all duration-200",
                   index === currentIndex
-                    ? "bg-primary w-6"
-                    : "bg-background/60 hover:bg-background/80 w-4"
+                    ? "bg-primary w-5 h-2"
+                    : "bg-muted-foreground/40 hover:bg-muted-foreground/60 w-2 h-2"
                 )}
                 aria-label={`Go to slide ${index + 1}`}
               />
