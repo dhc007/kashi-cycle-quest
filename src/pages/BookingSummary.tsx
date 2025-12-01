@@ -268,15 +268,23 @@ const BookingSummary = () => {
         paymentLines.push(`GST (18%) - ₹${gst}`);
         paymentLines.push(`Subtotal - ₹${totalBeforeDeposit}`);
         
+        // Format times with AM/PM
+        const formatTimeWithPeriod = (time: string) => {
+          const [hours, minutes] = time.split(':').map(Number);
+          const period = hours >= 12 ? 'PM' : 'AM';
+          const hour12 = hours % 12 || 12;
+          return `${hour12}:${minutes.toString().padStart(2, '0')} ${period}`;
+        };
+        
         await supabase.functions.invoke('send-whatsapp-confirmation', {
           body: {
             phoneNumber: phoneNumber,
             bookingId: booking.booking_id,
             cycleName: cycleName,
             pickupLocation: pickupLocation?.name || 'Bolt91 Pickup Point',
-            pickupTime: `${format(new Date(selectedDate), 'dd MMM')}, ${selectedTime}`,
-            returnTime: `${format(new Date(returnDate), 'dd MMM')}, ${returnTime || selectedTime}`,
-            paymentSummary: paymentLines.join('\\n'),
+            pickupTime: `${format(new Date(selectedDate), 'dd MMM')}, ${formatTimeWithPeriod(selectedTime)}`,
+            returnTime: `${format(new Date(returnDate), 'dd MMM')}, ${formatTimeWithPeriod(returnTime || selectedTime)}`,
+            paymentSummary: paymentLines.join('\n'),
             securityDeposit: String(totalDeposit),
             totalAmount: String(totalAmount)
           }
