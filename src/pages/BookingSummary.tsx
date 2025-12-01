@@ -257,12 +257,28 @@ const BookingSummary = () => {
 
       // Send WhatsApp booking confirmation (fire and forget - don't block on failure)
       try {
+        // Build payment summary string for WhatsApp template
+        const paymentLines = [`Cycle × ${selectedDuration} - ₹${basePrice}`];
+        if (accessories && accessories.length > 0) {
+          accessories.forEach((acc: any) => {
+            const accTotal = (acc.pricePerDay || 0) * (acc.days || 0) * (acc.quantity || 1);
+            paymentLines.push(`${acc.name} × ${acc.days} day${acc.days > 1 ? 's' : ''} - ₹${accTotal}`);
+          });
+        }
+        paymentLines.push(`GST (18%) - ₹${gst}`);
+        paymentLines.push(`Subtotal - ₹${totalBeforeDeposit}`);
+        
         await supabase.functions.invoke('send-whatsapp-confirmation', {
           body: {
             phoneNumber: phoneNumber,
             bookingId: booking.booking_id,
             cycleName: cycleName,
-            pickupLocation: pickupLocation?.name || 'Bolt91 Pickup Point'
+            pickupLocation: pickupLocation?.name || 'Bolt91 Pickup Point',
+            pickupTime: `${format(new Date(selectedDate), 'dd MMM')}, ${selectedTime}`,
+            returnTime: `${format(new Date(returnDate), 'dd MMM')}, ${returnTime || selectedTime}`,
+            paymentSummary: paymentLines.join('\\n'),
+            securityDeposit: String(totalDeposit),
+            totalAmount: String(totalAmount)
           }
         });
       } catch (notificationError) {

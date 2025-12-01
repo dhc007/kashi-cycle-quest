@@ -7,9 +7,14 @@ const corsHeaders = {
 
 interface WhatsAppConfirmationRequest {
   phoneNumber: string;
-  bookingId: string;
-  cycleName: string;
-  pickupLocation: string;
+  bookingId: string;           // {{1}}
+  cycleName: string;           // {{2}}
+  pickupLocation: string;      // {{3}}
+  pickupTime: string;          // {{4}} - "20 Nov, 10:00 AM"
+  returnTime: string;          // {{5}} - "21 Nov, 10:00 AM"
+  paymentSummary: string;      // {{6}} - Multi-line string
+  securityDeposit: string;     // {{7}} - "2000"
+  totalAmount: string;         // {{8}} - "4247"
 }
 
 serve(async (req) => {
@@ -22,7 +27,12 @@ serve(async (req) => {
       phoneNumber, 
       bookingId, 
       cycleName, 
-      pickupLocation 
+      pickupLocation,
+      pickupTime,
+      returnTime,
+      paymentSummary,
+      securityDeposit,
+      totalAmount
     }: WhatsAppConfirmationRequest = await req.json();
     
     const AISENSY_API_KEY = Deno.env.get('AISENSY_API_KEY');
@@ -39,18 +49,23 @@ serve(async (req) => {
 
     const aiSensyPayload = {
       apiKey: AISENSY_API_KEY,
-      campaignName: "user_booking_confirmation",
+      campaignName: "booking_confirmation_cycle",
       destination: `91${cleanPhone}`,
       userName: "Blue Bolt Electric Pvt Ltd",
       templateParams: [
         bookingId,        // {{1}} Booking ID
         cycleName,        // {{2}} Cycle name
-        pickupLocation    // {{3}} Pickup Location
+        pickupLocation,   // {{3}} Pickup Location
+        pickupTime,       // {{4}} Pickup Time
+        returnTime,       // {{5}} Return Time
+        paymentSummary,   // {{6}} Payment Summary
+        securityDeposit,  // {{7}} Security Deposit
+        totalAmount       // {{8}} Total Amount
       ],
       source: "Booking Confirmation"
     };
 
-    console.log('Sending to AiSensy with campaign: user_booking_confirmation');
+    console.log('Sending to AiSensy with campaign: booking_confirmation_cycle');
 
     const response = await fetch(
       'https://backend.aisensy.com/campaign/t1/api/v2',
@@ -68,7 +83,7 @@ serve(async (req) => {
       throw new Error(responseData.message || 'Failed to send WhatsApp notification');
     }
 
-    console.log('WhatsApp confirmation sent successfully:', JSON.stringify(responseData));
+    console.log('WhatsApp confirmation sent successfully');
 
     return new Response(
       JSON.stringify({ 

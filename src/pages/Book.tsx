@@ -1184,13 +1184,10 @@ const Book = () => {
                       <Button
                         onClick={() => setStep(2)}
                         disabled={!canContinue}
-                        className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
+                        className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-[10px] sm:text-xs md:text-sm px-2 sm:px-4"
                       >
-                        <span className="hidden sm:inline">
+                        <span className="whitespace-nowrap">
                           {cyclesData.length > 1 ? "Continue to Cycle Selection" : "Continue to Duration Selection"}
-                        </span>
-                        <span className="sm:hidden">
-                          {cyclesData.length > 1 ? "Select Cycle" : "Select Duration"}
                         </span>
                       </Button>
                     </div>
@@ -1324,10 +1321,9 @@ const Book = () => {
                             selectedCycles.length !== numberOfCycles ||
                             selectedCycles.filter((c) => c).length !== numberOfCycles
                           }
-                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
+                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-[10px] sm:text-xs md:text-sm px-2 sm:px-4"
                         >
-                          <span className="hidden sm:inline">Continue to Duration</span>
-                          <span className="sm:hidden">Duration</span>
+                          <span className="whitespace-nowrap">Continue to Duration</span>
                         </Button>
                       </div>
                     </div>
@@ -1586,13 +1582,10 @@ const Book = () => {
                               setStep(5);
                             }
                           }}
-                          className="flex-1 bg-gradient-primary hover:opacity-90 text-xs sm:text-sm"
+                          className="flex-1 bg-gradient-primary hover:opacity-90 text-[10px] sm:text-xs md:text-sm px-2 sm:px-4"
                         >
-                          <span className="hidden sm:inline">
+                          <span className="whitespace-nowrap">
                             {partnerId ? "Continue to Checkout" : "Continue to Pickup Location"}
-                          </span>
-                          <span className="sm:hidden">
-                            {partnerId ? "Checkout" : "Pickup"}
                           </span>
                         </Button>
                       </div>
@@ -1669,10 +1662,9 @@ const Book = () => {
                             setStep(partnerId ? 5 : 6);
                           }}
                           disabled={!selectedPickupLocation}
-                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
+                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-[10px] sm:text-xs md:text-sm px-2 sm:px-4"
                         >
-                          <span className="hidden sm:inline">Continue to Checkout</span>
-                          <span className="sm:hidden">Checkout</span>
+                          <span className="whitespace-nowrap">Continue to Checkout</span>
                         </Button>
                       </div>
                     </div>
@@ -1903,10 +1895,9 @@ const Book = () => {
                           <Button
                             onClick={handleProceedToPayment}
                             disabled={!canProceedToPayment()}
-                            className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
+                            className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-[10px] sm:text-xs md:text-sm px-2 sm:px-4"
                           >
-                            <span className="hidden sm:inline">Proceed to Book</span>
-                            <span className="sm:hidden">Book Now</span>
+                            <span className="whitespace-nowrap">Proceed to Book</span>
                           </Button>
                           {!canProceedToPayment() && (
                             <p className="text-xs text-destructive text-center">
