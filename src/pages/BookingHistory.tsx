@@ -216,9 +216,9 @@ const BookingHistory = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
-      <div className="container mx-auto px-3 sm:px-4 pt-20 sm:pt-24 pb-8 sm:pb-12">
+      <div className="container mx-auto px-3 sm:px-4 pt-20 sm:pt-24 pb-8 sm:pb-12 max-w-full">
         <div className="mb-4 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-1 sm:mb-2">My Bookings</h1>
           <p className="text-sm sm:text-base text-muted-foreground">View all your past and upcoming bookings</p>
@@ -255,20 +255,20 @@ const BookingHistory = () => {
                           />
                         </div>
                       )}
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <CardTitle className="text-base sm:text-lg md:text-xl mb-1 sm:mb-2 leading-tight truncate">
                           {booking.cycles?.name}
                         </CardTitle>
-                        <p className="text-xs sm:text-sm text-muted-foreground mb-2">{booking.cycles?.model}</p>
+                        <p className="text-xs sm:text-sm text-muted-foreground mb-2 truncate">{booking.cycles?.model}</p>
                         <div className="flex gap-1.5 sm:gap-2 flex-wrap">
-                          <Badge className={`${getStatusColor(booking.booking_status)} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5`}>
+                          <Badge className={`${getStatusColor(booking.booking_status)} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 whitespace-nowrap`}>
                             Booking: {booking.booking_status}
                           </Badge>
-                          <Badge className={`${getPaymentStatusColor(booking.payment_status)} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5`}>
+                          <Badge className={`${getPaymentStatusColor(booking.payment_status)} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 whitespace-nowrap`}>
                             Payment: {booking.payment_status}
                           </Badge>
                           {booking.cancellation_status !== 'none' && (
-                            <Badge className={`${getCancellationStatusColor(booking.cancellation_status)} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5`}>
+                            <Badge className={`${getCancellationStatusColor(booking.cancellation_status)} text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 whitespace-nowrap`}>
                               Cancel: {booking.cancellation_status}
                             </Badge>
                           )}
@@ -276,18 +276,18 @@ const BookingHistory = () => {
                       </div>
                     </div>
                     {/* Booking ID - full width on mobile */}
-                    <div className="flex justify-between items-center bg-muted/50 rounded px-2 py-1.5 sm:px-3 sm:py-2">
-                      <span className="text-xs sm:text-sm text-muted-foreground">Booking ID</span>
-                      <span className="font-mono text-xs sm:text-sm">{booking.booking_id}</span>
+                    <div className="flex justify-between items-center bg-muted/50 rounded px-2 py-1.5 sm:px-3 sm:py-2 overflow-hidden">
+                      <span className="text-xs sm:text-sm text-muted-foreground flex-shrink-0">Booking ID</span>
+                      <span className="font-mono text-xs sm:text-sm truncate ml-2">{booking.booking_id}</span>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-3 sm:space-y-4">
+                <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0 space-y-3 sm:space-y-4 overflow-hidden">
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                    <div className="space-y-2 sm:space-y-3">
+                    <div className="space-y-2 sm:space-y-3 min-w-0">
                       <div className="flex items-start gap-2 sm:gap-3">
                         <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
-                        <div className="min-w-0">
+                        <div className="min-w-0 overflow-hidden">
                           <p className="text-xs sm:text-sm font-medium">Pickup</p>
                           <p className="text-xs sm:text-sm text-muted-foreground truncate">
                             {format(new Date(booking.pickup_date), 'PP')}
@@ -297,7 +297,7 @@ const BookingHistory = () => {
 
                       <div className="flex items-start gap-2 sm:gap-3">
                         <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
-                        <div className="min-w-0">
+                        <div className="min-w-0 overflow-hidden">
                           <p className="text-xs sm:text-sm font-medium">Return</p>
                           <p className="text-xs sm:text-sm text-muted-foreground truncate">
                             {format(new Date(booking.return_date), 'PP')}
@@ -307,17 +307,17 @@ const BookingHistory = () => {
 
                       <div className="flex items-start gap-2 sm:gap-3">
                         <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs sm:text-sm font-medium">Time</p>
-                          <p className="text-xs sm:text-sm text-muted-foreground">{booking.pickup_time}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">{booking.pickup_time}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="space-y-2 sm:space-y-3">
+                    <div className="space-y-2 sm:space-y-3 min-w-0">
                       <div className="flex items-start gap-2 sm:gap-3">
                         <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
-                        <div className="min-w-0">
+                        <div className="min-w-0 overflow-hidden flex-1">
                           <p className="text-xs sm:text-sm font-medium">Location</p>
                           <p className="text-xs sm:text-sm text-muted-foreground truncate">
                             {booking.partners?.name || booking.pickup_locations?.name || 'N/A'}
@@ -329,8 +329,8 @@ const BookingHistory = () => {
                               rel="noopener noreferrer"
                               className="text-[10px] sm:text-xs text-primary hover:underline inline-flex items-center gap-1 mt-0.5"
                             >
-                              <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                              Maps
+                              <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                              <span>Maps</span>
                             </a>
                           )}
                         </div>
@@ -338,7 +338,7 @@ const BookingHistory = () => {
 
                       <div className="flex items-start gap-2 sm:gap-3">
                         <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs sm:text-sm font-medium">Total</p>
                           <p className="text-sm sm:text-lg font-bold">₹{booking.total_amount.toLocaleString()}</p>
                         </div>
@@ -346,39 +346,39 @@ const BookingHistory = () => {
                     </div>
                   </div>
 
-                  <div className="pt-3 sm:pt-4 border-t">
+                  <div className="pt-3 sm:pt-4 border-t overflow-hidden">
                     <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Cycle ({booking.duration_type})</span>
-                        <span className="font-medium">₹{booking.cycle_rental_cost.toLocaleString()}</span>
+                      <div className="flex justify-between gap-2">
+                        <span className="text-muted-foreground truncate">Cycle ({booking.duration_type})</span>
+                        <span className="font-medium flex-shrink-0">₹{booking.cycle_rental_cost.toLocaleString()}</span>
                       </div>
                       {booking.accessories_cost > 0 && (
-                        <div className="flex justify-between">
+                        <div className="flex justify-between gap-2">
                           <span className="text-muted-foreground">Accessories</span>
-                          <span className="font-medium">₹{booking.accessories_cost.toLocaleString()}</span>
+                          <span className="font-medium flex-shrink-0">₹{booking.accessories_cost.toLocaleString()}</span>
                         </div>
                       )}
-                      <div className="flex justify-between">
+                      <div className="flex justify-between gap-2">
                         <span className="text-muted-foreground">GST</span>
-                        <span className="font-medium">₹{booking.gst.toLocaleString()}</span>
+                        <span className="font-medium flex-shrink-0">₹{booking.gst.toLocaleString()}</span>
                       </div>
                       {booking.coupon_code && booking.discount_amount > 0 && (
-                        <div className="flex justify-between text-green-600">
-                          <span className="truncate mr-2">Discount ({booking.coupon_code})</span>
+                        <div className="flex justify-between gap-2 text-green-600">
+                          <span className="truncate min-w-0">Discount ({booking.coupon_code})</span>
                           <span className="font-medium flex-shrink-0">-₹{booking.discount_amount.toLocaleString()}</span>
                         </div>
                       )}
-                      <div className="flex justify-between pt-1.5 sm:pt-2 border-t">
+                      <div className="flex justify-between gap-2 pt-1.5 sm:pt-2 border-t">
                         <span className="font-semibold">Subtotal</span>
-                        <span className="font-semibold">₹{(booking.cycle_rental_cost + booking.accessories_cost + booking.gst - (booking.discount_amount || 0)).toLocaleString()}</span>
+                        <span className="font-semibold flex-shrink-0">₹{(booking.cycle_rental_cost + booking.accessories_cost + booking.gst - (booking.discount_amount || 0)).toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between text-xs sm:text-sm">
-                        <span className="text-muted-foreground">Security Deposit</span>
-                        <span className="font-medium text-green-600">₹{booking.security_deposit.toLocaleString()}</span>
+                      <div className="flex justify-between gap-2 text-xs sm:text-sm">
+                        <span className="text-muted-foreground truncate">Security Deposit</span>
+                        <span className="font-medium text-green-600 flex-shrink-0">₹{booking.security_deposit.toLocaleString()}</span>
                       </div>
-                      <div className="flex justify-between pt-1.5 sm:pt-2 border-t-2">
+                      <div className="flex justify-between gap-2 pt-1.5 sm:pt-2 border-t-2">
                         <span className="text-sm sm:text-lg font-bold">Total</span>
-                        <span className="text-sm sm:text-lg font-bold">₹{booking.total_amount.toLocaleString()}</span>
+                        <span className="text-sm sm:text-lg font-bold flex-shrink-0">₹{booking.total_amount.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

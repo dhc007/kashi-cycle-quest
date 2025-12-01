@@ -338,11 +338,11 @@ const BookingsContent = () => {
   );
 
   const renderBookingCard = (booking: Booking) => (
-    <div key={booking.id} className="border rounded-lg p-4 space-y-3 hover:bg-accent/50 transition-colors">
+    <div key={booking.id} className="border rounded-lg p-4 space-y-3 hover:bg-accent/50 transition-colors overflow-hidden">
       <div className="flex items-start gap-2">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="flex-shrink-0">
+            <Button variant="ghost" size="sm" className="flex-shrink-0 h-8 w-8 p-0">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -359,42 +359,42 @@ const BookingsContent = () => {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <p className="font-mono text-sm font-semibold truncate">{booking.booking_id}</p>
           <p className="font-medium truncate">
             {booking.profiles?.first_name} {booking.profiles?.last_name}
           </p>
-          <p className="text-xs text-muted-foreground">{booking.profiles?.phone_number}</p>
+          <p className="text-xs text-muted-foreground truncate">{booking.profiles?.phone_number}</p>
         </div>
       </div>
       
       <div className="grid grid-cols-2 gap-2 text-sm">
-        <div>
+        <div className="min-w-0">
           <p className="text-muted-foreground text-xs">Cycle</p>
           <p className="truncate">{booking.cycles?.name}</p>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-muted-foreground text-xs">Partner</p>
           <p className="truncate">{booking.partners?.city}</p>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-muted-foreground text-xs">Pickup</p>
-          <p>{format(new Date(booking.pickup_date), 'MMM dd')}</p>
+          <p className="truncate">{format(new Date(booking.pickup_date), 'MMM dd')}</p>
         </div>
-        <div>
+        <div className="min-w-0">
           <p className="text-muted-foreground text-xs">Return</p>
-          <p>{format(new Date(booking.return_date), 'MMM dd')}</p>
+          <p className="truncate">{format(new Date(booking.return_date), 'MMM dd')}</p>
         </div>
       </div>
       
-      <div className="flex justify-between items-center pt-2 border-t">
-        <span className="font-semibold">₹{booking.total_amount}</span>
+      <div className="flex justify-between items-center pt-2 border-t gap-2">
+        <span className="font-semibold flex-shrink-0">₹{booking.total_amount}</span>
         {canEdit ? (
           <Select
             value={booking.booking_status}
             onValueChange={(value) => updateBookingStatus(booking.id, value)}
           >
-            <SelectTrigger className="w-[120px] h-8 text-xs">
+            <SelectTrigger className="w-[110px] h-8 text-xs flex-shrink-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -405,7 +405,7 @@ const BookingsContent = () => {
             </SelectContent>
           </Select>
         ) : (
-          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(booking.booking_status)}`}>
+          <span className={`px-2 py-1 rounded-full text-xs whitespace-nowrap ${getStatusColor(booking.booking_status)}`}>
             {booking.booking_status}
           </span>
         )}

@@ -968,27 +968,27 @@ const Book = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Progress Indicator */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center gap-4">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-full overflow-x-hidden">
+        {/* Progress Indicator - Mobile Optimized */}
+        <div className="mb-6 sm:mb-8 overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
+          <div className="flex items-center justify-start sm:justify-center gap-2 sm:gap-4 min-w-max sm:min-w-0">
             {[
-              { num: 1, label: "Select Date & Time" },
-              { num: 2, label: "Select Cycles" },
-              { num: 3, label: "Choose Duration" },
-              { num: 4, label: "Add Accessories" },
-              ...(partnerId ? [] : [{ num: 5, label: "Pickup Location" }]),
+              { num: 1, label: "Date" },
+              { num: 2, label: "Cycle" },
+              { num: 3, label: "Duration" },
+              { num: 4, label: "Accessories" },
+              ...(partnerId ? [] : [{ num: 5, label: "Location" }]),
               { num: partnerId ? 5 : 6, label: "Checkout" },
             ].map((s) => (
-              <div key={s.num} className="flex items-center gap-2">
+              <div key={s.num} className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
+                  className={`w-7 h-7 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-semibold text-xs sm:text-sm ${
                     step >= s.num ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {s.num}
                 </div>
-                <span className="hidden md:block text-sm">{s.label}</span>
+                <span className="hidden md:block text-sm truncate max-w-[100px]">{s.label}</span>
               </div>
             ))}
           </div>
