@@ -54,10 +54,14 @@ serve(async (req) => {
         customerPhone,       // {{3}} Customer Phone
         cycleName,           // {{4}} Cycle
         pickupLocation,      // {{5}} Pickup
-        duration             // {{6}} Duration
+        duration             // {{6}} Duration (e.g., "1 Day", "3 Days")
       ],
     };
 
+    console.log('Admin notification payload:', JSON.stringify({
+      destination: adminPhoneNumber.slice(-4),
+      templateParams: aiSensyPayload.templateParams
+    }));
     console.log('Sending to AiSensy with campaign: admin_booking_confirmation');
 
     const aiSensyResponse = await fetch('https://backend.aisensy.com/campaign/t1/api/v2', {
