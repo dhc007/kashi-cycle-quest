@@ -292,6 +292,18 @@ const BookingSummary = () => {
             totalAmount: String(totalAmount)
           }
         });
+
+        // Send admin notification
+        await supabase.functions.invoke('send-admin-notification', {
+          body: {
+            bookingId: booking.booking_id,
+            customerName: `${firstName} ${lastName}`.trim(),
+            customerPhone: phoneNumber,
+            cycleName: cycleName,
+            pickupLocation: pickupLocation?.name || 'Bolt91 Pickup Point',
+            duration: `${format(new Date(selectedDate), 'dd MMM')}, ${formatTimeWithPeriod(selectedTime)} - ${format(new Date(returnDate), 'dd MMM')}, ${formatTimeWithPeriod(returnTime || selectedTime)}`
+          }
+        });
       } catch (notificationError) {
         // Don't fail the booking if WhatsApp notification fails
         console.error('WhatsApp notification failed (non-critical)');
