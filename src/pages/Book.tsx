@@ -1065,7 +1065,7 @@ const Book = () => {
                                   {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
                                 </Button>
                               </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
+                              <PopoverContent className="w-auto p-0 max-w-[calc(100vw-2rem)]" align="center">
                                 <Calendar
                                   mode="single"
                                   selected={selectedDate}
@@ -1075,12 +1075,29 @@ const Book = () => {
                                   }}
                                   disabled={(date) => {
                                     const today = new Date(new Date().setHours(0, 0, 0, 0));
-                                    const minBookingDate = new Date(2025, 11, 1); // December 1st, 2025 (month is 0-indexed)
+                                    const minBookingDate = new Date(2025, 11, 1);
                                     const earliestDate = minBookingDate > today ? minBookingDate : today;
+                                    
+                                    // Check if date has available time slots
+                                    const now = new Date();
+                                    const isToday = date.getDate() === now.getDate() &&
+                                                    date.getMonth() === now.getMonth() &&
+                                                    date.getFullYear() === now.getFullYear();
+                                    
+                                    if (isToday) {
+                                      const endTime = parseTime(operationHours.end_display);
+                                      const todayClosing = new Date(now);
+                                      todayClosing.setHours(endTime.hour, endTime.minute, 0, 0);
+                                      // Disable today if past closing time
+                                      if (now >= todayClosing) {
+                                        return true;
+                                      }
+                                    }
+                                    
                                     return date < earliestDate || date > maxDate;
                                   }}
                                   initialFocus
-                                  className={cn("p-3 pointer-events-auto")}
+                                  className={cn("p-2 sm:p-3 pointer-events-auto")}
                                 />
                               </PopoverContent>
                             </Popover>
@@ -1167,9 +1184,14 @@ const Book = () => {
                       <Button
                         onClick={() => setStep(2)}
                         disabled={!canContinue}
-                        className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                        className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
                       >
-                        {cyclesData.length > 1 ? "Continue to Cycle Selection" : "Continue to Duration Selection"}
+                        <span className="hidden sm:inline">
+                          {cyclesData.length > 1 ? "Continue to Cycle Selection" : "Continue to Duration Selection"}
+                        </span>
+                        <span className="sm:hidden">
+                          {cyclesData.length > 1 ? "Select Cycle" : "Select Duration"}
+                        </span>
                       </Button>
                     </div>
                   )}
@@ -1188,7 +1210,7 @@ const Book = () => {
                         {Array.from({ length: numberOfCycles }).map((_, personIndex) => (
                           <div key={personIndex} className="mb-6">
                             <h4 className="text-sm font-semibold mb-3 text-primary">Cycle {personIndex + 1}</h4>
-                            <div className="grid md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                               {cyclesData.map((cycle) => {
                                 const isSelected = selectedCycles[personIndex]?.id === cycle.id;
                                 const freeAccessories = cycle.free_accessories || [];
@@ -1227,15 +1249,15 @@ const Book = () => {
                                         : "hover:border-primary",
                                     )}
                                   >
-                                    <CardContent className="p-4">
+                                    <CardContent className="p-3 sm:p-4">
                                       {/* Show MediaSlider if media_urls exist, otherwise show single image */}
                                       {cycle.media_urls && cycle.media_urls.length > 0 ? (
-                                        <MediaSlider mediaUrls={cycle.media_urls} alt={cycle.name} className="mb-3" />
+                                        <MediaSlider mediaUrls={cycle.media_urls} alt={cycle.name} className="mb-2 sm:mb-3" />
                                       ) : cycle.image_url ? (
                                         <img
                                           src={cycle.image_url}
                                           alt={cycle.name}
-                                          className="w-full h-40 object-cover rounded-lg mb-3 pointer-events-none"
+                                          className="w-full h-32 sm:h-40 object-cover rounded-lg mb-2 sm:mb-3 pointer-events-none"
                                         />
                                       ) : null}
 
@@ -1292,8 +1314,8 @@ const Book = () => {
                         ))}
                       </div>
 
-                      <div className="flex gap-4">
-                        <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
+                      <div className="flex gap-2 sm:gap-4">
+                        <Button variant="outline" onClick={() => setStep(1)} className="flex-1 text-xs sm:text-sm">
                           Back
                         </Button>
                         <Button
@@ -1302,9 +1324,10 @@ const Book = () => {
                             selectedCycles.length !== numberOfCycles ||
                             selectedCycles.filter((c) => c).length !== numberOfCycles
                           }
-                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
                         >
-                          Continue to Duration
+                          <span className="hidden sm:inline">Continue to Duration</span>
+                          <span className="sm:hidden">Duration</span>
                         </Button>
                       </div>
                     </div>
@@ -1318,7 +1341,7 @@ const Book = () => {
                           Choose Rental Duration
                         </h3>
 
-                        <div className="grid md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                           {selectedCycles.length > 0 &&
                             selectedCycles[0] &&
                             [
@@ -1351,28 +1374,29 @@ const Book = () => {
                                     : "hover:border-primary",
                                 )}
                               >
-                                <CardContent className="pt-6 text-center">
-                                  <Bike className="w-12 h-12 mx-auto mb-3 text-primary" />
-                                  <h4 className="font-semibold mb-2">{option.duration}</h4>
-                                  <p className="text-2xl font-bold text-primary mb-1">{option.price}</p>
-                                  <p className="text-sm text-muted-foreground mb-2">{option.hours}</p>
-                                  <p className="text-xs text-muted-foreground">Per person deposit: {option.deposit}</p>
+                                <CardContent className="p-4 sm:pt-6 text-center">
+                                  <Bike className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-primary" />
+                                  <h4 className="font-semibold mb-1 sm:mb-2 text-sm sm:text-base">{option.duration}</h4>
+                                  <p className="text-xl sm:text-2xl font-bold text-primary mb-1">{option.price}</p>
+                                  <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">{option.hours}</p>
+                                  <p className="text-xs text-muted-foreground">Deposit: {option.deposit}</p>
                                 </CardContent>
                               </Card>
                             ))}
                         </div>
                       </div>
 
-                      <div className="flex gap-4">
-                        <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                      <div className="flex gap-2 sm:gap-4">
+                        <Button variant="outline" onClick={() => setStep(2)} className="flex-1 text-xs sm:text-sm">
                           Back
                         </Button>
                         <Button
                           onClick={() => setStep(4)}
                           disabled={!selectedDuration}
-                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
                         >
-                          Continue to Accessories
+                          <span className="hidden sm:inline">Continue to Accessories</span>
+                          <span className="sm:hidden">Accessories</span>
                         </Button>
                       </div>
                     </div>
@@ -1548,8 +1572,8 @@ const Book = () => {
                         </div>
                       </div>
 
-                      <div className="flex gap-4">
-                        <Button variant="outline" onClick={() => setStep(3)} className="flex-1">
+                      <div className="flex gap-2 sm:gap-4">
+                        <Button variant="outline" onClick={() => setStep(3)} className="flex-1 text-xs sm:text-sm">
                           Back
                         </Button>
                         <Button
@@ -1562,9 +1586,14 @@ const Book = () => {
                               setStep(5);
                             }
                           }}
-                          className="flex-1 bg-gradient-primary hover:opacity-90"
+                          className="flex-1 bg-gradient-primary hover:opacity-90 text-xs sm:text-sm"
                         >
-                          {partnerId ? "Continue to Checkout" : "Continue to Pickup Location"}
+                          <span className="hidden sm:inline">
+                            {partnerId ? "Continue to Checkout" : "Continue to Pickup Location"}
+                          </span>
+                          <span className="sm:hidden">
+                            {partnerId ? "Checkout" : "Pickup"}
+                          </span>
                         </Button>
                       </div>
                     </div>
@@ -1630,8 +1659,8 @@ const Book = () => {
                         </p>
                       </div>
 
-                      <div className="flex gap-4">
-                        <Button variant="outline" onClick={() => setStep(4)} className="flex-1">
+                      <div className="flex gap-2 sm:gap-4">
+                        <Button variant="outline" onClick={() => setStep(4)} className="flex-1 text-xs sm:text-sm">
                           Back
                         </Button>
                         <Button
@@ -1640,9 +1669,10 @@ const Book = () => {
                             setStep(partnerId ? 5 : 6);
                           }}
                           disabled={!selectedPickupLocation}
-                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                          className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
                         >
-                          Continue to Checkout
+                          <span className="hidden sm:inline">Continue to Checkout</span>
+                          <span className="sm:hidden">Checkout</span>
                         </Button>
                       </div>
                     </div>
@@ -1866,16 +1896,17 @@ const Book = () => {
                       </Card>
 
                       <div className="flex gap-4">
-                        <Button variant="outline" onClick={() => setStep(partnerId ? 4 : 5)} className="flex-1">
+                        <Button variant="outline" onClick={() => setStep(partnerId ? 4 : 5)} className="flex-1 text-xs sm:text-sm">
                           Back
                         </Button>
                         <div className="flex-1 space-y-2">
                           <Button
                             onClick={handleProceedToPayment}
                             disabled={!canProceedToPayment()}
-                            className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50"
+                            className="w-full bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
                           >
-                            Proceed to Book
+                            <span className="hidden sm:inline">Proceed to Book</span>
+                            <span className="sm:hidden">Book Now</span>
                           </Button>
                           {!canProceedToPayment() && (
                             <p className="text-xs text-destructive text-center">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
 
 interface MediaSliderProps {
   mediaUrls: string[];
@@ -54,7 +55,7 @@ export const MediaSlider = ({
 
   return (
     <div 
-      className={`relative w-full ${className}`}
+      className={cn("relative w-full", className)}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -81,27 +82,35 @@ export const MediaSlider = ({
           <Button
             variant="outline"
             size="icon"
-            className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background transition-transform active:scale-95"
+            className={cn(
+              "absolute left-1 sm:left-2 top-1/2 -translate-y-1/2",
+              "h-7 w-7 sm:h-10 sm:w-10",
+              "bg-background/80 hover:bg-background transition-transform active:scale-95"
+            )}
             onClick={(e) => {
               e.stopPropagation();
               goToPrevious();
             }}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
           <Button
             variant="outline"
             size="icon"
-            className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background transition-transform active:scale-95"
+            className={cn(
+              "absolute right-1 sm:right-2 top-1/2 -translate-y-1/2",
+              "h-7 w-7 sm:h-10 sm:w-10",
+              "bg-background/80 hover:bg-background transition-transform active:scale-95"
+            )}
             onClick={(e) => {
               e.stopPropagation();
               goToNext();
             }}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
 
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
             {mediaUrls.map((_, index) => (
               <button
                 key={index}
@@ -109,11 +118,12 @@ export const MediaSlider = ({
                   e.stopPropagation();
                   setCurrentIndex(index);
                 }}
-                className={`w-2 h-2 rounded-full transition-all duration-200 ${
+                className={cn(
+                  "rounded-full transition-all duration-200",
                   index === currentIndex
-                    ? "bg-primary w-4"
-                    : "bg-background/60 hover:bg-background/80"
-                }`}
+                    ? "bg-primary w-3 sm:w-4 h-1.5 sm:h-2"
+                    : "bg-background/60 hover:bg-background/80 w-1.5 sm:w-2 h-1.5 sm:h-2"
+                )}
                 aria-label={`Go to slide ${index + 1}`}
               />
             ))}
