@@ -60,16 +60,14 @@ interface Partner {
 // Expandable description component for long text
 const ExpandableDescription = ({ text, maxLength = 80 }: { text: string; maxLength?: number }) => {
   const [expanded, setExpanded] = useState(false);
-  
+
   if (text.length <= maxLength) {
     return <p className="text-xs text-muted-foreground mt-1 mb-3">{text}</p>;
   }
-  
+
   return (
     <div className="mt-1 mb-3">
-      <p className="text-xs text-muted-foreground">
-        {expanded ? text : `${text.slice(0, maxLength)}...`}
-      </p>
+      <p className="text-xs text-muted-foreground">{expanded ? text : `${text.slice(0, maxLength)}...`}</p>
       <button
         type="button"
         onClick={(e) => {
@@ -388,13 +386,13 @@ const Book = () => {
   // Restore booking data when in edit mode
   useEffect(() => {
     if (!isEditMode || loading || editModeInitialized) return;
-    
+
     const storedData = sessionStorage.getItem("bookingData");
     if (!storedData) return;
-    
+
     try {
       const bookingData = JSON.parse(storedData);
-      
+
       // Restore date and time
       if (bookingData.selectedDate) {
         setSelectedDate(new Date(bookingData.selectedDate));
@@ -405,40 +403,42 @@ const Book = () => {
       if (bookingData.selectedDuration) {
         setSelectedDuration(bookingData.selectedDuration);
       }
-      
+
       // Restore pickup location
       if (bookingData.pickupLocationId && pickupLocations.length > 0) {
-        const location = pickupLocations.find(loc => loc.id === bookingData.pickupLocationId);
+        const location = pickupLocations.find((loc) => loc.id === bookingData.pickupLocationId);
         if (location) {
           setSelectedPickupLocation(location);
           setPickupLocationConfirmed(true);
         }
       }
-      
+
       // Restore selected cycle
       if (bookingData.cycleId && cyclesData.length > 0) {
-        const cycle = cyclesData.find(c => c.id === bookingData.cycleId);
+        const cycle = cyclesData.find((c) => c.id === bookingData.cycleId);
         if (cycle) {
           setSelectedCycles([cycle]);
           setNumberOfCycles(1);
         }
       }
-      
+
       // Restore accessories
       if (bookingData.accessories && bookingData.accessories.length > 0 && accessories.length > 0) {
-        setAccessories(prev => prev.map(acc => {
-          const savedAcc = bookingData.accessories.find((a: any) => a.id === acc.id);
-          if (savedAcc) {
-            return {
-              ...acc,
-              quantity: savedAcc.quantity || 0,
-              days: savedAcc.days || 0,
-            };
-          }
-          return acc;
-        }));
+        setAccessories((prev) =>
+          prev.map((acc) => {
+            const savedAcc = bookingData.accessories.find((a: any) => a.id === acc.id);
+            if (savedAcc) {
+              return {
+                ...acc,
+                quantity: savedAcc.quantity || 0,
+                days: savedAcc.days || 0,
+              };
+            }
+            return acc;
+          }),
+        );
       }
-      
+
       // Restore contact info
       if (bookingData.firstName) setFirstName(bookingData.firstName);
       if (bookingData.lastName) setLastName(bookingData.lastName);
@@ -446,18 +446,18 @@ const Book = () => {
       if (bookingData.email) setEmail(bookingData.email);
       if (bookingData.emergencyName) setEmergencyName(bookingData.emergencyName);
       if (bookingData.emergencyPhone) setEmergencyPhone(bookingData.emergencyPhone);
-      
+
       // Restore terms acceptance
       if (bookingData.termsAcceptedAt) {
         setTermsAccepted(true);
       }
-      
+
       // Set phone as verified since we're editing
       setPhoneVerified(true);
-      
+
       // Mark edit mode as initialized
       setEditModeInitialized(true);
-      
+
       toast({
         title: "Edit Mode",
         description: "You can now modify your booking details",
@@ -471,15 +471,16 @@ const Book = () => {
   useEffect(() => {
     if (selectedDate && selectedTime) {
       const now = new Date();
-      const isToday = selectedDate.getDate() === now.getDate() &&
-                      selectedDate.getMonth() === now.getMonth() &&
-                      selectedDate.getFullYear() === now.getFullYear();
-      
+      const isToday =
+        selectedDate.getDate() === now.getDate() &&
+        selectedDate.getMonth() === now.getMonth() &&
+        selectedDate.getFullYear() === now.getFullYear();
+
       if (isToday) {
-        const [hours, minutes] = selectedTime.split(':').map(Number);
+        const [hours, minutes] = selectedTime.split(":").map(Number);
         const slotTime = new Date(selectedDate);
         slotTime.setHours(hours, minutes, 0, 0);
-        
+
         // Clear time if it's now in the past
         if (slotTime <= now) {
           setSelectedTime(undefined);
@@ -502,11 +503,11 @@ const Book = () => {
   const calculateMinDate = () => {
     const now = new Date();
     const endTime = parseTime(operationHours.end_display);
-    
+
     // Create today's closing time
     const todayClosing = new Date(now);
     todayClosing.setHours(endTime.hour, endTime.minute, 0, 0);
-    
+
     // If current time is past closing time, minimum date is tomorrow
     if (now >= todayClosing) {
       const tomorrow = new Date(now);
@@ -514,7 +515,7 @@ const Book = () => {
       tomorrow.setHours(0, 0, 0, 0);
       return tomorrow;
     }
-    
+
     // Otherwise, today is still valid
     return now;
   };
@@ -530,9 +531,10 @@ const Book = () => {
   const generateTimeSlots = (forDate: Date | undefined) => {
     const slots = [];
     const now = new Date();
-    
+
     // Check if selected date is today
-    const isToday = forDate && 
+    const isToday =
+      forDate &&
       forDate.getDate() === now.getDate() &&
       forDate.getMonth() === now.getMonth() &&
       forDate.getFullYear() === now.getFullYear();
@@ -548,7 +550,7 @@ const Book = () => {
       if (isToday) {
         const slotTime = new Date(forDate);
         slotTime.setHours(currentHour, currentMinute, 0, 0);
-        
+
         // Skip if this slot is in the past or current
         if (slotTime <= now) {
           currentMinute += 30;
@@ -1077,13 +1079,14 @@ const Book = () => {
                                     const today = new Date(new Date().setHours(0, 0, 0, 0));
                                     const minBookingDate = new Date(2025, 11, 1);
                                     const earliestDate = minBookingDate > today ? minBookingDate : today;
-                                    
+
                                     // Check if date has available time slots
                                     const now = new Date();
-                                    const isToday = date.getDate() === now.getDate() &&
-                                                    date.getMonth() === now.getMonth() &&
-                                                    date.getFullYear() === now.getFullYear();
-                                    
+                                    const isToday =
+                                      date.getDate() === now.getDate() &&
+                                      date.getMonth() === now.getMonth() &&
+                                      date.getFullYear() === now.getFullYear();
+
                                     if (isToday) {
                                       const endTime = parseTime(operationHours.end_display);
                                       const todayClosing = new Date(now);
@@ -1093,7 +1096,7 @@ const Book = () => {
                                         return true;
                                       }
                                     }
-                                    
+
                                     return date < earliestDate || date > maxDate;
                                   }}
                                   initialFocus
@@ -1249,7 +1252,11 @@ const Book = () => {
                                     <CardContent className="p-3 sm:p-4">
                                       {/* Show MediaSlider if media_urls exist, otherwise show single image */}
                                       {cycle.media_urls && cycle.media_urls.length > 0 ? (
-                                        <MediaSlider mediaUrls={cycle.media_urls} alt={cycle.name} className="mb-2 sm:mb-3" />
+                                        <MediaSlider
+                                          mediaUrls={cycle.media_urls}
+                                          alt={cycle.name}
+                                          className="mb-2 sm:mb-3"
+                                        />
                                       ) : cycle.image_url ? (
                                         <img
                                           src={cycle.image_url}
@@ -1374,7 +1381,9 @@ const Book = () => {
                                   <Bike className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 text-primary" />
                                   <h4 className="font-semibold mb-1 sm:mb-2 text-sm sm:text-base">{option.duration}</h4>
                                   <p className="text-xl sm:text-2xl font-bold text-primary mb-1">{option.price}</p>
-                                  <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">{option.hours}</p>
+                                  <p className="text-xs sm:text-sm text-muted-foreground mb-1 sm:mb-2">
+                                    {option.hours}
+                                  </p>
                                   <p className="text-xs text-muted-foreground">Deposit: {option.deposit}</p>
                                 </CardContent>
                               </Card>
@@ -1392,7 +1401,6 @@ const Book = () => {
                           className="flex-1 bg-gradient-primary hover:opacity-90 disabled:opacity-50 text-xs sm:text-sm"
                         >
                           <span className="hidden sm:inline">Continue to Accessories</span>
-                          <span className="sm:hidden">Accessories</span>
                         </Button>
                       </div>
                     </div>
@@ -1888,7 +1896,11 @@ const Book = () => {
                       </Card>
 
                       <div className="flex gap-4">
-                        <Button variant="outline" onClick={() => setStep(partnerId ? 4 : 5)} className="flex-1 text-xs sm:text-sm">
+                        <Button
+                          variant="outline"
+                          onClick={() => setStep(partnerId ? 4 : 5)}
+                          className="flex-1 text-xs sm:text-sm"
+                        >
                           Back
                         </Button>
                         <div className="flex-1 space-y-2">
